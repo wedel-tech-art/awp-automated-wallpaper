@@ -1,8 +1,8 @@
 # AWP - Automated Wallpaper Program
 
-![AWP Logo](https://img.shields.io/badge/AWP-Automated%20Wallpaper%20Program-blue)
-![Python](https://img.shields.io/badge/Python-3.6%2B-green)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+[![AWP](https://img.shields.io/badge/AWP-Automated%20Wallpaper%20Program-blue)](https://github.com/ottowedel-linux/awp-automated-wallpaper)
+[![Python](https://img.shields.io/badge/Python-3.6%2B-green)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 A professional wallpaper and theme management system for Linux desktop environments.
 Per-workspace automated wallpaper rotation with dynamic theme switching.
