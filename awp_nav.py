@@ -552,7 +552,7 @@ def main():
     # =========================================================================
     # CONKY INTEGRATION (OPTIONAL)
     # Uncomment the line below to enable real-time wallpaper info for Conky
-    # update_conky_state(f"ws{self.num+1}", current_wallpaper_path)
+    # update_conky_state(f"ws{ws_num+1}", wallpaper_path)
     # =========================================================================
     
     print(f"WS{ws_num+1}: {direction} -> index {new_idx}, scaling '{scaling}', wallpaper '{wallpaper_path}'")
