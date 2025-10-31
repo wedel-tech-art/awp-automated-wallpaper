@@ -78,6 +78,20 @@ python3 awp_dab.py
 ### Example Configuration
 See `awp_config.ini.example` for a complete configuration reference.
 
+## Screenshots
+
+### General Settings
+![General Settings](screenshots/awp_dab.py%20General%20Settings.png)
+
+### Workspace 1 Configuration
+![Workspace 1](screenshots/awp_dab.py%20Workspace%201%20Configuration%20Example.png)
+
+### Workspace 2 Configuration  
+![Workspace 2](screenshots/awp_dab.py%20Workspace%202%20Configuration%20Example.png)
+
+### Workspace 3 Configuration
+![Workspace 3](screenshots/awp_dab.py%20Workspace%203%20Configuration%20Example.png)
+
 ## 📁 Project Structure
 
 ```
