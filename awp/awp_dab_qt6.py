@@ -1,43 +1,35 @@
 #!/usr/bin/env python3
 """
-AWP - Automated Wallpaper Program
-Configuration Dashboard
+AWP - Automated Wallpaper Program (Qt6 Version)
+Configuration Dashboard - PyQt6 Edition
 
-Graphical interface for configuring workspace-specific wallpaper automation,
-theme management, and desktop customization across multiple workspaces.
-
-Features:
-- Intuitive workspace configuration with real-time previews
-- Automated wallpaper rotation with customizable timing and behavior
-- System theme discovery and per-workspace theme switching
-- Cross-platform desktop environment support (XFCE, Cinnamon, GNOME, MATE)
-- Professional keyboard shortcuts and smart configuration management
-
-Part of the AWP wallpaper automation ecosystem.
+Direct conversion from PyQt5 to PyQt6.
+Changes mainly involve enum naming conventions and QApplication initialization.
 """
 import os
-os.environ['NO_AT_BRIDGE'] = '1'  # Suppress GTK accessibility warnings
+os.environ['NO_AT_BRIDGE'] = '1'
 
 import sys
 import shutil
-import configparser
-from PyQt5.QtWidgets import (
+
+# QT6 IMPORTS
+from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QFileDialog, QComboBox, QMessageBox, QTabWidget,
-    QCheckBox
+    QPushButton, QFileDialog, QComboBox, QMessageBox, QTabWidget, QCheckBox
 )
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from PyQt6.QtCore import Qt, QStandardPaths
+from PyQt6.QtGui import QPixmap
 from PIL import Image
 
-# =============================================================================
-# PATHS AND CONSTANTS
-# =============================================================================
-AWP_DIR = os.path.expanduser("~/awp")
-CONFIG_PATH = os.path.join(AWP_DIR, "awp_config.ini")
-ICON_DIR = os.path.join(AWP_DIR, "logos")
-BASE_FOLDER = os.path.expanduser("~")
-USER_HOME = BASE_FOLDER
+# CORE IMPORTS
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from core.constants import AWP_DIR, ICON_DIR
+from core.config import AWPConfig
+
+BASE_FOLDER = QStandardPaths.writableLocation(
+    QStandardPaths.StandardLocation.HomeLocation
+)
+
 DEFAULT_ICON = os.path.join(AWP_DIR, "debian.png")
 
 # =============================================================================
@@ -211,7 +203,7 @@ class WorkspaceTab(QWidget):
             combo.setMinimumWidth(250)
             combo.setMaximumWidth(250)
             combo.setEditable(True)
-            combo.setInsertPolicy(QComboBox.NoInsert)
+            combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)  # Qt6 enum
             for text, data in items:
                 combo.addItem(text, data)
             return combo
@@ -350,12 +342,11 @@ class WorkspaceTab(QWidget):
             self.theme_controls[key] = combo
             layout.addLayout(row)
 
-        # Initialize theme availability based on current DE
-        self.update_theme_availability()
-        
         layout.addStretch()
         self.setLayout(layout)
+        self.update_theme_availability()
         self.update_icon_preview()
+
 
     def update_theme_availability(self):
         """Update theme dropdown availability based on current DE."""
@@ -460,25 +451,25 @@ class WorkspaceTab(QWidget):
             path = DEFAULT_ICON if os.path.isfile(DEFAULT_ICON) else ""
         if path:
             pix = QPixmap(path)
-            self.icon_preview.setPixmap(pix.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            # Qt6 enums
+            self.icon_preview.setPixmap(pix.scaled(60, 60, 
+                Qt.AspectRatioMode.KeepAspectRatio, 
+                Qt.TransformationMode.SmoothTransformation))
         else:
             self.icon_preview.clear()
 
     # --- CONFIG LOAD / SAVE ---
     
-    def load_from_config(self, config_section):
-        """
-        Load settings from configuration section.
-        
-        Args:
-            config_section (SectionProxy): Configuration section for this workspace
-        """
+    def load_from_config(self, ws_num: int):
+        """Load settings from AWPConfig."""
+        ws_config = self.parent_window.config.get_workspace_config(ws_num)
+    
         # Basic settings
-        self.folder_edit.setText(config_section.get('folder', ''))
-        self.icon_edit.setText(config_section.get('icon', ''))
+        self.folder_edit.setText(ws_config['folder'])
+        self.icon_edit.setText(ws_config['icon'])
 
         # Timing
-        timing = config_section.get('timing', '5m')
+        timing = ws_config['timing']
         for i in range(self.timing_combo.count()):
             if self.timing_combo.itemData(i) == timing:
                 self.timing_combo.setCurrentIndex(i)
@@ -487,10 +478,9 @@ class WorkspaceTab(QWidget):
             self.timing_combo.setCurrentText("5 minutes")
 
         # Mode and order
-        mode = config_section.get('mode', 'random')
+        mode = ws_config['mode']
         self.mode_combo.setCurrentText(mode.title())
-        order = config_section.get('order', 'name_az')
-        
+    
         if mode == "random":
             found_n = False
             for i in range(self.order_combo.count()):
@@ -503,6 +493,7 @@ class WorkspaceTab(QWidget):
                 self.order_combo.setCurrentIndex(self.order_combo.count() - 1)
             self.order_combo.setEnabled(False)
         else:
+            order = ws_config['order']
             for i in range(self.order_combo.count()):
                 if self.order_combo.itemData(i) == order:
                     self.order_combo.setCurrentIndex(i)
@@ -510,7 +501,7 @@ class WorkspaceTab(QWidget):
             self.order_combo.setEnabled(True)
 
         # Scaling
-        scaling = config_section.get('scaling', 'scaled')
+        scaling = ws_config['scaling']
         for i in range(self.scaling_combo.count()):
             if self.scaling_combo.itemData(i) == scaling:
                 self.scaling_combo.setCurrentIndex(i)
@@ -518,7 +509,7 @@ class WorkspaceTab(QWidget):
 
         # Theme settings
         for key, combo in self.theme_controls.items():
-            theme_value = config_section.get(key, '')
+            theme_value = ws_config.get(key, '')
             if theme_value:
                 found = False
                 for i in range(combo.count()):
@@ -532,31 +523,27 @@ class WorkspaceTab(QWidget):
             else:
                 combo.setCurrentIndex(0)  # "(Not set)"
 
-        # Update theme availability after loading values
         self.update_theme_availability()
-        
         self.update_icon_preview()
 
-    def save_to_config(self, config_section):
-        """
-        Save settings to configuration section.
-        
-        Args:
-            config_section (SectionProxy): Configuration section for this workspace
-        """
-        config_section['folder'] = self.folder_edit.text().strip()
-        config_section['icon'] = self.icon_edit.text().strip()
-        config_section['timing'] = self.timing_combo.currentData() or '5m'
-        config_section['mode'] = self.mode_combo.currentText().lower()
-        config_section['order'] = self.order_combo.currentData() or 'name_az'
-        config_section['scaling'] = self.scaling_combo.currentData() or 'scaled'
+    def save_to_config(self):
+        """Save settings to AWPConfig."""
+        config = self.parent_window.config
+        section = f"ws{self.index}"
+    
+        config.set(section, 'folder', self.folder_edit.text().strip())
+        config.set(section, 'icon', self.icon_edit.text().strip())
+        config.set(section, 'timing', self.timing_combo.currentData() or '5m')
+        config.set(section, 'mode', self.mode_combo.currentText().lower())
+        config.set(section, 'order', self.order_combo.currentData() or 'name_az')
+        config.set(section, 'scaling', self.scaling_combo.currentData() or 'scaled')
 
         # Theme settings
         for key, combo in self.theme_controls.items():
             if combo.currentText() and combo.currentText() != "(Not set)":
-                config_section[key] = combo.currentText()
-            elif key in config_section:
-                del config_section[key]
+                config.set(section, key, combo.currentText())
+            else:
+                config.set(section, key, '')  # Clear theme
 
 # =============================================================================
 # MAIN DASHBOARD WINDOW
@@ -578,16 +565,10 @@ class AWPDashboard(QWidget):
     def __init__(self):
         """Initialize dashboard and load existing configuration."""
         super().__init__()
-        self.setWindowTitle("AWP Dashboard - Configuration Editor")
+        self.setWindowTitle("AWP Dashboard - Configuration Editor (Qt6)")
         self.resize(500, 670)
 
-        if not os.path.exists(CONFIG_PATH):
-            QMessageBox.critical(self, "Error", 
-                f"Config file not found: {CONFIG_PATH}\n\nPlease run awp_setup.py first to create the initial configuration.")
-            sys.exit(1)
-
-        self.config = configparser.ConfigParser()
-        self.config.read(CONFIG_PATH)
+        self.config = AWPConfig()
 
         self.workspace_tabs = []
         self.setup_ui()
@@ -599,8 +580,8 @@ class AWPDashboard(QWidget):
         layout = QVBoxLayout()
         
         # Header
-        header = QLabel("<h2>AWP Dashboard - Configuration Editor</h2>")
-        header.setAlignment(Qt.AlignCenter)
+        header = QLabel("<h2>AWP Dashboard - Configuration Editor (Qt6)</h2>")
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Qt6 enum
         layout.addWidget(header)
 
         # Tab widget
@@ -611,7 +592,7 @@ class AWPDashboard(QWidget):
         self.tab_widget.addTab(general_tab, "General Settings")
 
         # Workspace tabs
-        num_workspaces = int(self.config['general'].get('workspaces', 3))
+        num_workspaces = self.config.workspaces_count
         for i in range(1, num_workspaces + 1):
             tab = WorkspaceTab(i, self)
             self.workspace_tabs.append(tab)
@@ -665,48 +646,80 @@ class AWPDashboard(QWidget):
         self.save_btn.setShortcut("Ctrl+S")
         self.backup_btn.setShortcut("Ctrl+B")  
         self.exit_btn.setShortcut("Ctrl+Q")
+        
+    def create_standard_combo(self, items=None, width=200, editable=True):
+        """Create a standardized combo box used across all tabs."""
+        combo = QComboBox()
+        combo.setFixedWidth(width)
+
+        # Make arrow/padding match WorkspaceTab
+        combo.setEditable(editable)
+        combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)  # Qt6 enum
+
+        if editable:
+            combo.lineEdit().setReadOnly(True)
+            combo.lineEdit().setAlignment(Qt.AlignmentFlag.AlignLeft)  # Qt6 enum
+
+        # Add items
+        if items:
+            for item in items:
+                if isinstance(item, tuple):
+                    combo.addItem(item[0], item[1])
+                else:
+                    combo.addItem(item, item)
+
+        return combo
 
     def create_general_tab(self):
         """Create and configure the general settings tab."""
         tab = QWidget()
         layout = QVBoxLayout()
 
-        # Desktop Environment and Session Type
+        # === Desktop Environment ===
         de_row = QHBoxLayout()
         de_row.addWidget(QLabel("Desktop Environment:"))
-        self.de_combo = QComboBox()
-        self.de_combo.setMaximumWidth(200)
-        self.de_combo.addItems(["xfce", "gnome", "cinnamon", "mate", "generic", "unknown"])
+
+        self.de_combo = self.create_standard_combo(
+            items=["xfce", "gnome", "cinnamon", "mate", "generic", "unknown"],
+            width=200
+        )
         self.de_combo.setToolTip("Select your desktop environment for proper theme integration")
         self.de_combo.currentTextChanged.connect(self.on_de_changed)
         de_row.addWidget(self.de_combo)
         de_row.addStretch()
         layout.addLayout(de_row)
 
+        # === Session Type ===
         session_row = QHBoxLayout()
         session_row.addWidget(QLabel("Session Type:"))
-        self.session_combo = QComboBox()
-        self.session_combo.setMaximumWidth(200)
-        self.session_combo.addItems(["x11", "wayland"])
+
+        self.session_combo = self.create_standard_combo(
+            items=["x11", "wayland"],
+            width=200
+        )
         self.session_combo.setToolTip("Display server protocol (X11 or Wayland)")
         session_row.addWidget(self.session_combo)
         session_row.addStretch()
         layout.addLayout(session_row)
 
-        # Screen Blanking Section
+        # === Screen Blanking Section ===
         layout.addWidget(QLabel("<b>Screen Blanking</b>"))
         blanking_row = QHBoxLayout()
         blanking_row.addWidget(QLabel("Timeout:"))
-        self.blanking_combo = QComboBox()
-        self.blanking_combo.setMaximumWidth(150)
-        self.blanking_combo.addItem("Disabled", "0")
-        self.blanking_combo.addItem("30 seconds", "30")
-        self.blanking_combo.addItem("1 minute", "60")
-        self.blanking_combo.addItem("5 minutes", "300")
-        self.blanking_combo.addItem("10 minutes", "600")
-        self.blanking_combo.addItem("20 minutes", "1200")
-        self.blanking_combo.addItem("30 minutes", "1800")
-        self.blanking_combo.addItem("1 hour", "3600")
+
+        self.blanking_combo = self.create_standard_combo(
+            width=150,
+            items=[
+                ("Disabled", "0"),
+                ("30 seconds", "30"),
+                ("1 minute", "60"),
+                ("5 minutes", "300"),
+                ("10 minutes", "600"),
+                ("20 minutes", "1200"),
+                ("30 minutes", "1800"),
+                ("1 hour", "3600")
+            ]
+        )
         self.blanking_combo.setToolTip("Time before screen blanks/sleeps (XFCE/X11 only)")
         self.blanking_combo.currentTextChanged.connect(self.on_blanking_changed)
         blanking_row.addWidget(self.blanking_combo)
@@ -718,14 +731,15 @@ class AWPDashboard(QWidget):
         blanking_row.addStretch()
         layout.addLayout(blanking_row)
 
-        # Workspace Management Section
+        # === Workspace Management ===
         layout.addWidget(QLabel("<b>Workspace Management</b>"))
         ws_row = QHBoxLayout()
         ws_row.addWidget(QLabel("Number of workspaces:"))
-        self.ws_count_combo = QComboBox()
-        self.ws_count_combo.setMaximumWidth(80)
-        for i in range(1, 9):
-            self.ws_count_combo.addItem(str(i), str(i))
+
+        self.ws_count_combo = self.create_standard_combo(
+            width=80,
+            items=[str(i) for i in range(1, 9)]
+        )
         self.ws_count_combo.setToolTip("Total number of workspaces to configure (1-8)")
         self.ws_count_combo.currentTextChanged.connect(self.on_workspace_count_changed)
         ws_row.addWidget(self.ws_count_combo)
@@ -735,6 +749,7 @@ class AWPDashboard(QWidget):
         layout.addStretch()
         tab.setLayout(layout)
         return tab
+
 
     def get_current_de(self):
         """Get current desktop environment selection."""
@@ -799,141 +814,88 @@ class AWPDashboard(QWidget):
                 self.workspace_tabs.pop()
 
     def load_config(self):
-        """Load all settings from configuration file."""
+        """Load all settings from AWPConfig."""
         # General settings
-        general = self.config['general']
-        self.de_combo.setCurrentText(general.get('os_detected', 'unknown'))
-        self.session_combo.setCurrentText(general.get('session_type', 'x11'))
+        self.de_combo.setCurrentText(self.config.de)
+        self.session_combo.setCurrentText(self.config.session_type)
     
         # Screen blanking settings
-        blanking_timeout = general.get('blanking_timeout', '0')
-        blanking_paused = general.get('blanking_pause', 'false').lower() == 'true'
-    
-        if blanking_paused or blanking_timeout == '0':
+        if self.config.blanking_pause or self.config.blanking_timeout == 0:
             self.blanking_combo.setCurrentText("Disabled")
             self.blanking_pause_cb.setChecked(True)
         else:
             for i in range(self.blanking_combo.count()):
-                if self.blanking_combo.itemData(i) == blanking_timeout:
+                if str(self.blanking_combo.itemData(i)) == str(self.config.blanking_timeout):
                     self.blanking_combo.setCurrentIndex(i)
                     break
             self.blanking_pause_cb.setChecked(False)
     
         # Workspace count
-        ws_count = general.get('workspaces', '3')
-        self.ws_count_combo.setCurrentText(ws_count)
+        self.ws_count_combo.setCurrentText(str(self.config.workspaces_count))
 
         # Workspace settings
-        for i, tab in enumerate(self.workspace_tabs, 1):
-            section_name = f"ws{i}"
-            if section_name in self.config:
-                tab.load_from_config(self.config[section_name])
+        for i, tab in enumerate(self.workspace_tabs):
+            tab.load_from_config(i)
 
     def save_config(self):
         """
-        Perform smart configuration save with change detection.
-        
-        Features:
-        - Only updates actually changed values
-        - Automatic icon copying and color extraction
-        - Creates configuration backups
-        - Validates changes before saving
-        
-        Raises:
-            Exception: If configuration file operations fail
+        Finalized Save Logic for Qt6.
+        Uses internal get_icon_color and handles folder-based naming.
         """
         try:
-            # Read current config
-            current_config = configparser.ConfigParser()
-            current_config.read(CONFIG_PATH)
-    
-            # Create a copy to modify
-            new_config = configparser.ConfigParser()
-            new_config.read(CONFIG_PATH)
-    
-            has_changes = False
-    
-            # Update general section if changed
-            if self.has_general_changes(current_config):
-                has_changes = True
-                new_config['general']['os_detected'] = self.de_combo.currentText()
-                new_config['general']['session_type'] = self.session_combo.currentText()
-                if self.blanking_pause_cb.isChecked():
-                    new_config['general']['blanking_timeout'] = '0'
-                    new_config['general']['blanking_pause'] = 'true'
-                else:
-                    new_config['general']['blanking_timeout'] = str(self.blanking_combo.currentData() or '0')
-                    new_config['general']['blanking_pause'] = 'false'
-                new_config['general']['workspaces'] = self.ws_count_combo.currentText()
-    
-            # Ensure logos directory exists
-            os.makedirs(ICON_DIR, exist_ok=True)
-    
-            # Update workspace sections if changed
-            for i, tab in enumerate(self.workspace_tabs, 1):
-                section_name = f"ws{i}"
-                old_section = current_config[section_name] if current_config.has_section(section_name) else {}
+            # 1. Update General Settings
+            self.config.set('general', 'os_detected', self.de_combo.currentText())
+            self.config.set('general', 'session_type', self.session_combo.currentText())
+            self.config.set('general', 'workspaces', self.ws_count_combo.currentText())
             
-                if self.has_workspace_changes(tab, old_section):
-                    has_changes = True
-                    if not new_config.has_section(section_name):
-                        new_config.add_section(section_name)
+            # Screen Blanking
+            if self.blanking_pause_cb.isChecked():
+                self.config.set('general', 'blanking_timeout', '0')
+                self.config.set('general', 'blanking_pause', 'true')
+            else:
+                timeout = self.blanking_combo.currentData() or '1200'
+                self.config.set('general', 'blanking_timeout', str(timeout))
+                self.config.set('general', 'blanking_pause', 'false')
+
+            # 2. Process Workspace Tabs
+            if not os.path.exists(ICON_DIR):
+                os.makedirs(ICON_DIR, exist_ok=True)
+
+            for tab in self.workspace_tabs:
+                tab.save_to_config() # Sync memory
                 
-                    # Handle icon copying and color extraction
-                    folder_path = tab.folder_edit.text().strip()
-                    folder_name = os.path.basename(folder_path.rstrip("/")) if folder_path else f"ws{i}"
-                    old_icon_path = old_section.get('icon', '')
-                    new_icon_path = tab.icon_edit.text().strip()
-                    icon_changed = (new_icon_path != old_icon_path)
+                # Get folder name (e.g., /home/ows/pics1 -> pics1)
+                folder_path = tab.folder_edit.text().strip()
+                folder_name = os.path.basename(folder_path.rstrip('/')) or f"ws{tab.index}"
+
+                new_icon_source = tab.icon_edit.text().strip()
                 
-                    if icon_changed and new_icon_path and os.path.isfile(new_icon_path):
-                        # Copy new icon to logos folder
-                        _, ext = os.path.splitext(new_icon_path)
-                        if not ext:
-                            ext = ".png"
-                        dest_icon = os.path.join(ICON_DIR, f"{folder_name}{ext}")
+                if new_icon_source and os.path.isfile(new_icon_source):
+                    ext = os.path.splitext(new_icon_source)[1]
+                    # Icon name matches folder name
+                    dest_icon = os.path.join(ICON_DIR, f"{folder_name}{ext}")
                     
-                        try:
-                            shutil.copy(new_icon_path, dest_icon)
-                            final_icon_path = dest_icon
-                        except Exception as e:
-                            print(f"Warning: Could not copy icon for {section_name}: {e}")
-                            final_icon_path = new_icon_path
-                    else:
-                        final_icon_path = old_icon_path if old_icon_path and os.path.isfile(old_icon_path) else DEFAULT_ICON
-                
-                    # Save workspace config
-                    tab.save_to_config(new_config[section_name])
-                    new_config[section_name]['icon'] = final_icon_path
-                
-                    # Update icon color
-                    color = get_icon_color(final_icon_path)
-                    if color:
-                        new_config[section_name]['icon_color'] = color
-                        new_config[section_name]['color_variable'] = f"{section_name}_color"
-                    else:
-                        new_config[section_name]['icon_color'] = old_section.get('icon_color', '')
-                        new_config[section_name]['color_variable'] = old_section.get('color_variable', '')
-    
-            if not has_changes:
-                QMessageBox.information(self, "No Changes", "No changes detected.")
-                return
-    
-            # Backup and save
-            if os.path.exists(CONFIG_PATH):
-                shutil.copy(CONFIG_PATH, CONFIG_PATH + ".bak")
-        
-            with open(CONFIG_PATH, 'w') as f:
-                new_config.write(f)
-        
-            # Reload config to update UI
-            self.config.read(CONFIG_PATH)
-            self.load_config()
-        
+                    # Copy and update color if new icon chosen
+                    if os.path.abspath(new_icon_source) != os.path.abspath(dest_icon):
+                        shutil.copy2(new_icon_source, dest_icon)
+                        
+                        # Use the function YOU ALREADY HAVE at the top of the file
+                        new_hex = get_icon_color(dest_icon)
+                        
+                        section = f"ws{tab.index}"
+                        self.config.set(section, 'icon', dest_icon)
+                        self.config.set(section, 'icon_color', new_hex)
+                        tab.icon_edit.setText(dest_icon)
+
+            # 3. Commit to file
+            self.config.save()
             QMessageBox.information(self, "Success", "Configuration saved!")
-    
+            
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to save:\n{str(e)}")
+            # This print will show up in your terminal if it fails
+            print(f"DEBUG SAVE ERROR: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
+
 
     def get_new_general_value(self, key):
         """
@@ -1029,19 +991,23 @@ class AWPDashboard(QWidget):
 
     def backup_config(self):
         """Create backup of current configuration file."""
-        if os.path.exists(CONFIG_PATH):
-            backup_path = CONFIG_PATH + ".backup"
-            shutil.copy(CONFIG_PATH, backup_path)
+        if os.path.exists(self.config.path):
+            backup_path = str(self.config.path) + ".backup"
+            shutil.copy(str(self.config.path), backup_path)
             QMessageBox.information(self, "Backup Created", 
                                   f"Configuration backed up to:\n{backup_path}")
+        else:
+            QMessageBox.warning(self, "No Config", "No configuration file found.")
 
 # =============================================================================
 # APPLICATION ENTRY POINT
 # =============================================================================
 
 if __name__ == "__main__":
-    """Main application entry point."""
-    app = QApplication(sys.argv)
+    """Main application entry point - Qt6 style."""
+    # Qt6: Can use empty list or sys.argv, but empty list is common
+    app = QApplication([])
     window = AWPDashboard()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
+

@@ -23,13 +23,31 @@ from PIL import Image
 import textwrap
 
 # =============================================================================
-# PATHS AND CONSTANTS
+# MODULAR CONSTANTS IMPORT
 # =============================================================================
-AWP_DIR = os.path.expanduser("~/awp")
-CONFIG_PATH = os.path.join(AWP_DIR, "awp_config.ini")
+try:
+    # Add current directory to path
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    
+    # Try to import from core constants
+    from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR
+    
+    # Convert Path objects to strings for backward compatibility
+    AWP_DIR = str(AWP_DIR)
+    CONFIG_PATH = str(CONFIG_PATH)
+    ICON_DIR = str(ICON_DIR)
+    
+except ImportError:
+    # Fallback for first-time setup (before core exists)
+    AWP_DIR = os.path.expanduser("~/awp")
+    CONFIG_PATH = os.path.join(AWP_DIR, "awp_config.ini")
+    ICON_DIR = os.path.join(AWP_DIR, "logos")
+
+# =============================================================================
+# DERIVED CONSTANTS
+# =============================================================================
 BACKUP_PATH = os.path.join(AWP_DIR, "awp_config.ini.bak")
 BASE_FOLDER = os.path.expanduser("~")
-ICON_DIR = os.path.join(AWP_DIR, "logos")
 USER_HOME = os.path.expanduser("~")
 
 # =============================================================================
@@ -349,16 +367,19 @@ def print_keybinding_instructions():
     """Print instructions for setting up keybindings."""
     print_header("Optional Keybindings")
     print(wrap_text(
-        "For manual wallpaper navigation, you can create these keybindings in your "
-        "system settings:"
+        "For manual wallpaper navigation and effects, you can create these keybindings:"
     ))
     print(f"\n  Next Wallpaper: ~/awp/awp_nav.py next")
     print(f"  Previous Wallpaper: ~/awp/awp_nav.py prev")
     print(f"  Delete Current Wallpaper: ~/awp/awp_nav.py delete")
+    print(f"  Sharpen Effect: ~/awp/awp_nav.py sharpen")
+    print(f"  Black & White Effect: ~/awp/awp_nav.py black")
+    print(f"  Color Boost Effect: ~/awp/awp_nav.py color")
     print("\nSuggested shortcuts:")
     print("  Next: Super+Right")
     print("  Previous: Super+Left") 
     print("  Delete: Super+Delete")
+    print("  Effects: Super+S (sharpen), Super+B (B&W), Super+C (color)")
 
 def configure_screen_blanking(config):
     """Configure screen blanking timeout."""

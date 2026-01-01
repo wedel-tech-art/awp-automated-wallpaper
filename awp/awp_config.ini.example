@@ -1,0 +1,61 @@
+# AWP (Automated Wallpaper Program) Configuration Template
+# --------------------------------------------------------
+# This file defines the behavior for the AWP engine and HUD.
+# Setup: Use 'python3 awp_setup.py' to generate a custom config,
+# or rename this file to 'awp_config.ini' for manual editing.
+# Also, you can use awp_dab.py (dashboard) to open the ini and
+# change all settings for the ini in a graffical fashion.  
+# Supported Engines (backends/): xfce, cinnamon, gnome, mate,
+# and generic (such as openbox, qtile, fluxbox, etc).
+
+[general]
+os_detected = xfce
+session_type = x11
+blanking_timeout = 1200
+blanking_pause = false
+workspaces = 3
+
+[workspace1]
+folder = /home/user/wallpapers/ws1
+icon = /home/user/awp/logos/ws1.png
+icon_color = #00ffd5
+color_variable = ws1_color
+timing = 24h
+mode = random
+order = n
+scaling = zoomed
+icon_theme = Adwaita
+gtk_theme = Adwaita-dark
+cursor_theme = Adwaita
+wm_theme = Adwaita
+desktop_theme = Adwaita
+
+[workspace2]
+folder = /home/user/wallpapers/ws2
+icon = /home/user/awp/logos/ws2.png
+icon_color = #f8ec09
+color_variable = ws2_color
+timing = 5m
+mode = sequential
+order = name_old
+scaling = scaled
+icon_theme = Adwaita
+gtk_theme = Adwaita
+cursor_theme = Adwaita
+wm_theme = Adwaita
+desktop_theme = Adwaita
+
+[workspace3]
+folder = /home/user/wallpapers/ws3
+icon = /home/user/awp/logos/ws3.png
+icon_color = #fa4781
+color_variable = ws3_color
+timing = 30s
+mode = sequential
+order = name_az
+scaling = scaled
+icon_theme = Adwaita
+gtk_theme = Adwaita
+cursor_theme = Adwaita
+wm_theme = Adwaita
+desktop_theme = Adwaita
