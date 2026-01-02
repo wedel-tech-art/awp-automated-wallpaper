@@ -93,7 +93,7 @@ See `awp_config.ini.example` for a complete configuration reference.
 ![Workspace 3](screenshots/awp_dab.py%20Workspace%203%20Configuration%20Example.png)
 
 ## 📁 Project Structure
-
+```
 awp-automated-wallpaper/
 ├── awp/                      # Main Application Directory
 │   ├── backends/             # Desktop-specific scripts (XFCE, GNOME, etc.)
@@ -111,17 +111,16 @@ awp-automated-wallpaper/
 ├── .gitignore                # Git exclusion rules
 ├── LICENSE                   # MIT License
 └── README.md                 # Project Documentation
+```
 
 ## 🌐 Supported Desktop Environments
 
-|    Destop    | Wallpapers | Icons | GTK | Cursors | Window | Desktop |
-|--------------|------------|-------|-----|---------|--------|---------|
-| **XFCE**     |     ✅     | ✅    | ✅  |   ✅    | ✅     | ❌      
-| **Cinnamon** |     ✅     | ✅    | ✅  |   ✅    | ✅     | ✅      |
-| **GNOME**    |     ✅     | ✅    | ✅  |   ✅    | ❌     | ❌      |
-| **MATE**     |     ✅     | ✅    | ✅  |   ✅    | ✅     | ❌      |
-| **Generic**  |     ✅     | ❌    | ✅  |   ❌    | ❌     | ❌      |
-
+Desktop Environment	Wallpapers	Icons	GTK Theme	Cursors	Window Dec.	Desktop Icons
+XFCE	✅	✅	✅	✅	✅	❌
+Cinnamon	✅	✅	✅	✅	✅	✅
+GNOME	✅	✅	✅	✅	❌	❌
+MATE	✅	✅	✅	✅	✅	❌
+Generic	✅	❌	✅	❌	❌	❌
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
