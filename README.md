@@ -115,12 +115,29 @@ awp-automated-wallpaper/
 
 ## 🌐 Supported Desktop Environments
 
-Desktop Environment	Wallpapers	Icons	GTK Theme	Cursors	Window Dec.	Desktop Icons
-XFCE	✅	✅	✅	✅	✅	❌
-Cinnamon	✅	✅	✅	✅	✅	✅
-GNOME	✅	✅	✅	✅	❌	❌
-MATE	✅	✅	✅	✅	✅	❌
-Generic	✅	❌	✅	❌	❌	❌
+🖥️ XFCE (Optimized)
+
+    ✅ Wallpapers, Icons, GTK Themes, Cursors, Window Dec.
+
+🌿 Cinnamon
+
+    ✅ Wallpapers, Icons, GTK Themes, Cursors, Window Dec., Desktop Icons
+
+👤 GNOME
+
+    ✅ Wallpapers, Icons, GTK Themes, Cursors
+
+    ❌ Window Decorations (Limited by Libadwaita)
+
+🧉 MATE
+
+    ✅ Wallpapers, Icons, GTK Themes, Cursors, Window Dec.
+
+⚙️ Generic WMs (Openbox/i3)
+
+    ✅ Wallpapers, GTK Themes
+
+    ❌ Icons & Cursors (Requires manual Xresources)
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
