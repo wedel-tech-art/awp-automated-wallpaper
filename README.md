@@ -1,6 +1,6 @@
 # AWP - Automated Wallpaper Program
 
-[![AWP](https://img.shields.io/badge/AWP-Automated%20Wallpaper%20Program-blue)](https://github.com/ottowedel-linux/awp-automated-wallpaper)
+[![AWP](https://img.shields.io/badge/AWP-Automated%20Wallpaper%20Program-blue)](https://github.com/wedel-tech-art/awp-automated-wallpaper)
 [![Python](https://img.shields.io/badge/Python-3.6%2B-green)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
@@ -22,7 +22,7 @@ Per-workspace automated wallpaper rotation with dynamic theme switching.
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/ottowedel-linux/awp-automated-wallpaper.git
+git clone https://github.com/wedel-tech-art/awp-automated-wallpaper.git
 cd awp-automated-wallpaper
 
 # Run the setup wizard
@@ -94,26 +94,33 @@ See `awp_config.ini.example` for a complete configuration reference.
 
 ## 📁 Project Structure
 
-```
 awp-automated-wallpaper/
-├── awp_setup.py          # Initial configuration wizard
-├── awp_daemon.py         # Main background service
-├── awp_dab.py            # Graphical configuration dashboard
-├── awp_nav.py            # Manual navigation controls
-├── awp_start.sh          # Startup script
-├── awp_config.ini.example # Example configuration
-└── README.md             # This file
-```
+├── awp/                      # Main Application Directory
+│   ├── backends/             # Desktop-specific scripts (XFCE, GNOME, etc.)
+│   ├── conky/                # Conky configs and Lua scripts
+│   ├── core/                 # Central logic (config.py, constants.py)
+│   ├── logos/                # Branding assets (ws1, ws2, ws3)
+│   ├── awp_dab.py            # Original Dashboard (PyQt5)
+│   ├── awp_dab_qt6.py        # New Professional Dashboard (Qt6) 🚀
+│   ├── awp_daemon.py         # The background service
+│   ├── awp_nav.py            # Navigation (Next/Prev/Del)
+│   ├── awp_setup.py          # Setup wizard
+│   ├── awp_start.sh          # Quick-start script
+│   └── *.png                 # UI icons (debian.png, ws1-3.png)
+├── screenshots/              # Previews for GitHub README
+├── .gitignore                # Git exclusion rules
+├── LICENSE                   # MIT License
+└── README.md                 # Project Documentation
 
 ## 🌐 Supported Desktop Environments
 
-| DE | Wallpapers | Icons | GTK | Cursors | Window | Desktop |
-|----|------------|-------|-----|---------|--------|---------|
-| **XFCE** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Cinnamon** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **GNOME** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **MATE** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Generic** | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+|    Destop    | Wallpapers | Icons | GTK | Cursors | Window | Desktop |
+|--------------|------------|-------|-----|---------|--------|---------|
+| **XFCE**     |     ✅     | ✅    | ✅  |   ✅    | ✅     | ❌      
+| **Cinnamon** |     ✅     | ✅    | ✅  |   ✅    | ✅     | ✅      |
+| **GNOME**    |     ✅     | ✅    | ✅  |   ✅    | ❌     | ❌      |
+| **MATE**     |     ✅     | ✅    | ✅  |   ✅    | ✅     | ❌      |
+| **Generic**  |     ✅     | ❌    | ✅  |   ❌    | ❌     | ❌      |
 
 ## 🤝 Contributing
 
@@ -125,6 +132,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
-- Built with Python 3 and PyQt5
+- Built with Python 3 and PyQt5 and experimental PyQt6
 - Tested on Linux Mint XFCE, Cinnamon, and other major distributions
 - Icons from the system theme collections
