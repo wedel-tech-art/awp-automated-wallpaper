@@ -4,18 +4,25 @@
 [![Python](https://img.shields.io/badge/Python-3.6%2B-green)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-A professional wallpaper and theme management system for Linux desktop environments.
-Per-workspace automated wallpaper rotation with dynamic theme switching.
+A professional-grade Linux environment manager that goes beyond wallpaper rotation. AWP synchronizes the entire visual identity of your desktop based on your current workspace.
 
-## 🌟 Features
+## 🚀 Key Features
 
-- **Multi-Desktop Support**: XFCE, Cinnamon, GNOME, MATE, and generic WMs
-- **Per-Workspace Configuration**: Different wallpapers and themes for each workspace
-- **Smart Automation**: Automatic rotation with customizable timing
-- **Theme Management**: Dynamic icon, GTK, cursor, and window theme switching
-- **Professional Dashboard**: Graphical configuration interface
-- **Manual Controls**: Keyboard shortcuts for navigation and deletion
-- **Screen Blanking**: Intelligent power management for XFCE/X11
+* **📦 Comprehensive "Deep" Theming**: Total environment synchronization per workspace.
+    * **Wallpapers**: Independent rotation and scaling.
+    * **Icon Sets**: Dynamic switching of system-wide icon packs.
+    * **GTK & WM Themes**: Real-time widget and window decoration updates.
+    * **Cursor Themes**: Mouse pointer synchronization.
+* **📡 Conky IPC Integration**: Advanced Inter-Process Communication between the AWP daemon and Conky.
+    * Monitors internal state via `.awp_conky_state`.
+    * Synchronizes Lua-based system monitoring aesthetics with the active workspace theme.
+* **🖥️ Universal X11 Power Management**: 
+    * Intelligent **X11 Screen Blanking** control compatible with any desktop running X11.
+    * Manual and automated power-save overrides.
+* **🎮 Navigation Effects**: Keyboard-driven wallpaper cycling with "Next/Previous" effects and direct file management (deletion).
+* **🛠️ Dual Dashboard System**:
+    * **Next-Gen Qt6 Dashboard**: A professional, modular configuration interface.
+    * **Legacy PyQt5 Dashboard**: Maintained for maximum compatibility on older systems.
 
 ## 🚀 Quick Start
 
