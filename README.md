@@ -26,6 +26,15 @@ A professional-grade Linux environment manager that goes beyond wallpaper rotati
 
 ## 🚀 Quick Start
 
+### 📦 Prerequisites
+Before installing, ensure your system has the necessary background tools:
+
+```bash
+# Install System Tools & Python Bindings
+sudo apt update
+sudo apt install conky-all imagemagick python3-pyqt6
+```
+
 ### Installation
 ```bash
 # Clone the repository
@@ -57,6 +66,11 @@ python3 awp_daemon.py
 python3 awp_dab.py
 ```
 
+### Or newer Dashboard Qt6
+```bash
+python3 awp_dab_qt6.py
+```
+
 ### Manual Navigation
 ```bash
 # Next wallpaper
@@ -67,12 +81,24 @@ python3 awp_nav.py prev
 
 # Delete current wallpaper
 python3 awp_nav.py delete
+
+# Sharpen current wallpaper (temporary, via ImageMagick)
+python3 awp_nav.py sharpen
+
+# Apply saturation to wallpaper (temporary, via ImageMagick)
+python3 awp_nav.py color
+
+# Convert wallpaper to black and white (temporary, via ImageMagick)
+python3 awp_nav.py black
 ```
 
 ### Recommended Keybindings
-- `Super+Right` → Next wallpaper
-- `Super+Left` → Previous wallpaper
-- `Super+Delete` → Delete current wallpaper
+- `Super + Right` → Next wallpaper
+- `Super + Left` → Previous wallpaper
+- `Super + Delete` → Delete current wallpaper
+- `Super + s` → Sharpen wallpaper
+- `Super + c` → Colorize wallpaper
+- `Super + b` → Convert wallpaper to black and white
 
 ## 🛠️ Configuration
 
