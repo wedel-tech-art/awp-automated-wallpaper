@@ -100,6 +100,10 @@ python3 awp_nav.py black
 - `Super + c` → Colorize wallpaper
 - `Super + b` → Convert wallpaper to black and white
 
+---
+> [!TIP]
+> **Non-Destructive Editing:** Last 3 effects are applied to a temporary copy in the `awp/` folder. The original wallpaper remains untouched. If you love a modified version (e.g., a sharpened or B&W version), you can manually replace the original file in your library with the processed one from the `awp/` directory.
+
 ## 🛠️ Configuration
 
 Edit `~/awp/awp_config.ini` directly or use the dashboard:
