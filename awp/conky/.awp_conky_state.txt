@@ -1,0 +1,10 @@
+wallpaper_path=/home/user/Pictures/ws1/wallpaper.jpg
+workspace_name=ws1
+logo_path=~/awp/logos/ws1.png
+icon_color=#00ffd5
+intv=1h
+flow=sequential
+sort=name_az
+view=zoomed
+blanking_timeout=20m
+blanking_paused=False
