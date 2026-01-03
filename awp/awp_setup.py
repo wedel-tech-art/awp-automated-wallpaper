@@ -29,8 +29,8 @@ try:
     # Add current directory to path
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     
-    # Try to import from core constants
     from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR
+    from core.utils import get_icon_color, get_available_themes
     
     # Convert Path objects to strings for backward compatibility
     AWP_DIR = str(AWP_DIR)
@@ -320,27 +320,6 @@ def set_fixed_workspaces(de: str, num_ws: int):
     else:
         print_warning("For generic window managers, configure workspaces manually")
 
-def get_icon_color(image_path: str) -> str:
-    """
-    Detect dominant color from image.
-    
-    Args:
-        image_path (str): Path to image file
-        
-    Returns:
-        str: Hex color code or empty string on error
-    """
-    try:
-        with Image.open(image_path) as img:
-            rgba_img = img.convert("RGBA")
-            for r, g, b, a in rgba_img.getdata():
-                if a > 0:  # Ignore transparent pixels
-                    return f'#{r:02x}{g:02x}{b:02x}'
-            return ""
-    except Exception as e:
-        print_warning(f"Could not detect icon color: {e}")
-        return ""
-
 def setup_autostart():
     """Create autostart entry for AWP daemon."""
     autostart_dir = os.path.expanduser("~/.config/autostart")
@@ -416,101 +395,6 @@ def configure_screen_blanking(config):
         config['general']['blanking_timeout'] = '0'
         config['general']['blanking_pause'] = 'true'
         print_success("Screen blanking management disabled")
-
-def get_available_themes() -> dict:
-    """Discover available themes on the system and return categorized lists."""
-    themes = {
-        'icon_themes': [],
-        'gtk_themes': [], 
-        'cursor_themes': [],
-        'desktop_themes': [],  # For Cinnamon desktop/panels
-        'wm_themes': []        # For window borders specifically
-    }
-    
-    # Discover icon themes
-    icon_paths = [
-        '/usr/share/icons', 
-        os.path.expanduser('/usr/local/share/icons'),
-        os.path.expanduser('~/.icons'),
-        os.path.expanduser('~/.local/share/icons')
-    ]
-    
-    for path in icon_paths:
-        if os.path.exists(path):
-            try:
-                items = [d for d in os.listdir(path) 
-                        if os.path.isdir(os.path.join(path, d))]
-                themes['icon_themes'].extend(items)
-            except (PermissionError, OSError):
-                pass  # Skip directories we can't read
-    
-    # Discover ALL themes
-    theme_paths = [
-        '/usr/share/themes',
-        '/usr/local/share/themes', 
-        os.path.expanduser('~/.themes'),
-        os.path.expanduser('~/.local/share/themes')
-    ]
-    
-    all_themes = []
-    for path in theme_paths:
-        if os.path.exists(path):
-            try:
-                items = [d for d in os.listdir(path) 
-                        if os.path.isdir(os.path.join(path, d))]
-                all_themes.extend(items)
-            except (PermissionError, OSError):
-                pass  # Skip directories we can't read
-    
-    # Filter for themes that have Cinnamon support (desktop themes)
-    desktop_themes = []
-    wm_themes = []
-    
-    for theme in all_themes:
-        # Check all possible theme paths
-        theme_paths_to_check = []
-        for base_path in theme_paths:
-            if os.path.exists(base_path):
-                # Check for various window manager/desktop components
-                possible_paths = [
-                    os.path.join(base_path, theme, 'cinnamon'),
-                    os.path.join(base_path, theme, 'metacity-1'), 
-                    os.path.join(base_path, theme, 'xfwm4'),
-                    os.path.join(base_path, theme, 'gnome-shell'),
-                    os.path.join(base_path, theme, 'openbox-3')
-                ]
-                theme_paths_to_check.extend(possible_paths)
-        
-        # Check if this theme has window manager components
-        has_wm = any(os.path.exists(path) for path in theme_paths_to_check)
-        
-        if has_wm:
-            wm_themes.append(theme)
-            # Themes with Cinnamon specific support are desktop themes
-            if any('cinnamon' in path for path in theme_paths_to_check if os.path.exists(path)):
-                desktop_themes.append(theme)
-    
-    # Sort all lists alphabetically
-    themes['gtk_themes'] = sorted(list(set(all_themes)))
-    themes['desktop_themes'] = sorted(list(set(desktop_themes)))
-    themes['wm_themes'] = sorted(list(set(wm_themes)))
-    themes['icon_themes'] = sorted(list(set(themes['icon_themes'])))
-    
-    # Discover cursor themes
-    cursor_themes = []
-    for path in icon_paths:
-        if os.path.exists(path):
-            try:
-                for theme in os.listdir(path):
-                    cursor_path = os.path.join(path, theme, 'cursors')
-                    if os.path.exists(cursor_path):
-                        cursor_themes.append(theme)
-            except (PermissionError, OSError):
-                pass
-    
-    themes['cursor_themes'] = sorted(list(set(cursor_themes)))
-    
-    return themes
 
 def show_numbered_menu(items: list, title: str, page_size: int = 20) -> str:
     """Display a paginated numbered menu for theme selection."""

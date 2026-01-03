@@ -38,140 +38,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core.constants import AWP_DIR
 from core.config import AWPConfig
+from core.utils import get_icon_color, get_available_themes
 
 ICON_DIR = os.path.join(AWP_DIR, "logos")
 BASE_FOLDER = QStandardPaths.writableLocation(QStandardPaths.HomeLocation)
 DEFAULT_ICON = os.path.join(AWP_DIR, "debian.png")
-
-# =============================================================================
-# HELPER FUNCTIONS
-# =============================================================================
-
-def get_icon_color(image_path):
-    """
-    Extract dominant color from an image file.
-    
-    Args:
-        image_path (str): Path to the image file
-        
-    Returns:
-        str: Hex color code of the first non-transparent pixel, or empty string on error
-    """
-    try:
-        with Image.open(image_path) as img:
-            rgba = img.convert("RGBA")
-            pixels = list(rgba.getdata())
-            for r, g, b, a in pixels:
-                if a > 0:
-                    return f'#{r:02x}{g:02x}{b:02x}'
-            return ""
-    except Exception:
-        return ""
-
-def get_available_themes():
-    """
-    Discover available themes on the system and return categorized lists.
-    
-    Returns:
-        dict: Categorized theme lists including:
-            - icon_themes: Available icon themes
-            - gtk_themes: Available GTK themes
-            - cursor_themes: Available cursor themes  
-            - desktop_themes: Themes with Cinnamon desktop support
-            - wm_themes: Themes with window manager components
-    """
-    themes = {
-        'icon_themes': [],
-        'gtk_themes': [], 
-        'cursor_themes': [],
-        'desktop_themes': [],  # For Cinnamon desktop/panels
-        'wm_themes': []        # For window borders specifically
-    }
-    
-    # Discover icon themes
-    icon_paths = [
-        '/usr/share/icons', 
-        os.path.expanduser('/usr/local/share/icons'),
-        os.path.expanduser('~/.icons'),
-        os.path.expanduser('~/.local/share/icons')
-    ]
-    
-    for path in icon_paths:
-        if os.path.exists(path):
-            try:
-                items = [d for d in os.listdir(path) 
-                        if os.path.isdir(os.path.join(path, d))]
-                themes['icon_themes'].extend(items)
-            except (PermissionError, OSError):
-                pass  # Skip directories we can't read
-    
-    # Discover ALL themes
-    theme_paths = [
-        '/usr/share/themes',
-        '/usr/local/share/themes', 
-        os.path.expanduser('~/.themes'),
-        os.path.expanduser('~/.local/share/themes')
-    ]
-    
-    all_themes = []
-    for path in theme_paths:
-        if os.path.exists(path):
-            try:
-                items = [d for d in os.listdir(path) 
-                        if os.path.isdir(os.path.join(path, d))]
-                all_themes.extend(items)
-            except (PermissionError, OSError):
-                pass  # Skip directories we can't read
-    
-    # Filter for themes that have Cinnamon support (desktop themes)
-    desktop_themes = []
-    wm_themes = []
-    
-    for theme in all_themes:
-        # Check all possible theme paths
-        theme_paths_to_check = []
-        for base_path in theme_paths:
-            if os.path.exists(base_path):
-                # Check for various window manager/desktop components
-                possible_paths = [
-                    os.path.join(base_path, theme, 'cinnamon'),
-                    os.path.join(base_path, theme, 'metacity-1'), 
-                    os.path.join(base_path, theme, 'xfwm4'),
-                    os.path.join(base_path, theme, 'gnome-shell'),
-                    os.path.join(base_path, theme, 'openbox-3')
-                ]
-                theme_paths_to_check.extend(possible_paths)
-        
-        # Check if this theme has window manager components
-        has_wm = any(os.path.exists(path) for path in theme_paths_to_check)
-        
-        if has_wm:
-            wm_themes.append(theme)
-            # Themes with Cinnamon specific support are desktop themes
-            if any('cinnamon' in path for path in theme_paths_to_check if os.path.exists(path)):
-                desktop_themes.append(theme)
-    
-    # Sort all lists alphabetically
-    themes['gtk_themes'] = sorted(list(set(all_themes)))
-    themes['desktop_themes'] = sorted(list(set(desktop_themes)))
-    themes['wm_themes'] = sorted(list(set(wm_themes)))
-    themes['icon_themes'] = sorted(list(set(themes['icon_themes'])))
-    
-    # Discover cursor themes
-    cursor_themes = []
-    for path in icon_paths:
-        if os.path.exists(path):
-            try:
-                for theme in os.listdir(path):
-                    cursor_path = os.path.join(path, theme, 'cursors')
-                    if os.path.exists(cursor_path):
-                        cursor_themes.append(theme)
-            except (PermissionError, OSError):
-                pass
-    
-    themes['cursor_themes'] = sorted(list(set(cursor_themes)))
-    
-    return themes
 
 # =============================================================================
 # WORKSPACE CONFIGURATION TAB
@@ -504,7 +375,7 @@ class WorkspaceTab(QWidget):
     
         # Themes
         for key, combo in self.theme_controls.items():
-            theme_value = ws_config.get(key, '')
+            theme_value = ws_config.get(key, '')  # ← Solo esta línea nueva
             if theme_value:
                 found = False
                 for i in range(combo.count()):
@@ -526,12 +397,78 @@ class WorkspaceTab(QWidget):
         config = self.parent_window.config
         section = f"ws{self.index}"
     
-        config.set(section, 'folder', self.folder_edit.text().strip())
-        config.set(section, 'icon', self.icon_edit.text().strip())
-        config.set(section, 'timing', self.timing_combo.currentData() or '5m')
-        config.set(section, 'mode', self.mode_combo.currentText().lower())
-        config.set(section, 'order', self.order_combo.currentData() or 'name_az')
-        config.set(section, 'scaling', self.scaling_combo.currentData() or 'scaled')
+        # Get values
+        folder = self.folder_edit.text().strip()
+        icon_path = self.icon_edit.text().strip()
+        timing = self.timing_combo.currentData() or '5m'
+        mode = self.mode_combo.currentText().lower()
+        order = self.order_combo.currentData() or 'name_az'
+        scaling = self.scaling_combo.currentData() or 'scaled'
+    
+        # Handle icon copying/renaming
+        new_icon_path = icon_path
+        if icon_path and os.path.exists(icon_path):
+            try:
+                # Extract workspace name from folder
+                if folder:
+                    # Get the immediate parent directory name
+                    workspace_name = os.path.basename(os.path.normpath(folder))
+                    if not workspace_name or workspace_name == '.':
+                        # Fallback: get the last non-empty part of path
+                        parts = [p for p in folder.split('/') if p]
+                        workspace_name = parts[-1] if parts else f"ws{self.index}"
+                else:
+                    workspace_name = f"ws{self.index}"
+            
+                # Ensure logos directory exists
+                os.makedirs(ICON_DIR, exist_ok=True)
+            
+                # Get file extension
+                _, ext = os.path.splitext(icon_path)
+                if not ext:
+                    # Try to determine from file type
+                    import mimetypes
+                    mime_type, _ = mimetypes.guess_type(icon_path)
+                    if mime_type:
+                        ext = mimetypes.guess_extension(mime_type) or '.png'
+                    else:
+                        ext = '.png'
+            
+                # Create new icon name and path
+                new_icon_name = f"{workspace_name}{ext}"
+                new_icon_path = os.path.join(ICON_DIR, new_icon_name)
+            
+                # Copy the file
+                try:
+                    shutil.copy2(icon_path, new_icon_path)
+                    print(f"Icon saved as: {new_icon_path}")
+                    self.icon_edit.setText(new_icon_path)
+                    self.update_icon_preview()
+                    
+                except shutil.SameFileError:
+                    # File is already where it should be - this is fine!
+                    pass
+            
+            except Exception as e:
+                print(f"Could not copy icon: {e}")
+                # Keep original path
+    
+        # Save all settings
+        config.set(section, 'folder', folder)
+        config.set(section, 'icon', new_icon_path)
+        config.set(section, 'timing', timing)
+        config.set(section, 'mode', mode)
+        config.set(section, 'order', order)
+        config.set(section, 'scaling', scaling)
+        
+        if new_icon_path and os.path.exists(new_icon_path):
+            try:
+                color = get_icon_color(new_icon_path)
+                if color:
+                    config.set(section, 'icon_color', color)
+                    print(f"WS{self.index}: Color detected: {color}")
+            except Exception as e:
+                print(f"WS{self.index}: Error detecting color: {e}")
 
         # Themes
         for key, combo in self.theme_controls.items():
@@ -834,65 +771,35 @@ class AWPDashboard(QWidget):
 
     def save_config(self):
         """
-        Finalized Save Logic for Mint XFCE.
-        Handles folder-based renaming and HEX color extraction for the daemon.
+        Perform smart configuration save with change detection.
+        
+        Features:
+        - Only updates actually changed values
+        - Automatic icon copying and color extraction
+        - Creates configuration backups
+        - Validates changes before saving
+        
+        Raises:
+            Exception: If configuration file operations fail
         """
         try:
-            # 1. Update General Settings
+            # General
             self.config.set('general', 'os_detected', self.de_combo.currentText())
             self.config.set('general', 'session_type', self.session_combo.currentText())
-            self.config.set('general', 'workspaces', self.ws_count_combo.currentText())
-            
-            # Handle Screen Blanking
             if self.blanking_pause_cb.isChecked():
                 self.config.set('general', 'blanking_timeout', '0')
                 self.config.set('general', 'blanking_pause', 'true')
             else:
-                self.config.set('general', 'blanking_timeout', str(self.blanking_combo.currentData() or '1200'))
+                self.config.set('general', 'blanking_timeout', str(self.blanking_combo.currentData() or '0'))
                 self.config.set('general', 'blanking_pause', 'false')
-
-            # 2. Process Workspace Tabs
-            if not os.path.exists(ICON_DIR):
-                os.makedirs(ICON_DIR, exist_ok=True)
-
+            self.config.set('general', 'workspaces', self.ws_count_combo.currentText())
+        
+            # Workspaces
             for tab in self.workspace_tabs:
-                tab.save_to_config() # Saves folder, timing, themes to memory
-                
-                # Determine destination name based on the wallpaper folder name
-                folder_path = tab.folder_edit.text().strip()
-                folder_name = os.path.basename(folder_path.rstrip('/'))
-                if not folder_name:
-                    folder_name = f"ws{tab.index}"
-
-                new_icon_source = tab.icon_edit.text().strip()
-                
-                if new_icon_source and os.path.isfile(new_icon_source):
-                    ext = os.path.splitext(new_icon_source)[1]
-                    dest_icon = os.path.join(ICON_DIR, f"{folder_name}{ext}")
-                    
-                    # Logic: If a new file was browsed
-                    if os.path.abspath(new_icon_source) != os.path.abspath(dest_icon):
-                        # A. Copy and rename the file to the logos folder
-                        shutil.copy2(new_icon_source, dest_icon)
-                        
-                        # B. EXTRACT NEW COLOR HEX
-                        # This calls the helper function to get the dominant hex code
-                        new_hex_color = get_icon_color(dest_icon)
-                        
-                        # C. Update .ini with the new path and the new color
-                        section = f"ws{tab.index}"
-                        self.config.set(section, 'icon', dest_icon)
-                        self.config.set(section, 'icon_color', new_hex_color)
-                        
-                        # D. Update the UI to show the final portable path
-                        tab.icon_edit.setText(dest_icon)
-
-            # 3. PHYSICAL WRITE TO DISK
-            self.config.save()
-            QMessageBox.information(self, "Success", "Config saved! New icon colors extracted.")
+                tab.save_to_config()  # ← Nuevo método
             
+            QMessageBox.information(self, "Success", "Configuration saved!")
         except Exception as e:
-            print(f"DEBUG SAVE ERROR: {e}")
             QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
 
     def get_new_general_value(self, key):

@@ -23,6 +23,7 @@ A professional-grade Linux environment manager that goes beyond wallpaper rotati
 * **🛠️ Dual Dashboard System**:
     * **Next-Gen Qt6 Dashboard**: A professional, modular configuration interface.
     * **Legacy PyQt5 Dashboard**: Maintained for maximum compatibility on older systems.
+* **🏗️ Modular Architecture**: Shared utilities in `core/utils.py` for maintainable code
 
 ## 🚀 Quick Start
 
@@ -99,7 +100,6 @@ python3 awp_nav.py black
 - `Super + s` → Sharpen wallpaper
 - `Super + c` → Colorize wallpaper
 - `Super + b` → Convert wallpaper to black and white
-
 ---
 > [!TIP]
 > **Non-Destructive Editing:** Last 3 effects are applied to a temporary copy in the `awp/` folder. The original wallpaper remains untouched. If you love a modified version (e.g., a sharpened or B&W version), you can manually replace the original file in your library with the processed one from the `awp/` directory.
@@ -135,7 +135,7 @@ awp-automated-wallpaper/
 ├── awp/                      # Main Application Directory
 │   ├── backends/             # Desktop-specific scripts (XFCE, GNOME, etc.)
 │   ├── conky/                # Conky configs and Lua scripts
-│   ├── core/                 # Central logic (config.py, constants.py)
+│   ├── core/                 # Central logic (config.py, constants.py, utils.py)
 │   ├── logos/                # Branding assets (ws1, ws2, ws3)
 │   ├── awp_dab.py            # Original Dashboard (PyQt5)
 │   ├── awp_dab_qt6.py        # New Professional Dashboard (Qt6) 🚀
@@ -149,6 +149,14 @@ awp-automated-wallpaper/
 ├── LICENSE                   # MIT License
 └── README.md                 # Project Documentation
 ```
+
+## 🔄 Recent Architecture Improvements
+
+**Version 2.1 - Centralized Utilities (January 2025)**
+- Created `core/utils.py` module to eliminate code duplication
+- Consolidated `get_icon_color()` and `get_available_themes()` functions
+- All dashboard components now share common utilities
+- Cleaner codebase with better separation of concerns
 
 ## 🌐 Supported Desktop Environments
 

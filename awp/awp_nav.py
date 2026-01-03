@@ -30,29 +30,9 @@ except ImportError:
     HAS_QT = False
 
 # =============================================================================
-# LOGGING CONFIGURATION (Shared Suite Standard)
+# CONFIGURATION
 # =============================================================================
-def setup_logging():
-    logger = logging.getLogger("AWP.Nav")
-    logger.setLevel(logging.INFO)
-    
-    # Console for manual terminal use
-    c_handler = logging.StreamHandler()
-    c_handler.setFormatter(logging.Formatter('[AWP-Nav] %(message)s'))
-    
-    # Shared log file for background execution
-    log_file = os.path.join(os.path.expanduser("~"), ".awp", "awp_daemon.log")
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
-    f_handler = logging.FileHandler(log_file)
-    f_handler.setFormatter(logging.Formatter(
-        '%(asctime)s [NAV-%(levelname)s] %(message)s', '%H:%M:%S'
-    ))
-    
-    logger.addHandler(c_handler)
-    logger.addHandler(f_handler)
-    return logger
-
-logger = setup_logging()
+logging.basicConfig(level=logging.ERROR, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # =============================================================================
 # CORE IMPORTS
@@ -91,21 +71,25 @@ def set_wallpaper(ws_num: int, image_path: str, scaling: str):
 # =============================================================================
 
 def update_conky_state(workspace_name: str, wallpaper_path: str, config: AWPConfig):
-    """Update Conky state file with current workspace and wallpaper information."""
+    """
+    Update Conky state file with current workspace and wallpaper information.
+    """
     state_dict = config.get_conky_state(workspace_name, wallpaper_path)
     try:
         with open(CONKY_STATE_PATH, 'w') as f:
             for key, value in state_dict.items():
                 f.write(f"{key}={value}\n")
     except OSError as e:
-        logger.error(f"Failed to write Conky state file {CONKY_STATE_PATH}: {e}")
+        logging.error(f"Failed to write Conky state file {CONKY_STATE_PATH}: {e}")
 
 # =============================================================================
 # WALLPAPER DELETION FUNCTIONALITY
 # =============================================================================
 
 def universal_confirm_deletion(wallpaper_name: str) -> bool:
-    """Display confirmation dialog for wallpaper deletion."""
+    """
+    Display confirmation dialog for wallpaper deletion.
+    """
     if HAS_QT:
         try:
             app = QApplication.instance()
@@ -125,7 +109,7 @@ def universal_confirm_deletion(wallpaper_name: str) -> bool:
             return result == QMessageBox.Yes
             
         except Exception as e:
-            logger.error(f"Qt confirmation dialog failed: {e}")
+            logging.error(f"Qt confirmation dialog failed: {e}")
     
     # Fallback to terminal
     print(f"\n🚨 WARNING: About to delete: {os.path.basename(wallpaper_name)}")
@@ -133,10 +117,13 @@ def universal_confirm_deletion(wallpaper_name: str) -> bool:
     return response.strip().upper() == "DELETE"
 
 def delete_current_wallpaper_and_advance() -> bool:
-    """Delete current wallpaper and advance to next one."""
+    """
+    Delete current wallpaper and advance to next one.
+    """
     ws_num = get_current_workspace()
     ws_key = get_ws_key(ws_num)
     
+    # Load config and state
     config = AWPConfig()
     global DE
     DE = config.de
@@ -149,9 +136,10 @@ def delete_current_wallpaper_and_advance() -> bool:
     order = ws_config['order']
     scaling = ws_config['scaling']
     
+    # Get current images and index
     imgs = load_images(folder)
     if not imgs:
-        logger.error(f"No images in {folder}")
+        logging.error(f"No images in {folder}")
         return False
     
     if mode == 'sequential':
@@ -165,21 +153,23 @@ def delete_current_wallpaper_and_advance() -> bool:
     
     current_wallpaper = imgs[current_idx]
     
+    # Confirm deletion
     if not universal_confirm_deletion(str(current_wallpaper)):
         print("Deletion cancelled")
         return False
     
+    # Delete the file
     try:
         os.remove(current_wallpaper)
         print(f"Deleted: {current_wallpaper}")
-        logger.info(f"Deleted wallpaper: {current_wallpaper}")
     except Exception as e:
-        logger.error(f"Failed to delete {current_wallpaper}: {e}")
+        logging.error(f"Failed to delete {current_wallpaper}: {e}")
         return False
     
+    # Reload images and re-sort
     imgs = load_images(folder)
     if not imgs:
-        logger.error("No wallpapers left after deletion")
+        logging.error("No wallpapers left after deletion")
         return True
     
     if mode == 'sequential':
@@ -187,6 +177,7 @@ def delete_current_wallpaper_and_advance() -> bool:
     else:
         imgs = sort_images(imgs, 'name_az')
     
+    # Calculate new index
     if mode == 'random':
         if len(imgs) == 1:
             new_idx = 0
@@ -197,10 +188,12 @@ def delete_current_wallpaper_and_advance() -> bool:
     else:  # sequential
         new_idx = current_idx % len(imgs)
     
+    # Update state
     state[ws_key + '_last'] = current_idx
     state[ws_key] = new_idx
     save_state(state)
     
+    # Set new wallpaper
     wallpaper_path = str(imgs[new_idx])
     set_wallpaper(ws_num, wallpaper_path, scaling)
     update_conky_state(f"ws{ws_num+1}", wallpaper_path, config)
@@ -209,16 +202,20 @@ def delete_current_wallpaper_and_advance() -> bool:
     return True
 
 # =============================================================================
-# EFFECT PREVIEW (Optimized Parameters)
+# EFFECT PREVIEW
 # =============================================================================
 
 def apply_effect_preview(effect: str = "sharpen"):
-    """Apply a temporary effect to the current wallpaper."""
+    """
+    Apply a temporary effect to the current wallpaper.
+    """
     config = AWPConfig()
     global DE
     DE = config.de
+    
     ws_num = get_current_workspace()
 
+    # Read current wallpaper from Conky state
     wallpaper_path = None
     if os.path.isfile(CONKY_STATE_PATH):
         try:
@@ -228,38 +225,39 @@ def apply_effect_preview(effect: str = "sharpen"):
                         wallpaper_path = line.strip().split("=", 1)[1]
                         break
         except Exception as e:
-            logger.error(f"Failed to read Conky state: {e}")
+            logging.error(f"Failed to read Conky state: {e}")
 
     if not wallpaper_path or not os.path.isfile(wallpaper_path):
-        logger.error("Cannot determine current wallpaper path.")
+        logging.error("Cannot determine current wallpaper path.")
         return
 
+    # Temporary file
     filename = os.path.basename(wallpaper_path)
-    temp_file = os.path.join(AWP_DIR, f"preview_{filename}")
+    temp_file = os.path.join(AWP_DIR, filename)
     os.makedirs(os.path.dirname(temp_file), exist_ok=True)
 
-    # UPDATED: Optimized Commands for Dell Optiplex 755
+    # Build ImageMagick command
     cmd = ["convert", wallpaper_path]
     if effect == "sharpen":
-        cmd += ["-adaptive-sharpen", "0x2"]
+        cmd += ["-unsharp", "0x2+0.8+0"]
     elif effect == "black":
-        cmd += ["-colorspace", "gray", "-sigmoidal-contrast", "3,50%"]
+        cmd += ["-modulate", "100,0,100"]
     elif effect == "color":
-        cmd += ["-modulate", "100,150,100", "-sharpen", "0x1"]
+        cmd += ["-modulate", "100,130,100"]
     else:
-        logger.error(f"Unknown effect: {effect}")
+        logging.error(f"Unknown effect: {effect}")
         return
 
     cmd.append(temp_file)
 
+    # Apply effect
     try:
         subprocess.run(cmd, check=True)
         ws_config = config.get_workspace_config(ws_num)
         set_wallpaper(ws_num, temp_file, ws_config['scaling'])
         print(f"Applied temporary effect '{effect}' to wallpaper: {temp_file}")
-        logger.info(f"Applied {effect} effect to {filename}")
     except Exception as e:
-        logger.error(f"Failed to apply effect '{effect}': {e}")
+        logging.error(f"Failed to apply effect '{effect}': {e}")
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -273,7 +271,7 @@ def get_current_workspace() -> int:
         ).strip().split()[-1]
         return int(ws_num)
     except Exception as e:
-        logger.error(f"Could not determine current workspace: {e}")
+        logging.error(f"Could not determine current workspace: {e}")
         sys.exit(1)
 
 def get_ws_key(ws_num: int) -> str:
@@ -283,13 +281,13 @@ def get_ws_key(ws_num: int) -> str:
 def load_state() -> dict:
     """Load workspace state from JSON file."""
     if not os.path.isfile(STATE_PATH):
-        logger.error(f"State file {STATE_PATH} not found")
+        logging.error(f"State file {STATE_PATH} not found")
         return {}
     try:
         with open(STATE_PATH, "r") as f:
             return json.load(f)
     except Exception as e:
-        logger.error(f"Failed to load state file {STATE_PATH}: {e}")
+        logging.error(f"Failed to load state file {STATE_PATH}: {e}")
         return {}
 
 def save_state(state: dict):
@@ -300,13 +298,13 @@ def save_state(state: dict):
             json.dump(state, f)
         os.replace(tmp, STATE_PATH)
     except Exception as e:
-        logger.error(f"Failed to save state file {STATE_PATH}: {e}")
+        logging.error(f"Failed to save state file {STATE_PATH}: {e}")
 
 def load_images(folder_path: str) -> list:
     """Load all JPEG and PNG images from specified folder."""
     p = Path(folder_path)
     if not p.is_dir():
-        logger.error(f"Folder {folder_path} is not a directory")
+        logging.error(f"Folder {folder_path} is not a directory")
         return []
     return list(p.glob("*.[jJ][pP][gG]")) + list(p.glob("*.[pP][nN][gG]"))
 
@@ -335,17 +333,20 @@ def main():
 
     command = sys.argv[1]
     
+    # Handle effect commands
     if command in ("sharpen", "black", "color"):
         os.makedirs(AWP_DIR, exist_ok=True)
         apply_effect_preview(command)
         return
     
+    # Handle deletion command
     if command == "delete":
         os.makedirs(AWP_DIR, exist_ok=True)
         force_single_workspace_off()
         success = delete_current_wallpaper_and_advance()
         sys.exit(0 if success else 1)
     
+    # Handle next/prev navigation commands
     direction = command
     os.makedirs(AWP_DIR, exist_ok=True)
     force_single_workspace_off()
@@ -353,6 +354,7 @@ def main():
     ws_num = get_current_workspace()
     ws_key = get_ws_key(ws_num)
 
+    # Load configuration using AWPConfig
     config = AWPConfig()
     global DE
     DE = config.de
@@ -363,9 +365,10 @@ def main():
     order = ws_config['order']
     scaling = ws_config['scaling']
 
+    # Load and sort images
     imgs = load_images(folder)
     if not imgs:
-        logger.error(f"No images in {folder}")
+        logging.error(f"No images in {folder}")
         sys.exit(1)
 
     if mode == 'sequential':
@@ -373,12 +376,14 @@ def main():
     else:
         imgs = sort_images(imgs, 'name_az')
 
+    # Load state and calculate new index
     state = load_state()
     idx = int(state.get(ws_key, 0) or 0)
     last_idx = int(state.get(ws_key + '_last', -1) or -1)
     if idx >= len(imgs):
         idx = 0
 
+    # Calculate new index based on direction and mode
     if direction == "next":
         if mode == 'random':
             if len(imgs) == 1:
@@ -395,18 +400,20 @@ def main():
         else:
             new_idx = (idx - 1) % len(imgs)
 
+    # Update state and apply changes
     state[ws_key + '_last'] = idx
     state[ws_key] = new_idx
     save_state(state)
 
+    # Apply new wallpaper and update Conky
     wallpaper_path = str(imgs[new_idx])
     set_wallpaper(ws_num, wallpaper_path, scaling)
     
-    # Updated: Ensure Conky is always updated on manual nav
+    # CONKY INTEGRATION (OPTIONAL)
+    # Uncomment the line below to enable real-time wallpaper info for Conky
     update_conky_state(f"ws{ws_num+1}", wallpaper_path, config)
     
     print(f"WS{ws_num+1}: {direction} -> index {new_idx}, scaling '{scaling}', wallpaper '{wallpaper_path}'")
-    logger.info(f"Navigated {direction} to {os.path.basename(wallpaper_path)}")
 
 if __name__ == "__main__":
     main()

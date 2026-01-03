@@ -1,100 +1,179 @@
 #!/usr/bin/env python3
 """
 XFCE Desktop Backend for AWP
-Optimized for XFCE 4.16+ and X11 sessions.
+Contains all XFCE-specific wallpaper and theme management functions.
 """
 
+import os
 import subprocess
-import logging
-
-logger = logging.getLogger("AWP.XFCE")
 
 SCALING_XFCE = {'centered': 1, 'scaled': 4, 'zoomed': 5}
 
-def _xfconf_set(channel: str, prop: str, value: str, prop_type: str = "string"):
-    """Internal helper to set xfconf properties safely."""
-    try:
-        # Use --create as a default to ensure the property exists
-        subprocess.run([
-            "xfconf-query", "-c", channel, "-p", prop, 
-            "--set", str(value), "--create"
-        ], check=True, capture_output=True)
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Xfconf error on {prop}: {e}")
-
 def xfce_force_single_workspace_off():
-    """Disable single workspace mode to allow unique wallpapers per desktop."""
-    _xfconf_set("xfce4-desktop", "/backdrop/single-workspace-mode", "false", "bool")
+    """Disable single workspace mode in XFCE."""
+    subprocess.run([
+        "xfconf-query", "-c", "xfce4-desktop",
+        "-p", "/backdrop/single-workspace-mode",
+        "--set", "false", "--create"
+    ])
 
 def xfce_configure_screen_blanking(timeout_seconds: int):
-    """Manages DPMS and X11 screen blanking."""
-    try:
-        if timeout_seconds == 0:
-            subprocess.run(["xset", "s", "off"], check=False)
-            subprocess.run(["xset", "-dpms"], check=False)
-            logger.info("Screen blanking disabled via xset.")
-        else:
-            subprocess.run(["xset", "s", str(timeout_seconds)], check=False)
-            subprocess.run(["xset", "+dpms"], check=False)
-            subprocess.run([
-                "xset", "dpms", str(timeout_seconds), 
-                str(timeout_seconds), str(timeout_seconds)
-            ], check=False)
-            logger.info(f"Screen blanking set to {timeout_seconds}s")
-    except Exception as e:
-        logger.error(f"Failed to set xset blanking: {e}")
+    """
+    Configure screen blanking for XFCE/X11 sessions.
+    
+    Args:
+        timeout_seconds (int): Time in seconds before screen blanks (0 = disable)
+    """
+    if timeout_seconds == 0:
+        # Explicitly disable all blanking
+        subprocess.run(["xset", "s", "off"], check=False)
+        subprocess.run(["xset", "-dpms"], check=False)
+        print(f"[AWP] Screen blanking explicitly disabled")
+    else:
+        # Enable and configure blanking
+        subprocess.run(["xset", "s", str(timeout_seconds)], check=False)
+        subprocess.run(["xset", "+dpms"], check=False)
+        subprocess.run(["xset", "dpms", str(timeout_seconds), str(timeout_seconds), str(timeout_seconds)], check=False)
+        print(f"[AWP] Screen blanking set to {timeout_seconds}s")
 
-def xfce_get_monitors(ws_num: int):
-    """Finds all monitor properties for a specific workspace."""
-    try:
-        props = subprocess.check_output(
-            ["xfconf-query", "-c", "xfce4-desktop", "-l"], text=True
-        ).splitlines()
-        
-        monitors = []
-        target = f"/workspace{ws_num}/last-image"
-        for p in props:
-            if target in p:
-                parts = p.split("/")
-                # Pattern matches /backdrop/screen0/monitorHDMI-1/...
-                if len(parts) >= 4 and "monitor" in parts[3]:
-                    monitors.append(parts[3])
-        return sorted(set(monitors))
-    except Exception:
-        return ["monitor0"] # Fallback
+def xfce_get_monitors_for_workspace(ws_num: int):
+    """Get list of monitors for specified XFCE workspace."""
+    props = subprocess.check_output(
+        ["xfconf-query", "-c", "xfce4-desktop", "-l"], text=True
+    ).splitlines()
+    monitors = []
+    for p in props:
+        if f"/workspace{ws_num}/last-image" in p:
+            parts = p.split("/")
+            if len(parts) >= 6 and parts[3].startswith("monitor"):
+                monitors.append(parts[3])
+    return sorted(set(monitors))
 
 def xfce_set_wallpaper(ws_num: int, image_path: str, scaling: str):
-    """Applies wallpaper and scaling style to all monitors on a workspace."""
+    """Set wallpaper for XFCE workspace with specified scaling."""
     style_code = SCALING_XFCE.get(scaling, 5)
-    monitors = xfce_get_monitors(ws_num)
-    
-    for mon in monitors:
-        base_path = f"/backdrop/screen0/{mon}/workspace{ws_num}"
-        _xfconf_set("xfce4-desktop", f"{base_path}/last-image", image_path)
-        _xfconf_set("xfce4-desktop", f"{base_path}/image-style", style_code)
-    
-    # Force XFCE to repaint the desktop
-    subprocess.run(["xfdesktop", "--reload"], check=False)
+    for mon in xfce_get_monitors_for_workspace(ws_num):
+        subprocess.run([
+            "xfconf-query",
+            "--channel", "xfce4-desktop",
+            "--property", f"/backdrop/screen0/{mon}/workspace{ws_num}/last-image",
+            "--set", image_path,
+            "--create"
+        ])
+        subprocess.run([
+            "xfconf-query",
+            "--channel", "xfce4-desktop", 
+            "--property", f"/backdrop/screen0/{mon}/workspace{ws_num}/image-style",
+            "--set", str(style_code),
+            "--create"
+        ])
+    subprocess.run(["xfdesktop", "--reload"])
+
 
 def xfce_set_icon(icon_path: str):
-    """Whisker Menu icon updates are currently disabled for stability."""
-    logger.debug(f"XFCE Icon update requested but skipped: {icon_path}")
-    pass
+    try:
+        result = subprocess.run(
+            ["xfconf-query", "-c", "xfce4-panel", "-p", "/plugins/plugin-1/button-icon", "-s", icon_path, "--create", "-t", "string"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        print(f"✓ XFCE whiskermenu icon set to: {icon_path}")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"✗ Failed to set icon: {e.stderr}")
+        return False
+
 
 def xfce_set_themes(ws_num: int, config):
-    """Dynamically switch GTK, Icon, and Window themes per workspace."""
+
     section = f"ws{ws_num + 1}"
     
-    # Map config keys to XFCE Xfconf properties
-    theme_map = {
-        'icon_theme': ("xsettings", "/Net/IconThemeName"),
-        'gtk_theme': ("xsettings", "/Net/ThemeName"),
-        'cursor_theme': ("xsettings", "/Gtk/CursorThemeName"),
-        'wm_theme': ("xfwm4", "/general/theme")
-    }
-
-    for cfg_key, (channel, prop) in theme_map.items():
-        val = config.get(section, cfg_key, fallback=None)
-        if val:
-            _xfconf_set(channel, prop, val)
-            logger.info(f"Applied {cfg_key}: {val}")
+    if not config.has_section(section):
+        print(f"No theme config found for {section}")
+        return
+    
+    # Get theme settings with fallbacks
+    icon_theme = config.get(section, 'icon_theme', fallback=None)
+    gtk_theme = config.get(section, 'gtk_theme', fallback=None)
+    cursor_theme = config.get(section, 'cursor_theme', fallback=None)
+    wm_theme = config.get(section, 'wm_theme', fallback=None)
+    
+    # Apply themes if they exist in config
+    try:
+        if icon_theme:
+            # Check if property exists
+            result = subprocess.run(
+                ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                # Property exists - set without --create
+                subprocess.run(
+                    ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "--set", icon_theme],
+                    check=True
+                )
+            else:
+                # Property doesn't exist - create it
+                subprocess.run(
+                    ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "--set", icon_theme, "--create"],
+                    check=True
+                )
+            print(f"✓ XFCE icon theme: {icon_theme}")
+        
+        # Repeat the same pattern for other themes...
+        if gtk_theme:
+            result = subprocess.run(
+                ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                subprocess.run(
+                    ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName", "--set", gtk_theme],
+                    check=True
+                )
+            else:
+                subprocess.run(
+                    ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName", "--set", gtk_theme, "--create"],
+                    check=True
+                )
+            print(f"✓ XFCE GTK theme: {gtk_theme}")
+        
+        if cursor_theme:
+            result = subprocess.run(
+                ["xfconf-query", "-c", "xsettings", "-p", "/Gtk/CursorThemeName"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                subprocess.run(
+                    ["xfconf-query", "-c", "xsettings", "-p", "/Gtk/CursorThemeName", "--set", cursor_theme],
+                    check=True
+                )
+            else:
+                subprocess.run(
+                    ["xfconf-query", "-c", "xsettings", "-p", "/Gtk/CursorThemeName", "--set", cursor_theme, "--create"],
+                    check=True
+                )
+            print(f"✓ XFCE cursor theme: {cursor_theme}")
+        
+        if wm_theme:
+            result = subprocess.run(
+                ["xfconf-query", "-c", "xfwm4", "-p", "/general/theme"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                subprocess.run(
+                    ["xfconf-query", "-c", "xfwm4", "-p", "/general/theme", "--set", wm_theme],
+                    check=True
+                )
+            else:
+                subprocess.run(
+                    ["xfconf-query", "-c", "xfwm4", "-p", "/general/theme", "--set", wm_theme, "--create"],
+                    check=True
+                )
+            print(f"✓ XFCE window theme: {wm_theme}")
+        
+        print(f"Applied XFCE themes for workspace {ws_num + 1}")
+        
+    except subprocess.CalledProcessError as e:
+        print(f"Error applying XFCE themes: {e}")
