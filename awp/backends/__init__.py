@@ -14,17 +14,21 @@ try:
         xfce_force_single_workspace_off,
         xfce_configure_screen_blanking,
         xfce_set_wallpaper,
+        xfce_set_wallpaper_native,  # <--- Added this
+        xfce_lean_mode,             # <--- Added this
         xfce_set_icon,
         xfce_set_themes
     )
     BACKENDS["xfce"] = {
         "wallpaper": xfce_set_wallpaper,
+        "wallpaper_native": xfce_set_wallpaper_native, # <--- Added this
+        "lean_mode": xfce_lean_mode,                   # <--- Added this
         "icon": xfce_set_icon,
         "themes": xfce_set_themes,
         "workspace_off": xfce_force_single_workspace_off,
         "configure_blanking": xfce_configure_screen_blanking
     }
-    print(f"[AWP Backends] XFCE backend loaded")
+    print(f"[AWP Backends] XFCE backend loaded (Lean Mode enabled)")
 except ImportError as e:
     print(f"[AWP Backends] ERROR: Could not load XFCE backend: {e}")
     sys.exit(1)

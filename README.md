@@ -23,7 +23,8 @@ A professional-grade Linux environment manager that goes beyond wallpaper rotati
 * **🛠️ Dual Dashboard System**:
     * **Next-Gen Qt6 Dashboard**: A professional, modular configuration interface.
     * **Legacy PyQt5 Dashboard**: Maintained for maximum compatibility on older systems.
-* **🏗️ Modular Architecture**: Shared utilities in `core/utils.py` for maintainable code
+* **🏗️ Modular Architecture**: Shared utilities and hybrid backend support for mixed environments (e.g., XFCE + Openbox).
+* **⚡ XFCE Lean Mode**: Optimized for low-resource systems (like the Optiplex 755). Can bypass `xfdesktop` and use `feh` for ultra-lightweight wallpaper management.
 
 ## 🚀 Quick Start
 
@@ -33,7 +34,7 @@ Before installing, ensure your system has the necessary background tools:
 ```bash
 # Install System Tools & Python Bindings
 sudo apt update
-sudo apt install conky-all imagemagick python3-pyqt6
+sudo apt install conky-all imagemagick python3-pyqt5 python3-pyqt6 feh
 ```
 
 ### Installation
@@ -152,6 +153,10 @@ awp-automated-wallpaper/
 
 ## 🔄 Recent Architecture Improvements
 
+**Version 2.2 - Lean Mode & Hybrid Backends (January 2026)**
+- **Lean Mode:** New universal function in `awp_daemon` to toggle between native XFCE wallpaper handling and `feh`.
+- **Hybrid Support:** Refactored `generic.py` to support mixed environments like Openbox running inside XFCE.
+- **UI Fixes:** Added environment-specific QT5 settings in `awp_dab.py` to ensure consistent workspace theme following.
 **Version 2.1 - Centralized Utilities (January 2025)**
 - Created `core/utils.py` module to eliminate code duplication
 - Consolidated `get_icon_color()` and `get_available_themes()` functions

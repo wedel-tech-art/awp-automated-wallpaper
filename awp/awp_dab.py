@@ -16,8 +16,8 @@ Features:
 Part of the AWP wallpaper automation ecosystem.
 """
 import os
-os.environ['NO_AT_BRIDGE'] = '1'  # Suppress GTK accessibility warnings
-
+#os.environ['NO_AT_BRIDGE'] = '1'  # Suppress GTK accessibility warnings
+os.environ['QT_QPA_PLATFORMTHEME'] = 'qt5ct'
 import sys
 import shutil
 from PyQt5.QtWidgets import (

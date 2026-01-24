@@ -51,6 +51,19 @@ from backends import get_backend
 # UNIVERSAL DESKTOP FUNCTIONS
 # =============================================================================
 
+def optimize_desktop_environment():
+    """
+    Universal optimization: Disables heavy desktop managers (like xfdesktop)
+    to reclaim RAM and CPU for audio work.
+    """
+    backend = get_backend(DE)
+    if backend:
+        # We look for a 'lean_mode' function in the specific backend
+        func = backend.get("lean_mode")
+        if func:
+            print(f"[AWP] Initializing Lean Mode for {DE}...")
+            func()
+
 def force_single_workspace_off():
     """Disable single workspace mode for current desktop environment."""
     backend = get_backend(DE)
@@ -297,6 +310,8 @@ def main():
     BLANKING_TIMEOUT = config.blanking_timeout
     BLANKING_FORMATTED = config.blanking_formatted
 
+    optimize_desktop_environment()
+    
     # Configure screen blanking based on config properties
     configure_screen_blanking(config)
     force_single_workspace_off()
