@@ -2,20 +2,6 @@
 # awp_start.sh - Startup script for AWP Daemon
 # Customize this script to add your own startup commands (Conky, etc.)
 
-# CONFIG_FILE="$HOME/awp/awp_config.ini"
-
-# =============================================================================
-# FORCE SCREEN BLANKING SETTINGS (Early Override)
-# We set this here to ensure it applies immediately, preventing the default
-# 10-minute timeout from taking over before the Python daemon is ready.
-# 1200 seconds = 20 minutes (matches your awp_config.ini setting)
-# =============================================================================
-#xset s 1200
-#xset +dpms
-#xset dpms 1200 1200 1200
-# =============================================================================
-
-
 # Kill any previous instances
 pkill -f "$HOME/awp/awp_daemon.py" 2>/dev/null
 sleep 1

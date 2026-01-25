@@ -21,6 +21,7 @@ os.environ['NO_AT_BRIDGE'] = '1'
 # CORE IMPORTS
 from core.constants import AWP_DIR, STATE_PATH, CONKY_STATE_PATH
 from core.config import AWPConfig, ConfigError
+from core.utils import x11_blanking
 from backends import get_backend
 
 # =============================================================================
@@ -97,11 +98,15 @@ def set_themes(ws_num: int, config=None):
             func(ws_num, config)
 
 def configure_screen_blanking(config):
-    timeout = int(config.get('general', 'blanking_timeout', 0))
-    de = config.get('general', 'os_detected', 'generic')
-    backend = get_backend(de)
-    backend['configure_blanking'](timeout)
-    print(f"[AWP] Blanking set to {timeout}s")
+    """
+    Standard AWP Blanking configuration.
+    Redirects the config values to the universal x11_blanking utility.
+    """
+    # Pull the value from your existing AWPConfig object
+    timeout = config.blanking_timeout
+    
+    # Execute the hardware command
+    x11_blanking(timeout)
 
 def update_conky_state(workspace_name: str, wallpaper_path: str, config: AWPConfig):
     """Update Conky state using cached config."""

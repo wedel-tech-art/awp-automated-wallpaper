@@ -41,6 +41,3 @@ def mate_set_themes(ws_num: int, config):
     if wm_theme:
         subprocess.run(["gsettings", "set", "org.mate.Marco.general", "theme", wm_theme])
 
-def mate_configure_screen_blanking(timeout_seconds: int):
-    """MATE screen blanking not implemented."""
-    print(f"[AWP] MATE screen blanking configuration not implemented.")

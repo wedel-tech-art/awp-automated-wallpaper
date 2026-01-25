@@ -8,8 +8,6 @@ Keep it simple, no fancy stuff.
 import os
 from pathlib import Path
 
-# HOME = Path.home()
-# AWP_DIR = HOME / "awp"
 AWP_DIR = Path(__file__).resolve().parent.parent
 
 CONFIG_PATH = str(AWP_DIR / "awp_config.ini")

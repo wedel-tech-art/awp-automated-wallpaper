@@ -9,23 +9,34 @@ A professional-grade Linux environment manager that goes beyond wallpaper rotati
 ## 🚀 Key Features
 
 * **📦 Comprehensive "Deep" Theming**: Total environment synchronization per workspace.
-    * **Wallpapers**: Independent rotation and scaling.
-    * **Icon Sets**: Dynamic switching of system-wide icon packs.
-    * **GTK & WM Themes**: Real-time widget and window decoration updates.
-    * **Cursor Themes**: Mouse pointer synchronization.
-* **📡 Conky IPC Integration**: Advanced Inter-Process Communication between the AWP daemon and Conky.
-    * Monitors internal state via `.awp_conky_state`.
-    * Synchronizes Lua-based system monitoring aesthetics with the active workspace theme.
-* **🖥️ Universal X11 Power Management**: 
-    * Intelligent **X11 Screen Blanking** control compatible with any desktop running X11.
-    * Manual and automated power-save overrides.
-* **🎮 Navigation Effects**: Keyboard-driven wallpaper cycling with "Next/Previous" effects and direct file management (deletion).
-* **🛠️ Dual Dashboard System**:
-    * **Next-Gen Qt6 Dashboard**: A professional, modular configuration interface.
-    * **Legacy PyQt5 Dashboard**: Maintained for maximum compatibility on older systems.
-* **🏗️ Modular Architecture**: Shared utilities and hybrid backend support for mixed environments (e.g., XFCE + Openbox).
-* **⚡ XFCE Lean Mode**: Optimized for low-resource systems (like the Optiplex 755). Can bypass `xfdesktop` and use `feh` for ultra-lightweight wallpaper management.
+    * **Visual Atmosphere**: Orchestrates a complete aesthetic shift by synchronizing Wallpapers, Icon Sets, GTK Widgets, and Window Decorations (GTK 2/3/4) in real-time.
+    * **Cursor Themes**: Seamless mouse pointer synchronization to match your active style.
+    * **🧪 Experimental "Generic" Scope**: Expanded support for **Icon, GTK, and Cursor** switching in hybrid environments (e.g., Openbox + XFCE), allowing AWP to act as a standalone theme manager.
+    * **Universal Compatibility**: Designed to "embellish" the workspace across both **X11 and Wayland** sessions (Gnome/Cinnamon) using native backend integration.
 
+* **🎮 Interactive Navigation & Aesthetic Effects**: Powered by `awp_nav.py`.
+    * **Dynamic Library Control**: Rapid **Next** and **Previous** wallpaper cycling via keyboard shortcuts for an evolving workspace.
+    * **Real-time Image Processing**: Instantly adapt your wallpaper's look with non-destructive effects:
+        * **Sharpen**: Enhance detail and clarity for high-resolution displays.
+        * **Black & White**: Instant minimalist grayscale conversion.
+        * **Saturation**: Boost color vibrance to change the "energy" of your desktop.
+    * **Asset Management**: Integrated **Delete** functionality to curate your wallpaper library on the fly.
+
+* **📡 Advanced Conky IPC Integration**
+    * **State-Aware Monitoring**: Uses a custom `.awp_conky_state` bridge to keep system monitors in sync with the active theme.
+    * **Visual Cohesion**: Automatically pushes color palettes and font settings to Conky's Lua/Cairo scripts, ensuring your system data looks like a native part of the wallpaper.
+
+* **⚡ Optimized for Low-Resource Hardware**
+    * **Optiplex 755 "Lean Mode"**: Specifically tailored for legacy systems (Core 2 Duo / 6GB RAM). Includes an optional bypass for `xfdesktop`, utilizing `feh` for ultra-lightweight wallpaper rendering without sacrificing the "Deep Theming" experience.
+
+* **🏗️ Universal Modular Architecture**
+    * **DE-Centric Design**: Focuses on Desktop Environments (**XFCE, Cinnamon, Gnome, and Mate**) rather than specific distributions, making it truly distro-agnostic.
+    * **Unified Logic Core**: Centralized libraries ensure that the "Desktop Experience" remains consistent and high-quality across all supported backends.
+    * **🛠️ Dual Dashboard Configuration**: Features a modern **Qt6 Dashboard** for the latest setups and a **Legacy PyQt5** version for maximum stability on older systems.
+
+* **🖥️ Utility: Intelligent Display Management**
+    * **Consolidated Logic**: Centralized screen blanking and power-saving overrides in `core/utils.py`.
+    * **Clean Integration**: Provides essential hardware-level control as a lightweight alternative to heavy desktop-specific power daemons.
 ## 🚀 Quick Start
 
 ### 📦 Prerequisites

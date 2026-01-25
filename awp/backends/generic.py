@@ -28,19 +28,6 @@ def generic_force_single_workspace_off():
     """No-op for Openbox."""
     pass
 
-def generic_configure_screen_blanking(timeout_seconds: int):
-    """Universal X11 screen blanking control."""
-    try:
-        if timeout_seconds == 0:
-            subprocess.run(["xset", "s", "off", "-dpms"], check=False)
-            print(f"{CLR_CYAN}[AWP]{CLR_RESET} Screen blanking: {CLR_RED}DISABLED{CLR_RESET}")
-        else:
-            subprocess.run(["xset", "s", str(timeout_seconds)], check=False)
-            subprocess.run(["xset", "+dpms", "dpms", str(timeout_seconds), str(timeout_seconds), str(timeout_seconds)], check=False)
-            print(f"{CLR_CYAN}[AWP]{CLR_RESET} Screen blanking: {CLR_GREEN}{timeout_seconds}s{CLR_RESET}")
-    except Exception as e:
-        print(f"{CLR_RED}[AWP-GENERIC] Blanking Error: {e}{CLR_RESET}")
-
 def generic_set_wallpaper(ws_num: int, image_path: str, scaling: str):
     """Set wallpaper using feh for Openbox compatibility."""
     scaling_map = {'centered': '--bg-center', 'scaled': '--bg-scale', 'zoomed': '--bg-fill'}

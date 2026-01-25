@@ -16,7 +16,6 @@ Features:
 Part of the AWP wallpaper automation ecosystem.
 """
 import os
-#os.environ['NO_AT_BRIDGE'] = '1'  # Suppress GTK accessibility warnings
 os.environ['QT_QPA_PLATFORMTHEME'] = 'qt5ct'
 import sys
 import shutil
@@ -254,8 +253,8 @@ class WorkspaceTab(QWidget):
                 'desktop_theme': False, 'wm_theme': True
             },
             "generic": {
-                'icon_theme': False, 'gtk_theme': True, 'cursor_theme': False,
-                'desktop_theme': False, 'wm_theme': False
+                'icon_theme': True, 'gtk_theme': True, 'cursor_theme': True,
+                'desktop_theme': False, 'wm_theme': False       
             }
         }
         
@@ -375,7 +374,7 @@ class WorkspaceTab(QWidget):
     
         # Themes
         for key, combo in self.theme_controls.items():
-            theme_value = ws_config.get(key, '')  # ← Solo esta línea nueva
+            theme_value = ws_config.get(key, '')
             if theme_value:
                 found = False
                 for i in range(combo.count()):
@@ -446,7 +445,7 @@ class WorkspaceTab(QWidget):
                     self.update_icon_preview()
                     
                 except shutil.SameFileError:
-                    # File is already where it should be - this is fine!
+                    # File is already where it should be
                     pass
             
             except Exception as e:
@@ -652,7 +651,7 @@ class AWPDashboard(QWidget):
                 ("1 hour", "3600")
             ]
         )
-        self.blanking_combo.setToolTip("Time before screen blanks/sleeps (XFCE/X11 only)")
+        self.blanking_combo.setToolTip("Time before screen blanks/sleeps (X11)")
         self.blanking_combo.currentTextChanged.connect(self.on_blanking_changed)
         blanking_row.addWidget(self.blanking_combo)
 
@@ -796,7 +795,7 @@ class AWPDashboard(QWidget):
         
             # Workspaces
             for tab in self.workspace_tabs:
-                tab.save_to_config()  # ← Nuevo método
+                tab.save_to_config()
             
             QMessageBox.information(self, "Success", "Configuration saved!")
         except Exception as e:

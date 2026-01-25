@@ -5,28 +5,24 @@ Exports all desktop environment backend functions.
 """
 import sys
 
-# Try to import all backends with error handling
 BACKENDS = {}
 
-# XFCE (core backend, should always be available)
 try:
     from .xfce import (
         xfce_force_single_workspace_off,
-        xfce_configure_screen_blanking,
         xfce_set_wallpaper,
-        xfce_set_wallpaper_native,  # <--- Added this
-        xfce_lean_mode,             # <--- Added this
+        xfce_set_wallpaper_native,
+        xfce_lean_mode,
         xfce_set_icon,
         xfce_set_themes
     )
     BACKENDS["xfce"] = {
         "wallpaper": xfce_set_wallpaper,
-        "wallpaper_native": xfce_set_wallpaper_native, # <--- Added this
-        "lean_mode": xfce_lean_mode,                   # <--- Added this
+        "wallpaper_native": xfce_set_wallpaper_native,
+        "lean_mode": xfce_lean_mode,
         "icon": xfce_set_icon,
         "themes": xfce_set_themes,
         "workspace_off": xfce_force_single_workspace_off,
-        "configure_blanking": xfce_configure_screen_blanking
     }
     print(f"[AWP Backends] XFCE backend loaded (Lean Mode enabled)")
 except ImportError as e:
@@ -40,14 +36,12 @@ try:
         gnome_set_wallpaper,
         gnome_set_icon,
         gnome_set_themes,
-        gnome_configure_screen_blanking
     )
     BACKENDS["gnome"] = {
         "wallpaper": gnome_set_wallpaper,
         "icon": gnome_set_icon,
         "themes": gnome_set_themes,
         "workspace_off": gnome_force_single_workspace_off,
-        "configure_blanking": gnome_configure_screen_blanking
     }
     print(f"[AWP Backends] GNOME backend loaded")
 except ImportError as e:
@@ -60,14 +54,12 @@ try:
         cinnamon_set_wallpaper,
         cinnamon_set_icon,
         cinnamon_set_themes,
-        cinnamon_configure_screen_blanking
     )
     BACKENDS["cinnamon"] = {
         "wallpaper": cinnamon_set_wallpaper,
         "icon": cinnamon_set_icon,
         "themes": cinnamon_set_themes,
         "workspace_off": cinnamon_force_single_workspace_off,
-        "configure_blanking": cinnamon_configure_screen_blanking
     }
     print(f"[AWP Backends] Cinnamon backend loaded")
 except ImportError as e:
@@ -80,14 +72,12 @@ try:
         mate_set_wallpaper,
         mate_set_icon,
         mate_set_themes,
-        mate_configure_screen_blanking
     )
     BACKENDS["mate"] = {
         "wallpaper": mate_set_wallpaper,
         "icon": mate_set_icon,
         "themes": mate_set_themes,
         "workspace_off": mate_force_single_workspace_off,
-        "configure_blanking": mate_configure_screen_blanking
     }
     print(f"[AWP Backends] MATE backend loaded")
 except ImportError as e:
@@ -100,14 +90,12 @@ try:
         generic_set_wallpaper,
         generic_set_icon,
         generic_set_themes,
-        generic_configure_screen_blanking
     )
     BACKENDS["generic"] = {
         "wallpaper": generic_set_wallpaper,
         "icon": generic_set_icon,
         "themes": generic_set_themes,
         "workspace_off": generic_force_single_workspace_off,
-        "configure_blanking": generic_configure_screen_blanking
     }
     print(f"[AWP Backends] Generic backend loaded")
 except ImportError as e:

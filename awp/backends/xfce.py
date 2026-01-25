@@ -52,18 +52,6 @@ def xfce_force_single_workspace_off():
         "--set", "false", "--create"
     ])
 
-def xfce_configure_screen_blanking(timeout_seconds: int):
-    """Configure screen blanking for XFCE/X11 sessions."""
-    if timeout_seconds == 0:
-        subprocess.run(["xset", "s", "off"], check=False)
-        subprocess.run(["xset", "-dpms"], check=False)
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} Screen blanking {CLR_RED}Disabled{CLR_RESET}")
-    else:
-        subprocess.run(["xset", "s", str(timeout_seconds)], check=False)
-        subprocess.run(["xset", "+dpms"], check=False)
-        subprocess.run(["xset", "dpms", str(timeout_seconds), str(timeout_seconds), str(timeout_seconds)], check=False)
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} Screen blanking set to {CLR_GREEN}{timeout_seconds}s{CLR_RESET}")
-
 def xfce_get_monitors_for_workspace(ws_num: int):
     """Get list of monitors for specified XFCE workspace."""
     props = subprocess.check_output(

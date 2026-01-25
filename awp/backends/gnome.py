@@ -48,11 +48,3 @@ def gnome_set_themes(ws_num: int, config):
         subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "cursor-theme", cursor_theme])
         print(f"✓ GNOME cursor theme: {cursor_theme}")
 
-def gnome_configure_screen_blanking(timeout_seconds: int):
-    """
-    Configure screen blanking for GNOME.
-    
-    Args:
-        timeout_seconds (int): Time in seconds before screen blanks (0 = disable)
-    """
-    print(f"[AWP] GNOME screen blanking configuration not implemented. Would set to: {timeout_seconds}s")

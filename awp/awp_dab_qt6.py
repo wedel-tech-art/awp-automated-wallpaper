@@ -7,8 +7,6 @@ Direct conversion from PyQt5 to PyQt6.
 Changes mainly involve enum naming conventions and QApplication initialization.
 """
 import os
-os.environ['NO_AT_BRIDGE'] = '1'
-
 import sys
 import shutil
 
@@ -242,7 +240,7 @@ class WorkspaceTab(QWidget):
                 'desktop_theme': False, 'wm_theme': True
             },
             "generic": {
-                'icon_theme': False, 'gtk_theme': True, 'cursor_theme': False,
+                'icon_theme': True, 'gtk_theme': True, 'cursor_theme': True,
                 'desktop_theme': False, 'wm_theme': False
             }
         }
@@ -648,7 +646,7 @@ class AWPDashboard(QWidget):
                 ("1 hour", "3600")
             ]
         )
-        self.blanking_combo.setToolTip("Time before screen blanks/sleeps (XFCE/X11 only)")
+        self.blanking_combo.setToolTip("Time before screen blanks/sleeps (X11)")
         self.blanking_combo.currentTextChanged.connect(self.on_blanking_changed)
         blanking_row.addWidget(self.blanking_combo)
 
@@ -899,7 +897,6 @@ class AWPDashboard(QWidget):
 
 if __name__ == "__main__":
     """Main application entry point - Qt6 style."""
-    # Qt6: Can use empty list or sys.argv, but empty list is common
     app = QApplication([])
     window = AWPDashboard()
     window.show()

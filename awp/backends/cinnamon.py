@@ -78,6 +78,3 @@ def cinnamon_set_themes(ws_num: int, config):
     
     print(f"Applied Cinnamon themes for workspace {ws_num + 1}")
 
-def cinnamon_configure_screen_blanking(timeout_seconds: int):
-    """Cinnamon screen blanking not implemented."""
-    print(f"[AWP] Cinnamon screen blanking configuration not implemented.")
