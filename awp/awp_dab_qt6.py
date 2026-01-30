@@ -12,7 +12,7 @@ import shutil
 
 # QT6 IMPORTS
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
     QPushButton, QFileDialog, QComboBox, QMessageBox, QTabWidget, QCheckBox
 )
 from PyQt6.QtCore import Qt, QStandardPaths
@@ -21,9 +21,9 @@ from PIL import Image
 
 # CORE IMPORTS
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from core.constants import AWP_DIR, ICON_DIR
+from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR
 from core.config import AWPConfig
-from core.utils import get_icon_color, get_available_themes
+from core.utils import get_icon_color, get_available_themes, bake_awp_theme
 
 BASE_FOLDER = QStandardPaths.writableLocation(
     QStandardPaths.StandardLocation.HomeLocation
@@ -194,7 +194,6 @@ class WorkspaceTab(QWidget):
             ("Window Theme", "wm_theme", "wm_themes", "Window borders and controls")
         ]
         
-        available_themes = get_available_themes()
         for label, key, theme_type, tooltip in theme_settings:
             row = QHBoxLayout()
             row.setSpacing(5)
@@ -202,10 +201,10 @@ class WorkspaceTab(QWidget):
             lbl.setFixedWidth(120)
             lbl.setToolTip(tooltip)
             row.addWidget(lbl)
+            
             combo = create_theme_like_combo([("(Not set)", "")])
             combo.setToolTip(f"Select {label.lower()} for this workspace")
-            for theme in available_themes.get(theme_type, []):
-                combo.addItem(theme)
+
             row.addWidget(combo)
             row.addStretch(1)
             self.theme_controls[key] = combo
@@ -491,6 +490,7 @@ class AWPDashboard(QWidget):
     def __init__(self):
         """Initialize dashboard and load existing configuration."""
         super().__init__()
+        self.setStyleSheet("QWidget { background-color: #2e2e2e; } QWidget:enabled { color: white; }")
         self.setWindowTitle("AWP Dashboard - Configuration Editor (Qt6)")
         self.resize(500, 670)
 
@@ -502,22 +502,21 @@ class AWPDashboard(QWidget):
         self.load_config()
 
     def setup_ui(self):
-        """Initialize and arrange all user interface components."""
+        """Initialize and arrange all user interface components with visual harmony."""
         layout = QVBoxLayout()
         
-        # Header
+        # Header - Professional centered title
         header = QLabel("<h2>AWP Dashboard - Configuration Editor (Qt6)</h2>")
-        header.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Qt6 enum
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter) # Qt6 specific flag
         layout.addWidget(header)
 
-        # Tab widget
+        # Main Tab Widget navigation
         self.tab_widget = QTabWidget()
                 
-        # General tab first
-        general_tab = self.create_general_tab()
-        self.tab_widget.addTab(general_tab, "General Settings")
+        # Primary settings tab
+        self.tab_widget.addTab(self.create_general_tab(), "General Settings")
 
-        # Workspace tabs
+        # Dynamic Workspace tabs generated from config count
         num_workspaces = self.config.workspaces_count
         for i in range(1, num_workspaces + 1):
             tab = WorkspaceTab(i, self)
@@ -525,39 +524,52 @@ class AWPDashboard(QWidget):
             self.tab_widget.addTab(tab, f"Workspace {i}")
 
         layout.addWidget(self.tab_widget)
-
-        # Action buttons
+        
+        # All tabs exist now, so we can safely populate their dropdowns
+        self.refresh_theme_lists()
+        
+        # --- Action Buttons: Squeezed for visual harmony (4 buttons in the space of 3) ---
         button_layout = QHBoxLayout()
         button_layout.addStretch(0)
         
+        # Finalized dimensions for a phi ratio experience
+        BTN_W = 118
+        BTN_H = 32
+        GAP = 6
+        
+        # 1. Backup Button - Preserves user data
         self.backup_btn = QPushButton("Backup Config")
-        self.backup_btn.setFixedHeight(30)
-        self.backup_btn.setFixedWidth(150)
+        self.backup_btn.setFixedSize(BTN_W, BTN_H)
         self.backup_btn.setToolTip("Create backup of current configuration (Ctrl+B)")
         self.backup_btn.clicked.connect(self.backup_config)
         button_layout.addWidget(self.backup_btn)
-        
-        button_layout.addSpacing(20)
+        button_layout.addSpacing(GAP)
 
+        # 2. Save Button - Commits settings to .ini
         self.save_btn = QPushButton("Save Changes")
-        self.save_btn.setFixedHeight(30)
-        self.save_btn.setFixedWidth(150)
-        self.save_btn.setToolTip("Save all configuration changes (Ctrl+S)")
+        self.save_btn.setFixedSize(BTN_W, BTN_H)
+        self.save_btn.setToolTip("Save configuration and colors to .ini (Ctrl+S)")
         self.save_btn.clicked.connect(self.save_config)
         button_layout.addWidget(self.save_btn)
-        
-        button_layout.addSpacing(20)
+        button_layout.addSpacing(GAP)
 
+        # 3. Sync Button - Triggers the Genetic Theme Engine
+        self.sync_btn = QPushButton("Sync Themes")
+        self.sync_btn.setFixedSize(BTN_W, BTN_H)
+        self.sync_btn.setToolTip("Bake missing Genetic Themes with folder.png thumbnails")
+        self.sync_btn.clicked.connect(self.sync_genetic_themes)
+        button_layout.addWidget(self.sync_btn)
+        button_layout.addSpacing(GAP)
+
+        # 4. Exit Button
         self.exit_btn = QPushButton("Quit")
-        self.exit_btn.setFixedHeight(30)
-        self.exit_btn.setFixedWidth(150)
+        self.exit_btn.setFixedSize(BTN_W, BTN_H)
         self.exit_btn.setToolTip("Exit application (Ctrl+Q)")
         self.exit_btn.clicked.connect(self.close)
         button_layout.addWidget(self.exit_btn)
 
         button_layout.addStretch()
         layout.addLayout(button_layout)
-
         self.setLayout(layout)
 
     def setup_keybindings(self):
@@ -593,7 +605,6 @@ class AWPDashboard(QWidget):
                     combo.addItem(item[0], item[1])
                 else:
                     combo.addItem(item, item)
-
         return combo
 
     def create_general_tab(self):
@@ -762,6 +773,99 @@ class AWPDashboard(QWidget):
         # Workspace settings
         for i, tab in enumerate(self.workspace_tabs):
             tab.load_from_config(i)
+
+    def sync_genetic_themes(self):
+        """
+        Genetic Synchronization: Physically creates ~/.themes folders with 
+        thumbnails based on the standardized 'icon' key in the .ini.
+        """
+        from core.utils import bake_awp_theme
+        baked_count = 0
+        
+        # Iterate through tabs, skipping General Settings (index 0)
+        # In Qt6, Workspace 1 corresponds to Tab Index 1
+        for i in range(1, self.tab_widget.count()):
+            section = f'ws{i}' 
+            
+            # 1. Retrieve the hex signature from the configuration
+            hex_color = self.config.get(section, 'icon_color')
+            
+            # 2. Retrieve the icon path (standardized as 'icon' in the .ini)
+            icon = self.config.get(section, 'icon') 
+            
+            if not hex_color:
+                continue
+                
+            theme_name = f"awp-{hex_color.lstrip('#').lower()}"
+            theme_path = os.path.expanduser(f"~/.themes/{theme_name}")
+            
+            # 3. Only bake if the folder is physically missing
+            if not os.path.exists(theme_path):
+                print(f"Syncing: {theme_name} is missing. Initiating bake...")
+                # Pass the hex color for DNA swap and icon for folder.png thumbnail
+                bake_awp_theme(hex_color, icon)
+                baked_count += 1
+        
+        # Trigger the refresh engine!
+        self.refresh_theme_lists()
+        
+        if baked_count > 0:
+            QMessageBox.information(self, "Sync Complete", f"Successfully baked {baked_count} new themes.")
+        else:
+            QMessageBox.information(self, "Sync Complete", "All themes are already present.")
+
+    def refresh_theme_lists(self):
+        """Universal Refresh: Updates data but respects the UI's visual state."""
+        from core.utils import get_available_themes
+        all_themes_dict = get_available_themes()
+        
+        mapping = {
+            "icon_theme": "icon_themes",
+            "gtk_theme": "gtk_themes",
+            "cursor_theme": "cursor_themes",
+            "desktop_theme": "desktop_themes",
+            "wm_theme": "wm_themes"
+        }
+
+        for i, tab in enumerate(self.workspace_tabs):
+            section = f'ws{i+1}'
+            for key, combo in tab.theme_controls.items():
+                saved_val = self.config.get(section, key)
+                theme_type = mapping.get(key)
+                theme_list = all_themes_dict.get(theme_type, [])
+
+                combo.blockSignals(True)
+                combo.clear()
+                
+                # 1. Always start with (Not set) as the first option
+                combo.addItem("(Not set)", "")
+                
+                # 2. Fill with themes and apply styles
+                for theme in theme_list:
+                    combo.addItem(theme)
+                    
+                # 3. SET THE SELECTION (Universal/Portable Logic)
+                if saved_val and saved_val.strip() != "":
+                    idx = combo.findText(saved_val)
+                    if idx >= 0:
+                        # Found it in the system!
+                        combo.setCurrentIndex(idx)
+                    else:
+                        # NOT found in system (e.g., Cinnamon theme while on XFCE)
+                        # We add it manually so the UI preserves your data
+                        combo.addItem(saved_val)
+                        new_idx = combo.findText(saved_val)
+                        combo.setCurrentIndex(new_idx)
+                else:
+                    # FALLBACK: If INI is truly empty, try to show 'Adwaita' 
+                    # so the UI looks complete even on XFCE.
+                    fallback_idx = combo.findText("Adwaita")
+                    if fallback_idx >= 0:
+                        combo.setCurrentIndex(fallback_idx)
+                    else:
+                        combo.setCurrentIndex(0) # Back to (Not set)
+                
+                combo.blockSignals(False)
 
     def save_config(self):
         """Save using AWPConfig API."""

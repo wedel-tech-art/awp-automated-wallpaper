@@ -30,7 +30,7 @@ try:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     
     from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR
-    from core.utils import get_icon_color, get_available_themes
+    from core.utils import get_icon_color, get_available_themes, bake_awp_theme
     
     # Convert Path objects to strings for backward compatibility
     AWP_DIR = str(AWP_DIR)
@@ -697,6 +697,15 @@ def main():
             config[section]['color_variable'] = f"{section}_color"
             print_success(f"Icon color: {color}")
         
+            # --- NEW: TRIGGER GENETIC THEME BAKE ---
+            print(f"Baking Genetic Theme for Workspace {i}...")
+            try:
+                # This creates ~/.themes/awp-<color> and the folder.png thumbnail
+                bake_awp_theme(color, dest_icon)
+                print_success(f"Theme baked successfully")
+            except Exception as e:
+                print_warning(f"Could not bake theme: {e}")
+        
         # Timing configuration
         timing = ask(
             "Wallpaper rotation interval (e.g., 30s, 5m, 1h): ",
@@ -742,13 +751,13 @@ def main():
     # -------------------------------------------------------------------------
     print_header("Autostart Configuration")
     
-    setup_autostart = ask(
+    do_autostart = ask(
         "Start AWP automatically at login? [Y/n]: ",
         lambda v: v.lower() in ['y', 'n', ''],
         default='y'
     )
     
-    if setup_autostart.lower() == 'y':
+    if do_autostart.lower() == 'y':
         setup_autostart()
     else:
         print_success("Autostart skipped - start manually with ~/awp/awp_start.sh")

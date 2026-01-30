@@ -8,6 +8,29 @@ import os
 import mimetypes
 from PIL import Image
 
+CLR_CYAN = "\033[96m"
+CLR_GREEN = "\033[92m"
+CLR_RED = "\033[91m"
+CLR_YELLOW = "\033[93m"
+CLR_RESET = "\033[0m"
+
+def x11_blanking(timeout_seconds: int):
+    """
+    Universal X11 screen blanking control.
+    Communicates directly with the X server via xset.
+    """
+    import subprocess
+    try:
+        if timeout_seconds == 0:
+            subprocess.run(["xset", "s", "off", "-dpms"], check=False)
+            print(f"{CLR_CYAN}[AWP]{CLR_RESET} Screen blanking: {CLR_RED}DISABLED{CLR_RESET}")
+        else:
+            # s sets the timer, +dpms enables power management
+            subprocess.run(["xset", "s", str(timeout_seconds)], check=False)
+            subprocess.run(["xset", "+dpms", "dpms", str(timeout_seconds), str(timeout_seconds), str(timeout_seconds)], check=False)
+            print(f"{CLR_CYAN}[AWP]{CLR_RESET} Screen blanking: {CLR_GREEN}{timeout_seconds}s{CLR_RESET}")
+    except Exception as e:
+        print(f"{CLR_RED}[AWP-UTILS] Blanking Error: {e}{CLR_RESET}")
 
 def get_icon_color(image_path: str) -> str:
     """
@@ -31,6 +54,64 @@ def get_icon_color(image_path: str) -> str:
     except Exception:
         return ""
 
+import os
+import shutil
+import subprocess
+
+def bake_awp_theme(hex_color: str, icon: str = None):
+    """
+    Genetic Theme Engine: Creates 'awp-[hex]' and copies the 
+    workspace icon as 'folder.png' for Thunar.
+    """
+    if not hex_color or hex_color == "":
+        return None
+
+    clean_hex = hex_color.lstrip('#').lower()
+    theme_name = f"awp-{clean_hex}"
+    
+    home = os.path.expanduser("~")
+    template_path = os.path.join(home, "awp/template")
+    target_path = os.path.join(home, ".themes", theme_name)
+
+    # Only bake if it doesn't already exist (The 'End of Story' rule)
+    if not os.path.exists(target_path):
+        try:
+            # 1. Clone the template
+            shutil.copytree(template_path, target_path)
+
+            # 2. Thumbnail Logic: Copy icon to folder.png for Thunar
+            if icon and os.path.exists(icon):
+                shutil.copy2(icon, os.path.join(target_path, "folder.png"))
+
+            # 3. DNA Swap Logic (sed)
+            r = int(clean_hex[0:2], 16)
+            g = int(clean_hex[2:4], 16)
+            b = int(clean_hex[4:6], 16)
+            faded_hex = f"{int(r*0.7):02x}{int(g*0.7):02x}{int(b*0.7):02x}"
+
+            replacements = [
+                ("70737a", clean_hex), 
+                ("52545a", faded_hex),
+                ("Mint-Y-Dark-Grey", theme_name)
+            ]
+
+            for old, new in replacements:
+                subprocess.run([
+                    "find", target_path, "-type", "f", 
+                    "(", "-name", "*.css", "-o", "-name", "*.svg", "-o", "-name", "*.rc", "-o", "-name", "index.theme", ")",
+                    "-exec", "sed", "-i", f"s/{old}/{new}/gI", "{}", "+"
+                ], check=True)
+
+            # 4. Cleanup
+            gres = os.path.join(target_path, "gtk-3.0/gtk.gresource")
+            if os.path.exists(gres):
+                os.remove(gres)
+
+        except Exception as e:
+            print(f"Theme Bake Error: {e}")
+            return None
+    
+    return theme_name
 
 def get_available_themes() -> dict:
     """
