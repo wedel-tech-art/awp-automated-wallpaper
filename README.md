@@ -155,6 +155,7 @@ awp-automated-wallpaper/
 │   ├── conky/                # Conky configs and Lua scripts
 │   ├── core/                 # Central logic (config.py, constants.py, utils.py)
 │   ├── logos/                # Branding assets (ws1, ws2, ws3)
+│   ├── template/             # Master Theme DNA (Mint-Y-Dark-Grey base) 🧬
 │   ├── awp_dab_qt6.py        # New Professional Dashboard (Qt6) 🚀
 │   ├── awp_daemon.py         # The background service
 │   ├── awp_nav.py            # Navigation (Next/Prev/Del)
