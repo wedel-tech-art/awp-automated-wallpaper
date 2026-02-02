@@ -1,128 +1,98 @@
 #!/usr/bin/env python3
 """
-AWP Backends Package - COMPLETE VERSION
-Exports all desktop environment backend functions.
+AWP Backends Package
+Lean Mode = use feh instead of native desktop wallpaper setter.
 """
 import sys
+import importlib
+
+# ============================================================================
+# BACKEND CONFIGURATION
+# ============================================================================
+BACKEND_NAMES = [
+    "xfce",         # XFCE: xfdesktop (native) or feh (lean)
+    "generic",      # Generic: usually feh (lean)
+    "openbox_xfce", # Openbox: feh only (always lean)
+    "qtile_xfce",   # Qtile: feh only (always lean)
+    "cinnamon",     # Cinnamon: gsettings (native only)
+    "gnome",        # GNOME: gsettings (native only)
+    "mate",         # MATE: gsettings/dconf (native only)
+]
 
 BACKENDS = {}
 
-try:
-    from .xfce import (
-        xfce_force_single_workspace_off,
-        xfce_set_wallpaper,
-        xfce_set_wallpaper_native,
-        xfce_lean_mode,
-        xfce_set_icon,
-        xfce_set_themes
-    )
-    BACKENDS["xfce"] = {
-        "wallpaper": xfce_set_wallpaper,
-        "wallpaper_native": xfce_set_wallpaper_native,
-        "lean_mode": xfce_lean_mode,
-        "icon": xfce_set_icon,
-        "themes": xfce_set_themes,
-        "workspace_off": xfce_force_single_workspace_off,
-    }
-    print(f"[AWP Backends] XFCE backend loaded (Lean Mode enabled)")
-except ImportError as e:
-    print(f"[AWP Backends] ERROR: Could not load XFCE backend: {e}")
+print("[AWP Backends] Loading...")
+
+for name in BACKEND_NAMES:
+    try:
+        module = importlib.import_module(f".{name}", "backends")
+        prefix = name
+        
+        # REQUIRED: wallpaper (could be feh or native depending on backend)
+        funcs = {
+            "wallpaper": getattr(module, f"{prefix}_set_wallpaper"),
+            "icon": getattr(module, f"{prefix}_set_icon"),
+            "themes": getattr(module, f"{prefix}_set_themes"),
+            "lean_mode": getattr(module, f"{prefix}_lean_mode"),
+            "workspace_off": getattr(module, f"{prefix}_force_single_workspace_off"),
+        }
+        
+        # OPTIONAL: native wallpaper method (some backends have both)
+        # Note: Cinnamon/GNOME/MATE will have this as an alias
+        native_func = getattr(module, f"{prefix}_set_wallpaper_native", None)
+        if native_func:
+            funcs["wallpaper_native"] = native_func
+            native_status = " (+native)"
+        else:
+            native_status = " (feh-only)"
+        
+        # Store backend
+        BACKENDS[name] = funcs
+        
+        # Status message with more detail
+        if name == "xfce":
+            print(f"  ✓ {name}{native_status} - xfdesktop or feh (dual-mode)")
+        elif name in ["generic", "openbox_xfce", "qtile_xfce"]:
+            print(f"  ✓ {name}{native_status} - feh only")
+        elif name in ["cinnamon", "gnome", "mate"]:
+            print(f"  ✓ {name}{native_status} - native only")
+        else:
+            print(f"  ✓ {name}{native_status}")
+        
+    except AttributeError as e:
+        print(f"  ✗ {name} (missing function: {e})")
+        BACKENDS[name] = None
+    except ModuleNotFoundError:
+        print(f"  ✗ {name} (file not found)")
+        BACKENDS[name] = None
+    except Exception as e:
+        print(f"  ✗ {name} (error: {e})")
+        BACKENDS[name] = None
+
+# Remove failed backends
+BACKENDS = {k: v for k, v in BACKENDS.items() if v is not None}
+
+# ============================================================================
+# STATUS & API
+# ============================================================================
+available = list(BACKENDS.keys())
+if not available:
+    print("[AWP Backends] ERROR: No backends loaded!")
     sys.exit(1)
 
-# GNOME
-try:
-    from .gnome import (
-        gnome_force_single_workspace_off,
-        gnome_set_wallpaper,
-        gnome_set_icon,
-        gnome_set_themes,
-    )
-    BACKENDS["gnome"] = {
-        "wallpaper": gnome_set_wallpaper,
-        "icon": gnome_set_icon,
-        "themes": gnome_set_themes,
-        "workspace_off": gnome_force_single_workspace_off,
-    }
-    print(f"[AWP Backends] GNOME backend loaded")
-except ImportError as e:
-    print(f"[AWP Backends] WARNING: GNOME backend not available: {e}")
+# Categorize backends
+native_backends = [name for name, funcs in BACKENDS.items() 
+                   if "wallpaper_native" in funcs]
+feh_only_backends = [name for name in available 
+                     if name not in native_backends]
 
-# Cinnamon
-try:
-    from .cinnamon import (
-        cinnamon_force_single_workspace_off,
-        cinnamon_set_wallpaper,
-        cinnamon_set_icon,
-        cinnamon_set_themes,
-    )
-    BACKENDS["cinnamon"] = {
-        "wallpaper": cinnamon_set_wallpaper,
-        "icon": cinnamon_set_icon,
-        "themes": cinnamon_set_themes,
-        "workspace_off": cinnamon_force_single_workspace_off,
-    }
-    print(f"[AWP Backends] Cinnamon backend loaded")
-except ImportError as e:
-    print(f"[AWP Backends] WARNING: Cinnamon backend not available: {e}")
+print(f"\n[AWP Backends] Available: {', '.join(available)}")
+if native_backends:
+    print(f"[AWP Backends] Native wallpaper support: {', '.join(native_backends)}")
+if feh_only_backends:
+    print(f"[AWP Backends] Feh-only (always lean): {', '.join(feh_only_backends)}")
 
-# MATE
-try:
-    from .mate import (
-        mate_force_single_workspace_off,
-        mate_set_wallpaper,
-        mate_set_icon,
-        mate_set_themes,
-    )
-    BACKENDS["mate"] = {
-        "wallpaper": mate_set_wallpaper,
-        "icon": mate_set_icon,
-        "themes": mate_set_themes,
-        "workspace_off": mate_force_single_workspace_off,
-    }
-    print(f"[AWP Backends] MATE backend loaded")
-except ImportError as e:
-    print(f"[AWP Backends] WARNING: MATE backend not available: {e}")
-
-# Generic
-try:
-    from .generic import (
-        generic_force_single_workspace_off,
-        generic_set_wallpaper,
-        generic_set_icon,
-        generic_set_themes,
-    )
-    BACKENDS["generic"] = {
-        "wallpaper": generic_set_wallpaper,
-        "icon": generic_set_icon,
-        "themes": generic_set_themes,
-        "workspace_off": generic_force_single_workspace_off,
-    }
-    print(f"[AWP Backends] Generic backend loaded")
-except ImportError as e:
-    print(f"[AWP Backends] WARNING: Generic backend not available: {e}")
-
-# Export the main dictionary
+# Export
 backend_funcs = BACKENDS
-
-def get_backend(de_name):
-    """
-    Get backend functions for a specific desktop environment.
-    
-    Args:
-        de_name (str): Desktop environment name ('xfce', 'gnome', etc.)
-    
-    Returns:
-        dict: Backend functions dictionary or None if not found
-    """
-    return BACKENDS.get(de_name)
-
-def list_available_backends():
-    """Return list of available backend names."""
-    return list(BACKENDS.keys())
-
-def is_backend_available(de_name):
-    """Check if a specific backend is available."""
-    return de_name in BACKENDS
-
-# Print summary
-print(f"[AWP Backends] Available backends: {list(BACKENDS.keys())}")
+def get_backend(name): return BACKENDS.get(name)
+def list_backends(): return list(BACKENDS.keys())

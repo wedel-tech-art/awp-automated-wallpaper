@@ -47,6 +47,19 @@ A professional-grade Linux environment manager that goes beyond wallpaper rotati
     * **Independent Power Control**: Integrated direct management of screen timeouts and DPMS via X11 (`xset`).
     * **Lean System Design**: Specifically designed to provide display control for users who choose to remove `xfce4-power-manager` or `light-locker`.
 
+### 🚀 Supported Backends
+AWP now uses a dynamic backend factory, supporting both native desktop setters and a "Lean Mode" via `feh`.
+
+| Backend | Mode | Desktop Environment |
+| :--- | :--- | :--- |
+| **XFCE** | Native + Lean | xfdesktop / feh |
+| **Cinnamon** | Native | gsettings |
+| **GNOME** | Native | gsettings |
+| **MATE** | Native | dconf |
+| **Openbox/XFCE**| Lean | feh (Hybrid setup) |
+| **Qtile/XFCE** | Lean | feh (Hybrid setup) |
+| **Generic** | Lean | feh (Fallback) |
+
 ## 🚀 Quick Start
 
 ### 📦 Prerequisites
@@ -151,7 +164,7 @@ See `awp_config.ini.example` for a complete configuration reference.
 ```
 awp-automated-wallpaper/
 ├── awp/                      # Main Application Directory
-│   ├── backends/             # Desktop-specific scripts (XFCE, GNOME, etc.)
+│   ├── backends/             # Desktop-specific scripts (XFCE, Cinnamon, Gnome, Openbox, etc.)
 │   ├── conky/                # Conky configs and Lua scripts
 │   ├── core/                 # Central logic (config.py, constants.py, utils.py)
 │   ├── logos/                # Branding assets (ws1, ws2, ws3)
