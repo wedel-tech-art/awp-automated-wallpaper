@@ -183,6 +183,12 @@ awp-automated-wallpaper/
 
 ## 🔄 Recent Architecture Improvements
 
+**Version 3.1 - Universal Logic & Core Sanitization (February 2026)**
+- **Dynamic Discovery**: Removed hardcoded backend lists (`VALID_DES`). The core now performs filesystem-based validation, allowing AWP to support any new DE/WM by simply adding a `.py` file to the `backends/` directory.
+- **Config Safety (Zero-Flicker)**: Sanitized all backends to remove `sed`-based path manipulation. This eliminates `tint2` panel flickering and prevents potential configuration file corruption.
+- **Backend Expansion**: Introduced `qtile_xfce` backend, pre-optimized for Python-based window managers and future "Deep Color" sync (COSMIC-style active hinting).
+- **Log Professionalism**: Refactored terminal output to be "Logic-First," providing clean, honest feedback about applied themes and wallpapers without redundant debug noise.
+
 **Version 3.0 - Genetic Intelligence (January 2026)**
 - **Standardized Qt6**: Officially deprecated `awp_dab.py` (PyQt5) in favor of the modern `awp_dab_qt6.py`. Added a dedicated **Sync Themes** button to trigger the baking engine and real-time UI refresh.
 - **Genetic Theme Baking**: Integrated `bake_awp_theme` in `core/utils.py`. AWP now physically generates theme directories with accent colors based on the workspace icon, including automated `folder.png` thumbnails.

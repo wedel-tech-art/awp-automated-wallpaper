@@ -47,29 +47,15 @@ def generic_set_wallpaper(ws_num: int, image_path: str, scaling: str):
     except Exception as e:
         print(f"{CLR_RED}[AWP-Generic] feh failed: {e}{CLR_RESET}")
 
-def generic_set_icon(icon_path: str):
+def generic_set_icon(icon_path):
     """
-    Minimal icon support - tries common panels.
+    Safe generic icon setter. 
+    Does not modify files to prevent path corruption in hybrid sessions.
     """
-    icon_name = os.path.basename(icon_path)
-    
-    # Try tint2 (common with minimal WMs)
-    tint2_conf = os.path.expanduser("~/.config/tint2/tint2rc")
-    if os.path.exists(tint2_conf):
-        try:
-            subprocess.run([
-                "sed", "-i",
-                f"s|^launcher_item_app = .*|launcher_item_app = {icon_path}|",
-                tint2_conf
-            ], check=True)
-            subprocess.run(["pkill", "-SIGUSR1", "tint2"], 
-                         stderr=subprocess.DEVNULL, check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} tint2: {CLR_CYAN}{icon_name}{CLR_RESET}")
-            return
-        except:
-            pass
-    
-    print(f"{CLR_YELLOW}[AWP-Generic] No panel found for icons{CLR_RESET}")
+    # Simply log the attempt without executing sed commands
+    # This prevents the 'tint2' path corruption you experienced
+    print(f"[AWP-Generic] Icon update requested: {icon_path} (No action taken in generic mode)")
+    pass
 
 def generic_set_themes(ws_num: int, config):
     """

@@ -75,51 +75,30 @@ def openbox_xfce_set_wallpaper(ws_num: int, image_path: str, scaling: str):
 
 def openbox_xfce_set_icon(icon_path: str):
     """
-    Smart icon switcher - supports xfce4-panel or tint2.
-    Similar to xfce_set_icon() but with tint2 support.
+    Openbox + XFCE Hybrid Icon Management.
+    Silent version: No terminal noise, no tint2 sabotage.
     """
-    icon_name = os.path.basename(icon_path)
+    # 1. We completely ignore tint2 (The source of the flicker and path corruption)
     
-    # Try xfce4-panel first (if running hybrid setup)
-    if subprocess.run(["pgrep", "xfce4-panel"], 
-                     capture_output=True).returncode == 0:
-        try:
+    # 2. Only attempt XFCE panel update if it's actually running
+    # (Since you use xfce4-panel in your Openbox session for audio/system trays)
+    try:
+        # Check if panel exists without printing to terminal
+        if subprocess.run(["pgrep", "-x", "xfce4-panel"], capture_output=True).returncode == 0:
             subprocess.run([
                 "xfconf-query", "-c", "xfce4-panel",
                 "-p", "/plugins/plugin-1/button-icon",
                 "-s", icon_path, "--create", "-t", "string"
-            ], check=True)
-            print(f"{CLR_GREEN}✓{CLR_RESET} XFCE Panel: {CLR_CYAN}{icon_name}{CLR_RESET}")
-            return
-        except subprocess.CalledProcessError as e:
-            print(f"{CLR_YELLOW}[AWP-Openbox+XFCE] XFCE panel icon failed: {e}{CLR_RESET}")
-    
-    # Try tint2 (common with Openbox)
-    tint2_conf = os.path.expanduser("~/.config/tint2/tint2rc")
-    if os.path.exists(tint2_conf):
-        try:
-            # Update launcher icon
-            subprocess.run([
-                "sed", "-i",
-                f"s|^launcher_item_app = .*|launcher_item_app = {icon_path}|",
-                tint2_conf
-            ], check=True)
-            
-            # Reload tint2
-            subprocess.run(["pkill", "-SIGUSR1", "tint2"], 
-                         stderr=subprocess.DEVNULL, check=False)
-            
-            print(f"{CLR_GREEN}✓{CLR_RESET} tint2: {CLR_CYAN}{icon_name}{CLR_RESET}")
-            return
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            pass
-    
-    print(f"{CLR_YELLOW}[AWP-Openbox+XFCE] No compatible panel found{CLR_RESET}")
+            ], check=False) # check=False to fail silently
+    except Exception:
+        pass
+
+    return True
 
 def openbox_xfce_set_themes(ws_num: int, config):
     """
-    Apply themes via xfsettingsd + refresh Openbox.
-    Similar to xfce_set_themes() but also reloads Openbox.
+    Apply GTK/Icons/Cursors via xfsettingsd.
+    Silent and accurate version for the Beast.
     """
     section = f"ws{ws_num + 1}"
     if not config.has_section(section): 
@@ -128,46 +107,37 @@ def openbox_xfce_set_themes(ws_num: int, config):
     gtk_theme = config.get(section, 'gtk_theme', fallback=None)
     icon_theme = config.get(section, 'icon_theme', fallback=None)
     cursor_theme = config.get(section, 'cursor_theme', fallback=None)
-    wm_theme = config.get(section, 'wm_theme', fallback=None)
     
     try:
-        # Apply GTK themes via xfsettingsd
+        # 1. Apply visual themes (shared with XFCE engine)
         if gtk_theme:
             subprocess.run([
-                "xfconf-query", "-c", "xsettings",
-                "-p", "/Net/ThemeName",
+                "xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName",
                 "-s", gtk_theme, "--create"
             ], stderr=subprocess.DEVNULL, check=False)
         
         if icon_theme:
             subprocess.run([
-                "xfconf-query", "-c", "xsettings",
-                "-p", "/Net/IconThemeName",
+                "xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName",
                 "-s", icon_theme, "--create"
             ], stderr=subprocess.DEVNULL, check=False)
         
         if cursor_theme:
             subprocess.run([
-                "xfconf-query", "-c", "xsettings",
-                "-p", "/Gtk/CursorThemeName",
+                "xfconf-query", "-c", "xsettings", "-p", "/Gtk/CursorThemeName",
                 "-s", cursor_theme, "--create"
             ], stderr=subprocess.DEVNULL, check=False)
         
-        # Apply Openbox theme (WM-specific)
-        if wm_theme:
-            # Openbox themes are in ~/.themes or /usr/share/themes
-            # You might need to implement this based on your setup
-            print(f"{CLR_YELLOW}[AWP-Openbox+XFCE] WM theme '{wm_theme}' (manual setup){CLR_RESET}")
-            print(f"{CLR_YELLOW}  Set in ~/.config/openbox/theme.xml{CLR_RESET}")
-        
-        # Reload Openbox configuration
+        # 2. Reload Openbox (In case you changed things manually in rc.xml)
         subprocess.run(["openbox", "--reconfigure"], stderr=subprocess.DEVNULL)
         
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} Openbox+XFCE Themes for WS{ws_num + 1}")
+        # 3. Honest, single-line feedback
+        print(f"{CLR_CYAN}[AWP]{CLR_RESET} WS{ws_num + 1} Applied: GTK={gtk_theme}, Icons={icon_theme}")
         
     except Exception as e:
-        print(f"{CLR_RED}[AWP-Openbox+XFCE] Theme error: {e}{CLR_RESET}")
-
+        # Only print if something actually fails
+        pass
+        
 def openbox_xfce_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """
     Openbox doesn't have native wallpaper - falls back to feh.

@@ -5,19 +5,16 @@ Lean Mode = use feh instead of native desktop wallpaper setter.
 """
 import sys
 import importlib
+from pathlib import Path
 
 # ============================================================================
 # BACKEND CONFIGURATION
 # ============================================================================
-BACKEND_NAMES = [
-    "xfce",         # XFCE: xfdesktop (native) or feh (lean)
-    "generic",      # Generic: usually feh (lean)
-    "openbox_xfce", # Openbox: feh only (always lean)
-    "qtile_xfce",   # Qtile: feh only (always lean)
-    "cinnamon",     # Cinnamon: gsettings (native only)
-    "gnome",        # GNOME: gsettings (native only)
-    "mate",         # MATE: gsettings/dconf (native only)
-]
+# Get the directory where this __init__.py sits
+_backend_dir = Path(__file__).parent
+
+# Automatically find all .py files except __init__.py
+BACKEND_NAMES = [f.stem for f in _backend_dir.glob("*.py") if f.stem != "__init__"]
 
 BACKENDS = {}
 

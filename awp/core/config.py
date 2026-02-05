@@ -7,7 +7,7 @@ import configparser
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
-from core.constants import CONFIG_PATH, VALID_DES
+from core.constants import CONFIG_PATH, AWP_DIR
 
 class ConfigError(Exception):
     """Raised when configuration is invalid or missing required sections."""
@@ -84,15 +84,29 @@ class AWPConfig:
     
     @property
     def de(self) -> str:
-        """Detected desktop environment."""
+        """The .ini is the master. Validation is done by checking the filesystem."""
         de = self._global_cache.get('de')
         if de is None:
-            valid_des = ["xfce", "gnome", "cinnamon", "mate", "generic"]
-            de = self.get('general', 'os_detected', 'unknown')
-            if de not in VALID_DES:
-                # Fallback to environment detection
+            # 1. Trust the .ini file first
+            de = self.get('general', 'os_detected', 'unknown').lower()
+            
+            # 2. Check the filesystem: Does backends/{de}.py exist?
+            # We use AWP_DIR from constants to build the path
+            backend_file = Path(AWP_DIR) / "backends" / f"{de}.py"
+            
+            if not backend_file.exists():
+                # 3. If .ini is wrong/unknown, fallback to env detection
                 env_de = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
-                de = next((de_type for de_type in VALID_DES if de_type in env_de), "generic")
+                
+                # Dynamic check: Does any .py file in backends/ match our environment?
+                # We'll default to generic if we can't find a file match
+                de = "generic" 
+                for backend_file in (Path(AWP_DIR) / "backends").glob("*.py"):
+                    name = backend_file.stem
+                    if name != "__init__" and name in env_de:
+                        de = name
+                        break
+                        
             self._global_cache['de'] = de
         return de
 
