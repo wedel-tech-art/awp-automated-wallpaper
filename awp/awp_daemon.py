@@ -114,7 +114,7 @@ def update_conky_state(workspace_name: str, wallpaper_path: str, config: AWPConf
     with open(CONKY_STATE_PATH, 'w') as f:
         for key, value in state_dict.items():
             f.write(f"{key}={value}\n")
-
+            
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
@@ -130,11 +130,27 @@ def parse_timing(timing_str: str) -> int:
         return None
 
 def get_current_workspace() -> int:
-    """Get current workspace number using xprop."""
-    ws_num = subprocess.check_output(
-        ["xprop", "-root", "_NET_CURRENT_DESKTOP"], text=True
-    ).strip().split()[-1]
-    return int(ws_num)
+    """Get current workspace number using xprop with explicit environment."""
+    import os
+    env = os.environ.copy()
+    env["DISPLAY"] = ":0" # Force it directly
+        
+    try:
+        output = subprocess.check_output(
+            ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
+            text=True, 
+            env=env
+        ).strip()
+        
+        if not output:
+            return 0
+            
+        ws_num = output.split()[-1]
+        return int(ws_num)
+    except Exception as e:
+        # This will show up in .xsession-errors so you can track it
+        print(f"AWP Error getting workspace: {e}")
+        return 0
 
 def ensure_awp_dir():
     """Ensure AWP directory structure exists."""

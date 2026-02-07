@@ -9,11 +9,13 @@ A professional-grade Linux environment manager that goes beyond wallpaper rotati
 
 ## 🚀 Key Features
 
-* **🧬 Genetic Theme Generation (V3.0)**: 
+* **🧬 Genetic Theme Generation (V3.2)**: 
     * **Automated Asset Creation**: Analyzes workspace icons to physically "bake" custom GTK and Xfwm4 themes in `~/.themes` based on a neutral template.
     * **Visual Identity Sync**: Automatically extracts hex accent colors from icons to synchronize the visual "signature" across themes and Conky scripts.
     * **Dynamic Thumbnails**: Generates `folder.png` assets inside the themes, ensuring your file manager (Thunar/PCManFM) matches the active workspace style.
-
+    * **Swift Graphics Surgery**: Now it can generate with pre-defined genetic asset list to hue template PNGs via ImageMagick in seconds.
+    * **🔍 Real-Time Metadata (Hover-to-Hex)**: Hover over any workspace preview icon in the Dashboard to instantly see the extracted Hex color code—the 'DNA' of your theme—rendered in real-time.
+    
 * **🏗️ Modernized Qt6 Controller**:
     * **Zero-Restart Workflow**: Features a standalone **Sync & Refresh** engine that updates system themes and UI dropdowns in real-time without requiring a restart.
     * **Professional UI Styling**: Optimized dark-mode aesthetics with "faded" read-only states for locked system fields (Adwaita).
@@ -168,7 +170,7 @@ awp-automated-wallpaper/
 │   ├── conky/                # Conky configs and Lua scripts
 │   ├── core/                 # Central logic (config.py, constants.py, utils.py)
 │   ├── logos/                # Branding assets (ws1, ws2, ws3)
-│   ├── template/             # Master Theme DNA (Mint-Y-Dark-Grey base) 🧬
+│   ├── template/             # Master Theme DNA (Breeze Dark Gtk based) 🧬
 │   ├── awp_dab_qt6.py        # New Professional Dashboard (Qt6) 🚀
 │   ├── awp_daemon.py         # The background service
 │   ├── awp_nav.py            # Navigation (Next/Prev/Del)
@@ -182,6 +184,12 @@ awp-automated-wallpaper/
 ```
 
 ## 🔄 Recent Architecture Improvements
+
+**Version 3.2 - Surgical Precision & Metadata (February 2026)**
+- **Swift Graphics Engine**: Optimized `bake_awp_theme` to use a hardcoded `TARGET_ASSETS` list. This removes the need for reference folders and speeds up theme generation significantly.
+- **Hover-to-Hex Preview**: Added a "Human-Readable" feature to the Dashboard. Hovering over a workspace icon now performs a real-time first-pixel analysis to display the exact Hex color code.
+- **Fluent Backend Linkage**: Refactored the `backends/` core with an `__init__.py` factory for seamless environment detection (Mint vs. Debian).
+- **UI Gatekeeper**: Implemented dynamic UI controls that enable/disable features based on backend capabilities, plus alphabetical sorting for all dropdown menus.
 
 **Version 3.1 - Universal Logic & Core Sanitization (February 2026)**
 - **Dynamic Discovery**: Removed hardcoded backend lists (`VALID_DES`). The core now performs filesystem-based validation, allowing AWP to support any new DE/WM by simply adding a `.py` file to the `backends/` directory.

@@ -19,11 +19,12 @@ from PyQt6.QtCore import Qt, QStandardPaths
 from PyQt6.QtGui import QPixmap
 from PIL import Image
 
-# CORE IMPORTS
+# OTHER IMPORTS
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR
 from core.config import AWPConfig
 from core.utils import get_icon_color, get_available_themes, bake_awp_theme
+from backends import BACKEND_NAMES
 
 BASE_FOLDER = QStandardPaths.writableLocation(
     QStandardPaths.StandardLocation.HomeLocation
@@ -125,7 +126,7 @@ class WorkspaceTab(QWidget):
         # --- Floating Icon Preview ---
         self.icon_preview = QLabel(self)
         self.icon_preview.setFixedSize(64, 64)
-        self.icon_preview.setToolTip("Live preview of selected workspace icon")
+        self.icon_preview.setToolTip("Loading identity...")
         # Position it freely
         self.icon_preview.move(335, self.folder_edit.y() + 39)
         self.icon_preview.raise_()
@@ -217,54 +218,42 @@ class WorkspaceTab(QWidget):
 
 
     def update_theme_availability(self):
-        """Update theme dropdown availability based on current DE."""
-        de = self.parent_window.get_current_de()
+        """Update theme dropdown availability and tooltips based on current DE/WM."""
+        # 1. Get current DE from the parent window's combo
+        de = self.parent_window.get_current_de().lower()
         
-        # Define which themes are applicable for each DE
-        theme_rules = {
-            "xfce": {
-                'icon_theme': True, 'gtk_theme': True, 'cursor_theme': True,
-                'desktop_theme': False, 'wm_theme': True
-            },
-            "cinnamon": {
-                'icon_theme': True, 'gtk_theme': True, 'cursor_theme': True,
-                'desktop_theme': True, 'wm_theme': True
-            },
-            "gnome": {
-                'icon_theme': True, 'gtk_theme': True, 'cursor_theme': True,
-                'desktop_theme': False, 'wm_theme': False
-            },
-            "mate": {
-                'icon_theme': True, 'gtk_theme': True, 'cursor_theme': True,
-                'desktop_theme': False, 'wm_theme': True
-            },
-            "generic": {
-                'icon_theme': True, 'gtk_theme': True, 'cursor_theme': True,
-                'desktop_theme': False, 'wm_theme': False
-            }
-        }
+        # 2. Logic for Window Theme (WM)
+        # It's modular if it's XFCE, MATE, Generic, or a hybrid (openbox/qtile)
+        is_wm_modular = any(k in de for k in ["xfce", "mate", "openbox", "qtile", "generic"])
         
-        rules = theme_rules.get(de, theme_rules["generic"])
+        wm_combo = self.theme_controls.get('wm_theme')
+        if wm_combo:
+            wm_combo.setEnabled(is_wm_modular)
+            if is_wm_modular:
+                wm_combo.setToolTip(f"Select window borders/decorations for {de.upper()}")
+            else:
+                wm_combo.setToolTip(f"Window borders are integrated into the GTK theme in {de.upper()}")
+
+        # 3. Logic for Desktop Theme
+        # Currently, only Cinnamon uses this specific 'desktop_theme' key
+        is_cinnamon = (de == "cinnamon")
         
-        # Apply to each theme control
-        theme_mapping = {
-            'icon_theme': 'Icon Theme',
-            'gtk_theme': 'GTK Theme', 
-            'cursor_theme': 'Cursor Theme',
-            'desktop_theme': 'Desktop Theme',
-            'wm_theme': 'Window Theme'
-        }
-        
-        for theme_key, enabled in rules.items():
-            if theme_key in self.theme_controls:
-                combo = self.theme_controls[theme_key]
-                combo.setEnabled(enabled)
-                
-                # Set tooltip to indicate why it's disabled
-                if enabled:
-                    combo.setToolTip(f"Select {theme_mapping[theme_key].lower()} for this workspace")
-                else:
-                    combo.setToolTip(f"{theme_mapping[theme_key]} not applicable for {de.upper()}")
+        dt_combo = self.theme_controls.get('desktop_theme')
+        if dt_combo:
+            dt_combo.setEnabled(is_cinnamon)
+            if is_cinnamon:
+                dt_combo.setToolTip("Select the Cinnamon Shell/Desktop theme")
+            else:
+                dt_combo.setToolTip(f"Desktop/Shell themes are not applicable to {de.upper()}")
+
+        # 4. Universal Basics (Icons, GTK, Cursors)
+        # These are always enabled in our suite
+        for key in ['icon_theme', 'gtk_theme', 'cursor_theme']:
+            combo = self.theme_controls.get(key)
+            if combo:
+                combo.setEnabled(True)
+                label = key.replace('_', ' ').capitalize()
+                combo.setToolTip(f"Select {label} for this workspace")
                 
     # --- SIGNAL HANDLERS ---
     
@@ -319,12 +308,18 @@ class WorkspaceTab(QWidget):
             path = DEFAULT_ICON if os.path.isfile(DEFAULT_ICON) else ""
         if path:
             pix = QPixmap(path)
-            # Qt6 enums
             self.icon_preview.setPixmap(pix.scaled(60, 60, 
                 Qt.AspectRatioMode.KeepAspectRatio, 
                 Qt.TransformationMode.SmoothTransformation))
+            
+            # --- NEW: Dynamic Hex Identity ---
+            hex_val = get_icon_color(path)
+            if hex_val:
+                self.icon_preview.setToolTip(f"<b>Detected Hex:</b> {hex_val.upper()}")
+            # ---------------------------------
         else:
             self.icon_preview.clear()
+            self.icon_preview.setToolTip("No icon selected")
 
     # --- CONFIG LOAD / SAVE ---
     
@@ -617,7 +612,7 @@ class AWPDashboard(QWidget):
         de_row.addWidget(QLabel("Desktop Environment:"))
 
         self.de_combo = self.create_standard_combo(
-            items=["xfce", "gnome", "cinnamon", "mate", "generic", "unknown"],
+            items=sorted(BACKEND_NAMES),
             width=200
         )
         self.de_combo.setToolTip("Select your desktop environment for proper theme integration")
@@ -692,9 +687,14 @@ class AWPDashboard(QWidget):
         """Get current desktop environment selection."""
         return self.de_combo.currentText().lower()
 
-    def on_de_changed(self, new_de):
-        """Update all workspace tabs when DE changes."""
-        for tab in self.workspace_tabs:
+    def on_de_changed(self, text):
+        """Handle DE change and update UI availability."""
+        # Update the internal config
+        self.config.set('general', 'desktop_environment', text)
+        
+        # Trigger the gatekeeper to enable/disable combos in all workspace tabs
+        for i in range(self.tab_widget.count()):
+            tab = self.tab_widget.widget(i)
             if hasattr(tab, 'update_theme_availability'):
                 tab.update_theme_availability()
 

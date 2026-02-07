@@ -1,10 +1,30 @@
-gtk-color-scheme = "base_color:#404040\nfg_color:#DADADA\ntooltip_fg_color:#4a4a4a\nselected_bg_color:#70737a\nselected_fg_color:#FFFFFF\ntext_color:#D3D3D3\nbg_color:#383838\ninsensitive_bg_color:#3e3e3e\ninsensitive_fg_color:#7f7f7f\nnotebook_bg:#404040\ndark_sidebar_bg:#353535\ntooltip_bg_color:#fbeaa0\nlink_color:#5294E2\nmenu_bg:#383838\nmenu_separator_color:#303030"
+# Theme:       Breeze-gtk
+# Description: Breeze theme for GTK+2.0
 
-gtk-icon-sizes = "gtk-button=16,16" # This makes button icons smaller.
-gtk-auto-mnemonics = 1
-gtk-primary-button-warps-slider = 1
+gtk-color-scheme = "text_color:#fcfcfc"
+gtk-color-scheme = "base_color:#1b1e20"
+gtk-color-scheme = "insensitive_base_color:#181b1d"
+gtk-color-scheme = "fg_color:#fcfcfc"
+gtk-color-scheme = "bg_color:#2a2e32"
+gtk-color-scheme = "selected_fg_color:#fcfcfc"
+gtk-color-scheme = "selected_bg_color:#3daee9"
+gtk-color-scheme = "button_fg_color:#fcfcfc"
+gtk-color-scheme = "tooltip_fg_color:#fcfcfc"
+gtk-color-scheme = "tooltip_bg_color:#31363b"
+gtk-color-scheme = "insensitive_fg_color:#6b6e70"
+gtk-color-scheme = "insensitive_text_color:#616364"
+gtk-color-scheme = "button_insensitive_fg_color:#707376"
+gtk-color-scheme = "button_active:#3daee9"
+gtk-color-scheme = "border_color:#5e6164"
 
-include "main.rc"
-include "apps.rc"
-include "panel.rc"
-include "menubar-toolbar.rc"
+include "widgets/default"
+include "widgets/buttons"
+include "widgets/menu"
+include "widgets/entry"
+include "widgets/notebook"
+include "widgets/range"
+include "widgets/scrollbar"
+include "widgets/toolbar"
+include "widgets/progressbar"
+include "widgets/misc"
+include "widgets/styles"
