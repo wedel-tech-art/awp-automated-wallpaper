@@ -18,35 +18,11 @@ from datetime import datetime
 
 os.environ['NO_AT_BRIDGE'] = '1'
 
-# CORE IMPORTS
-from core.constants import AWP_DIR, STATE_PATH, CONKY_STATE_PATH
+from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH
 from core.config import AWPConfig, ConfigError
 from core.utils import x11_blanking
+from core.runtime import update_runtime_state
 from backends import get_backend
-
-# =============================================================================
-# CONKY INTEGRATION (OPTIONAL)
-# 
-# To enable Conky integration:
-# 1. Uncomment the update_conky_state() call in the apply_index() method below
-# 2. Ensure the CONKY_STATE_PATH below matches your Conky configuration
-# 3. Your Conky/Lua script can read from this file for real-time wallpaper info
-#
-# AVAILABLE VARIABLES for your Conky/Lua script:
-# - wallpaper_path: Current wallpaper image path
-# - workspace_name: Current workspace (e.g., 'ws1')  
-# - logo_path: Workspace icon path
-# - icon_color: Dominant color from workspace icon (hex)
-# - intv: Wallpaper rotation interval (e.g., '5m', '30s')
-# - flow: Rotation mode ('random' or 'sequential')
-# - sort: Sort order ('name_az', 'name_za', 'name_old', 'name_new')
-# - view: Scaling mode ('centered', 'scaled', 'zoomed')
-# - blanking_timeout: Screen blanking timeout ('off', '30s', '5m', etc.)
-# - blanking_paused: Whether blanking is paused ('True' or 'False')
-#
-# DEFAULT LOCATION: ~/awp/conky/.awp_conky_state.txt
-# ↪ Customize CONKY_STATE_PATH below if needed
-# =============================================================================
 
 # =============================================================================
 # UNIVERSAL DESKTOP FUNCTIONS
@@ -108,12 +84,9 @@ def configure_screen_blanking(config):
     # Execute the hardware command
     x11_blanking(timeout)
 
-def update_conky_state(workspace_name: str, wallpaper_path: str, config: AWPConfig):
-    """Update Conky state using cached config."""
-    state_dict = config.get_conky_state(workspace_name, wallpaper_path)
-    with open(CONKY_STATE_PATH, 'w') as f:
-        for key, value in state_dict.items():
-            f.write(f"{key}={value}\n")
+def update_runtime_state(state_dict: dict):
+    with open(RUNTIME_STATE_PATH, "w") as f:
+        json.dump(state_dict, f)
             
 # =============================================================================
 # HELPER FUNCTIONS
@@ -259,7 +232,8 @@ class Workspace:
         return (self.index + 1) % len(self.images)
 
     def apply_index(self, new_index: int):
-        """Apply new wallpaper index and update state."""
+        """Apply new wallpaper index and update runtime state."""
+
         state = load_state()
         self.index = new_index
         state[self.key] = self.index
@@ -267,13 +241,14 @@ class Workspace:
 
         current_wallpaper_path = str(self.images[self.index])
         set_wallpaper(self.num, current_wallpaper_path, self.scaling)
-        
-        # =========================================================================
-        # CONKY INTEGRATION (OPTIONAL)
-        # Uncomment the line below to enable real-time wallpaper info for Conky
-        update_conky_state(f"ws{self.num+1}", current_wallpaper_path, self.config)
-        # =========================================================================
 
+        full_info = self.config.generate_runtime_state(
+            f"ws{self.num+1}",
+            current_wallpaper_path
+        )
+
+        update_runtime_state(full_info)
+        
 # =============================================================================
 # MAIN LOOP
 # =============================================================================

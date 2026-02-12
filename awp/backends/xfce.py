@@ -5,6 +5,7 @@ Contains all XFCE-specific wallpaper and theme management functions.
 """
 
 import os
+import json
 import subprocess
 
 # ANSI Color Codes for clean terminal output
@@ -138,3 +139,4 @@ def xfce_set_themes(ws_num: int, config):
         print(f"{CLR_CYAN}[AWP]{CLR_RESET} Themes Applied for {CLR_BOLD}WS{ws_num + 1}{CLR_RESET}")
     except Exception as e:
         print(f"{CLR_RED}Error applying XFCE themes: {e}{CLR_RESET}")
+

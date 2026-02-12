@@ -183,10 +183,10 @@ class AWPConfig:
         else:
             self._workspace_cache.clear()
 
-    # === CONKY STATE GENERATOR ===
+    # === RUN TIME GENERATOR ===
     
-    def get_conky_state(self, workspace_name: str, wallpaper_path: str) -> Dict[str, str]:
-        """Generate Conky state dictionary for current state."""
+    def generate_runtime_state(self, workspace_name: str, wallpaper_path: str) -> Dict[str, str]:
+        """Generate runtime state dictionary for current state."""
         ws_num = int(workspace_name.replace('ws', '')) - 1
         ws_config = self.get_workspace_config(ws_num)
         

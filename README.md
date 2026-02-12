@@ -1,11 +1,17 @@
 # AWP - Automated Wallpaper Program
 
 [![AWP](https://img.shields.io/badge/AWP-Automated%20Wallpaper%20Program-blue)](https://github.com/wedel-tech-art/awp-automated-wallpaper)
-[![Python](https://img.shields.io/badge/Python-3.6%2B-green)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-green)](https://python.org)
 [![Qt](https://img.shields.io/badge/Qt-6-purple)](https://qt.io)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-A professional-grade Linux environment manager that goes beyond wallpaper rotation. AWP synchronizes the entire visual identity of your desktop based on your current workspace.
+## 🎯 Why AWP?
+
+Most wallpaper managers rotate images.
+AWP orchestrates the entire desktop identity.
+
+It treats each workspace as a distinct visual environment — synchronizing themes, icons, cursors, and now runtime telemetry — under a unified architecture.
+
 
 ## 🚀 Key Features
 
@@ -13,7 +19,7 @@ A professional-grade Linux environment manager that goes beyond wallpaper rotati
     * **Automated Asset Creation**: Analyzes workspace icons to physically "bake" custom GTK and Xfwm4 themes in `~/.themes` based on a neutral template.
     * **Visual Identity Sync**: Automatically extracts hex accent colors from icons to synchronize the visual "signature" across themes and Conky scripts.
     * **Dynamic Thumbnails**: Generates `folder.png` assets inside the themes, ensuring your file manager (Thunar/PCManFM) matches the active workspace style.
-    * **Swift Graphics Surgery**: Now it can generate with pre-defined genetic asset list to hue template PNGs via ImageMagick in seconds.
+    * **Accelerated Asset Pipeline**: Pre-defined genetic asset list enables rapid PNG hue transformation via ImageMagick.
     * **🔍 Real-Time Metadata (Hover-to-Hex)**: Hover over any workspace preview icon in the Dashboard to instantly see the extracted Hex color code—the 'DNA' of your theme—rendered in real-time.
     
 * **🏗️ Modernized Qt6 Controller**:
@@ -34,12 +40,8 @@ A professional-grade Linux environment manager that goes beyond wallpaper rotati
         * **Saturation**: Boost color vibrance to change the "energy" of your desktop.
     * **Asset Management**: Integrated **Delete** functionality to curate your wallpaper library on the fly.
 
-* **📡 Advanced Conky IPC Integration**:
-    * **State-Aware Monitoring**: Uses a custom `.awp_conky_state` bridge to keep system monitors in sync with the active theme.
-    * **Visual Cohesion**: Automatically pushes color palettes and font settings to Conky's Lua/Cairo scripts, ensuring your system data looks like a native part of the wallpaper.
-
 * **⚡ Optimized for Low-Resource Hardware**:
-    * **Optiplex 755 "Lean Mode"**: Specifically tailored for legacy systems (Core 2 Duo / 6GB RAM). Includes an optional bypass for `xfdesktop`, utilizing `feh` for ultra-lightweight wallpaper rendering without sacrificing the "Deep Theming" experience.
+    * **"Lean Mode"**: Specifically tailored for old systems. Includes an optional bypass for `xfdesktop`, utilizing `feh` for ultra-lightweight wallpaper rendering without sacrificing the "Deep Theming" experience.
 
 * **🏗️ Universal Modular Architecture**:
     * **DE-Centric Design**: Focuses on Desktop Environments (**XFCE, Cinnamon, Gnome, and Mate**) rather than specific distributions, making it truly distro-agnostic.
@@ -59,7 +61,6 @@ AWP now uses a dynamic backend factory, supporting both native desktop setters a
 | **GNOME** | Native | gsettings |
 | **MATE** | Native | dconf |
 | **Openbox/XFCE**| Lean | feh (Hybrid setup) |
-| **Qtile/XFCE** | Lean | feh (Hybrid setup) |
 | **Generic** | Lean | feh (Fallback) |
 
 ## 🚀 Quick Start
@@ -70,7 +71,7 @@ Before installing, ensure your system has the necessary background tools:
 ```bash
 # Install System Tools & Python Bindings
 sudo apt update
-sudo apt install conky-all imagemagick python3-pyqt5 python3-pyqt6 feh
+sudo apt install imagemagick python3-pyqt6 feh
 ```
 
 ### Installation
@@ -167,13 +168,14 @@ See `awp_config.ini.example` for a complete configuration reference.
 awp-automated-wallpaper/
 ├── awp/                      # Main Application Directory
 │   ├── backends/             # Desktop-specific scripts (XFCE, Cinnamon, Gnome, Openbox, etc.)
-│   ├── conky/                # Conky configs and Lua scripts
-│   ├── core/                 # Central logic (config.py, constants.py, utils.py)
+│   ├── core/                 # Central logic (config.py, constants.py, utils.py, runtime.py)
 │   ├── logos/                # Branding assets (ws1, ws2, ws3)
 │   ├── template/             # Master Theme DNA (Breeze Dark Gtk based) 🧬
 │   ├── awp_dab_qt6.py        # New Professional Dashboard (Qt6) 🚀
-│   ├── awp_daemon.py         # The background service
-│   ├── awp_nav.py            # Navigation (Next/Prev/Del)
+│   ├── awp_daemon.py         # The background service + runtime state engine
+│   ├── awp_hud_vertical.py   # Native Qt vertical HUD
+│   ├── awp_hud_bottom.py     # Native Qt bottom HUD
+│   ├── awp_nav.py            # Navigation (Next/Prev/Delete/Sharpen/Black/Color)
 │   ├── awp_setup.py          # Setup wizard
 │   ├── awp_start.sh          # Quick-start script
 │   └── *.png                 # UI icons (debian.png, ws1-3.png)
@@ -185,6 +187,63 @@ awp-automated-wallpaper/
 
 ## 🔄 Recent Architecture Improvements
 
+### 🛰️ Runtime State Engine & Native HUD (V3.3)
+
+**Version 3.3 – Native Runtime Monitoring (February 2026)**
+
+AWP now includes a lightweight, backend-agnostic Runtime State engine with fully native Qt Heads-Up Displays (HUDs). This replaces the previous external monitoring bridge used in earlier versions.
+
+### 🧠 Runtime State Engine
+
+- **Shared Memory JSON State**:  
+  Uses `/dev/shm/awp_full_state.json` for ultra-fast in-memory state updates.
+- **Backend Decoupling**:  
+  Removed legacy `bar()` hooks from `backends/` for cleaner separation of concerns.
+- **Modular State Updates**:  
+  The daemon writes structured runtime data (workspace, wallpaper, system stats) that any UI component can consume.
+- **Low-Latency Refresh Model**:
+  Uses shared memory to minimize disk I/O and eliminate filesystem wear.
+
+### 🖥️ Native Qt HUD System
+
+Two fully independent monitoring overlays:
+
+| HUD | Layout | Purpose |
+|-----|--------|----------|
+| `awp_hud_vertical.py` | Vertical Panel | Sidebar-style system monitor |
+| `awp_hud_bottom.py`   | Horizontal Bar | Minimal bottom dock monitor |
+
+### 📊 Real-Time System Metrics
+
+HUDs now use centralized utility functions from `core/utils.py`:
+
+- `get_ram_info()`  
+- `get_swap_info()`  
+- `get_mounts_info()`  
+
+These utilities are reusable across dashboards, widgets, or future monitoring modules.
+
+### 🧹 Architecture Cleanup
+
+- Removed legacy external monitoring bridge logic
+- Removed deprecated `get_fs_info()` utility
+- Simplified backend factory (no more optional `bar` injection)
+- Introduced `RUNTIME_STATE_PATH` in `core/constants.py`
+
+### ⚡ Design Philosophy
+
+The new HUD system aligns with AWP’s modular vision:
+
+- Runtime data is **written once**
+- UI components **read independently**
+- Backends remain strictly responsible for **theme & wallpaper application only**
+
+This prepares AWP for future:
+- Wayland-native overlays
+- Multi-monitor HUDs
+- Expanded workspace telemetry
+
+
 **Version 3.2 - Surgical Precision & Metadata (February 2026)**
 - **Swift Graphics Engine**: Optimized `bake_awp_theme` to use a hardcoded `TARGET_ASSETS` list. This removes the need for reference folders and speeds up theme generation significantly.
 - **Hover-to-Hex Preview**: Added a "Human-Readable" feature to the Dashboard. Hovering over a workspace icon now performs a real-time first-pixel analysis to display the exact Hex color code.
@@ -194,7 +253,6 @@ awp-automated-wallpaper/
 **Version 3.1 - Universal Logic & Core Sanitization (February 2026)**
 - **Dynamic Discovery**: Removed hardcoded backend lists (`VALID_DES`). The core now performs filesystem-based validation, allowing AWP to support any new DE/WM by simply adding a `.py` file to the `backends/` directory.
 - **Config Safety (Zero-Flicker)**: Sanitized all backends to remove `sed`-based path manipulation. This eliminates `tint2` panel flickering and prevents potential configuration file corruption.
-- **Backend Expansion**: Introduced `qtile_xfce` backend, pre-optimized for Python-based window managers and future "Deep Color" sync (COSMIC-style active hinting).
 - **Log Professionalism**: Refactored terminal output to be "Logic-First," providing clean, honest feedback about applied themes and wallpapers without redundant debug noise.
 
 **Version 3.0 - Genetic Intelligence (January 2026)**

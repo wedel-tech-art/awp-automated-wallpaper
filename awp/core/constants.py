@@ -13,4 +13,4 @@ AWP_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = str(AWP_DIR / "awp_config.ini")
 STATE_PATH = str(AWP_DIR / "indexes.json")
 ICON_DIR = str(AWP_DIR / "logos")
-CONKY_STATE_PATH = str(AWP_DIR / "conky" / ".awp_conky_state.txt")
+RUNTIME_STATE_PATH = "/dev/shm/awp_full_state.json"

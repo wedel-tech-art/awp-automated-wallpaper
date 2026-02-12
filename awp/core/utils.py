@@ -256,3 +256,60 @@ def get_available_themes() -> dict:
     themes['desktop_themes'] = sorted(list(set(themes['desktop_themes'])), key=str.lower)
 
     return themes
+
+def get_ram_info():
+    """
+    Returns RAM information in unified format: 'used|free|totalG'
+    """
+    try:
+        with open('/proc/meminfo', 'r') as f:
+            mem = {line.split()[0].rstrip(':'): int(line.split()[1]) for line in f}
+        
+        total = mem['MemTotal'] / 1024 / 1024
+        free = mem['MemAvailable'] / 1024 / 1024
+        used = total - free
+        
+        return f"{used:.1f}|{free:.1f}|{total:.1f}G"
+    
+    except Exception:
+        return "??|??|??G"
+
+
+def get_swap_info():
+    """
+    Returns SWAP information in unified format: 'used|free|totalG'
+    Returns '0.0|0.0|0.0G' if no swap is present.
+    """
+    try:
+        with open('/proc/meminfo', 'r') as f:
+            mem = {line.split()[0].rstrip(':'): int(line.split()[1]) for line in f}
+        
+        total = mem.get('SwapTotal', 0) / 1024 / 1024
+        free = mem.get('SwapFree', 0) / 1024 / 1024
+        used = total - free
+        
+        if total == 0:
+            return "0.0|0.0|0.0G"
+        
+        return f"{used:.1f}|{free:.1f}|{total:.1f}G"
+    
+    except Exception:
+        return "??|??|??G"
+
+
+def get_mounts_info(paths):
+    """
+    Returns filesystem information for multiple paths.
+    Returns dict: {path: 'used|free|totalG'}
+    """
+    result = {}
+    for path in paths:
+        try:
+            st = os.statvfs(path)
+            used = (st.f_blocks - st.f_bfree) * st.f_frsize / (1024**3)
+            free = st.f_bavail * st.f_frsize / (1024**3)
+            total = st.f_blocks * st.f_frsize / (1024**3)
+            result[path] = f"{used:.1f}|{free:.1f}|{total:.1f}G"
+        except Exception:
+            result[path] = "N/A|N/A|N/A"
+    return result
