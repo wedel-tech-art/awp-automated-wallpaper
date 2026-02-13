@@ -1,8 +1,8 @@
 # AWP - Automated Wallpaper Program
 
-[![AWP](https://img.shields.io/badge/AWP-Automated%20Wallpaper%20Program-blue)](https://github.com/wedel-tech-art/awp-automated-wallpaper)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-green)](https://python.org)
 [![Qt](https://img.shields.io/badge/Qt-6-purple)](https://qt.io)
+[![Refactored](https://img.shields.io/badge/status-core--consolidated-brightgreen)](https://github.com/wedel-tech-art/awp-automated-wallpaper)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ## 🎯 Why AWP?
@@ -15,7 +15,7 @@ It treats each workspace as a distinct visual environment — synchronizing them
 
 ## 🚀 Key Features
 
-* **🧬 Genetic Theme Generation (V3.2)**: 
+* **🧬 Genetic Theme Generation (V3.4)**:  
     * **Automated Asset Creation**: Analyzes workspace icons to physically "bake" custom GTK and Xfwm4 themes in `~/.themes` based on a neutral template.
     * **Visual Identity Sync**: Automatically extracts hex accent colors from icons to synchronize the visual "signature" across themes and Conky scripts.
     * **Dynamic Thumbnails**: Generates `folder.png` assets inside the themes, ensuring your file manager (Thunar/PCManFM) matches the active workspace style.
@@ -32,7 +32,7 @@ It treats each workspace as a distinct visual environment — synchronizing them
     * **🧪 Experimental "Generic" Scope**: Expanded support for **Icon, GTK, and Cursor** switching in hybrid environments (e.g., Openbox + XFCE), allowing AWP to act as a standalone theme manager.
     * **Universal Compatibility**: Designed to "embellish" the workspace across both **X11 and Wayland** sessions (Gnome/Cinnamon) using native backend integration.
 
-* **🎮 Interactive Navigation & Aesthetic Effects**: Powered by `awp_nav.py`.
+* **🎮 Interactive Navigation & Aesthetic Effects**: Powered by `nav.py`.
     * **Dynamic Library Control**: Rapid **Next** and **Previous** wallpaper cycling via keyboard shortcuts for an evolving workspace.
     * **Real-time Image Processing**: Instantly adapt your wallpaper's look with non-destructive effects:
         * **Sharpen**: Enhance detail and clarity for high-resolution displays.
@@ -92,7 +92,7 @@ python3 awp_setup.py
 ### Manual Start
 ```bash
 # Start the daemon manually
-python3 awp_daemon.py
+python3 daemon.py
 
 # Or use the startup script
 ./awp_start.sh
@@ -103,28 +103,28 @@ python3 awp_daemon.py
 
 ### Or newer Dashboard Qt6
 ```bash
-python3 awp_dab_qt6.py
+python3 dab.py
 ```
 
 ### Manual Navigation
 ```bash
 # Next wallpaper
-python3 awp_nav.py next
+python3 nav.py next
 
 # Previous wallpaper
-python3 awp_nav.py prev
+python3 nav.py prev
 
 # Delete current wallpaper
-python3 awp_nav.py delete
+python3 nav.py delete
 
 # Sharpen current wallpaper (temporary, via ImageMagick)
-python3 awp_nav.py sharpen
+python3 nav.py sharpen
 
 # Apply saturation to wallpaper (temporary, via ImageMagick)
-python3 awp_nav.py color
+python3 nav.py color
 
 # Convert wallpaper to black and white (temporary, via ImageMagick)
-python3 awp_nav.py black
+python3 nav.py black
 ```
 
 ### Recommended Keybindings
@@ -143,7 +143,7 @@ python3 awp_nav.py black
 Edit `~/awp/awp_config.ini` directly or use the dashboard:
 
 ```bash
-python3 awp_dab.py
+python3 dab.py
 ```
 
 ### Example Configuration
@@ -152,32 +152,38 @@ See `awp_config.ini.example` for a complete configuration reference.
 ## Screenshots
 
 ### General Settings
-![General Settings](screenshots/awp_dab_qt6.py%20General%20Settings.png)
+![General Settings](screenshots/dab.py%20General%20Settings.png)
 
 ### Workspace 1 Configuration
-![Workspace 1](screenshots/awp_dab_qt6.py%20Workspace%201%20Configuration%20Example.png)
+![Workspace 1](screenshots/dab.py%20Workspace%201%20Configuration%20Example.png)
 
 ### Workspace 2 Configuration  
-![Workspace 2](screenshots/awp_dab_qt6.py%20Workspace%202%20Configuration%20Example.png)
+![Workspace 2](screenshots/dab.py%20Workspace%202%20Configuration%20Example.png)
 
 ### Workspace 3 Configuration
-![Workspace 3](screenshots/awp_dab_qt6.py%20Workspace%203%20Configuration%20Example.png)
+![Workspace 3](screenshots/dab.py%20Workspace%203%20Configuration%20Example.png)
 
 ## 📁 Project Structure
 ```
 awp-automated-wallpaper/
 ├── awp/                      # Main Application Directory
 │   ├── backends/             # Desktop-specific scripts (XFCE, Cinnamon, Gnome, Openbox, etc.)
-│   ├── core/                 # Central logic (config.py, constants.py, utils.py, runtime.py)
+│   ├── core/                 # Centralized business logic
+│   │   ├── actions.py        # ✨ NEW - Single source of truth for all wallpaper operations
+│   │   ├── config.py         # Configuration management
+│   │   ├── constants.py      # Paths and constants
+│   │   ├── runtime.py        # Runtime state management
+│   │   └── utils.py          # Utility functions
 │   ├── logos/                # Branding assets (ws1, ws2, ws3)
 │   ├── template/             # Master Theme DNA (Breeze Dark Gtk based) 🧬
-│   ├── awp_dab_qt6.py        # New Professional Dashboard (Qt6) 🚀
-│   ├── awp_daemon.py         # The background service + runtime state engine
-│   ├── awp_hud_vertical.py   # Native Qt vertical HUD
-│   ├── awp_hud_bottom.py     # Native Qt bottom HUD
-│   ├── awp_nav.py            # Navigation (Next/Prev/Delete/Sharpen/Black/Color)
-│   ├── awp_setup.py          # Setup wizard
-│   ├── awp_start.sh          # Quick-start script
+│   ├── daemon.py              # ✨ RENAMED - Background service (was awp_daemon.py)
+│   ├── nav.py                 # ✨ RENAMED - Navigation controller (was awp_nav.py)
+│   ├── dab.py                 # ✨ RENAMED - Qt6 Dashboard (was awp_dab_qt6.py)
+│   ├── hud_vertical.py        # ✨ RENAMED - Native Qt vertical HUD (mount points externalized)
+│   ├── hud_bottom.py          # ✨ RENAMED - Native Qt bottom HUD (mount points externalized)
+│   ├── awp_setup.py          # Setup wizard (keep as is)
+│   ├── awp_start.sh          # Quick-start script (keep as is)
+│   ├── awp_config.ini        # Configuration file
 │   └── *.png                 # UI icons (debian.png, ws1-3.png)
 ├── screenshots/              # Previews for GitHub README
 ├── .gitignore                # Git exclusion rules
@@ -186,6 +192,39 @@ awp-automated-wallpaper/
 ```
 
 ## 🔄 Recent Architecture Improvements
+
+### 🧬 Core Consolidation & Zero-Duplication Architecture (V3.4 - Current)
+
+**Version 3.4 – Unified Logic Core (February 2026)**
+
+AWP has undergone a major architectural refactoring to centralize all business logic in `core/actions.py`, eliminating code duplication across the entire suite.
+
+#### 🎯 Single Source of Truth
+
+- **`core/actions.py`** now contains ALL wallpaper operations:
+  - `next_wallpaper()`, `prev_wallpaper()`, `delete_wallpaper()`
+  - `apply_effect()`, `clear_effect()` for temporary effects
+  - `refresh_current_workspace()` for instant theme application
+  - Shared helpers: `get_workspace_images()`, `get_workspace_index()`
+  - Backend wrappers: `set_themes()`, `set_panel_icon()`
+
+#### 🔄 Unified Components
+
+All three major components now use the **exact same core functions**:
+
+| Component | Before | After |
+|-----------|--------|-------|
+| **Daemon** (`daemon.py`) | Duplicate logic | Calls `next_wallpaper()` from core |
+| **Nav** (`nav.py`) | Duplicate logic | Calls `next_wallpaper()` from core |
+| **Dashboard** (`dab.py`) | Had to restart | Calls `refresh_current_workspace()` from core |
+
+#### ✨ Instant Feedback Dashboard
+
+**Theme changes apply immediately** when saving in the dashboard. No more switching workspaces twice to see your new theme!
+
+# One line in dab.py after saving:
+from core.actions import refresh_current_workspace
+refresh_current_workspace()  # Applies themes NOW
 
 ### 🛰️ Runtime State Engine & Native HUD (V3.3)
 
@@ -210,8 +249,8 @@ Two fully independent monitoring overlays:
 
 | HUD | Layout | Purpose |
 |-----|--------|----------|
-| `awp_hud_vertical.py` | Vertical Panel | Sidebar-style system monitor |
-| `awp_hud_bottom.py`   | Horizontal Bar | Minimal bottom dock monitor |
+| `hud_vertical.py` | Vertical Panel | Sidebar-style system monitor |
+| `hud_bottom.py`   | Horizontal Bar | Minimal bottom dock monitor |
 
 ### 📊 Real-Time System Metrics
 
@@ -263,7 +302,7 @@ This prepares AWP for future:
 - **X11 Utility**: Centralized display blanking/timeout logic in `core/utils.py`, allowing for standalone display management without DE-specific power daemons.
 
 **Version 2.2 - Lean Mode & Hybrid Backends (January 2026)**
-- **Lean Mode**: Universal function in `awp_daemon` to toggle between native XFCE wallpaper handling and `feh` for legacy hardware (Optiplex 755).
+- **Lean Mode**: Universal function in `daemon` to toggle between native XFCE wallpaper handling and `feh` for legacy hardware (Optiplex 755).
 - **Hybrid Support**: Refactored `generic.py` to support mixed environments like Openbox running inside XFCE.
 
 **Version 2.1 - Centralized Utilities (January 2025)**

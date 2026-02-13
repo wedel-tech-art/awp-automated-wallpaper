@@ -6,8 +6,20 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor, QPainter, QBrush, QPixmap
 
-# Importamos las funciones que calculan fresco
 from core.utils import get_ram_info, get_swap_info, get_mounts_info
+
+# ================================
+# USER MOUNT MAP (EDITABLE)
+# label -> mount path
+# ================================
+MOUNTS_MAP = {
+    "SDA2": "/mnt/windows",
+    "SDA3": "/mnt/owstudios",
+    "SDA5": "/mnt/internal1500",
+    "SDB1": "/",
+    "SDB3": "/home",
+    "SDC1": "/mnt/internal2000",
+}
 
 class StudioHUD(QWidget):
     def __init__(self):
@@ -32,7 +44,7 @@ class StudioHUD(QWidget):
         self.label.setFont(QFont("Source Code Pro", 11, QFont.Weight.Bold))
         self.label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
-        # Ícono flotante
+
         self.icon_label = QLabel(self)
         self.icon_label.setFixedSize(64, 64)
         self.icon_label.move(16, 8)
@@ -41,7 +53,7 @@ class StudioHUD(QWidget):
         self.layout.addWidget(self.label)
         self.setLayout(self.layout)
 
-        # Timer más lento: 3 segundos
+
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_ui)
         self.timer.start(3000)
@@ -70,22 +82,11 @@ class StudioHUD(QWidget):
             ws = data.get('workspace_name', '??').upper()
             wall_name = os.path.basename(data.get('wallpaper_path', 'None'))
 
-            # Cálculo fresco (como el bottom)
             ram_val = get_ram_info()
             swap_val = get_swap_info()
 
-            # Monts fresco (lista completa de 6)
-            mounts = [
-                "/mnt/windows",
-                "/mnt/owstudios",
-                "/mnt/internal1500",
-                "/",
-                "/home",
-                "/mnt/internal2000"
-            ]
-            drives_info = get_mounts_info(mounts)
+            drives_info = get_mounts_info(list(MOUNTS_MAP.values()))
 
-            # Ícono
             logo_path = data.get('logo_path')
             if logo_path and os.path.exists(logo_path):
                 pix = QPixmap(logo_path)
@@ -117,7 +118,11 @@ class StudioHUD(QWidget):
 
             offset_px = 55
             first_line_style = f"margin-left: {offset_px}px; padding-left: {offset_px}px;"
-
+            
+            mount_rows = ""
+            for label, path in MOUNTS_MAP.items():
+                mount_rows += drive_row(label, path)
+            
             report = (
                 f'<div style="text-align: left; line-height: 90%;">'
                 f'<div align="right" style="color:#333; font-size:9px;">AWP - HUD</div>'
@@ -129,12 +134,7 @@ class StudioHUD(QWidget):
                 f'{fmt("SWAP", swap_val)}'
                 f'{fmt("BLNK", data.get("blanking_timeout", "??"))}'
                 f'{divider}'
-                f'{drive_row("SDA2", "/mnt/windows")}'
-                f'{drive_row("SDA3", "/mnt/owstudios")}'
-                f'{drive_row("SDA5", "/mnt/internal1500")}'
-                f'{drive_row("SDB1", "/")}'
-                f'{drive_row("SDB3", "/home")}'
-                f'{drive_row("SDC1", "/mnt/internal2000")}'
+                f'{mount_rows}'
                 f'{divider}'
                 f'{fmt("WALL", wall_name)}'
                 f'{fmt("VIEW", data.get("view", "??"))}'

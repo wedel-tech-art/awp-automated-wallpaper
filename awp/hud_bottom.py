@@ -6,6 +6,13 @@ from PyQt6.QtGui import QFont, QColor, QPainter, QBrush
 
 from core.utils import get_ram_info, get_swap_info, get_mounts_info
 
+# === MOUNT CONFIG (easy to edit) ===
+MOUNT_LABELS = {
+    "/mnt/internal1500": "SDA5",
+    "/": "SDB1",
+    "/home": "SDB3",
+    "/mnt/internal2000": "SDC1",
+}
 
 class StudioBar(QWidget):
     def __init__(self):
@@ -13,9 +20,9 @@ class StudioBar(QWidget):
        
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint |
-            Qt.WindowType.WindowStaysOnTopHint |
+            #Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.Tool |
-            Qt.WindowType.X11BypassWindowManagerHint |
+            #Qt.WindowType.X11BypassWindowManagerHint |
             Qt.WindowType.WindowTransparentForInput
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -69,13 +76,15 @@ class StudioBar(QWidget):
                 wall_name = os.path.basename(data.get("wallpaper_path", "None"))
                 wall_short = wall_name[:60] + ".." if len(wall_name) > 60 else wall_name
                 
-                mounts = [
-                    "/mnt/internal1500",
-                    "/",
-                    "/home",
-                    "/mnt/internal2000"
-                ]
-                drives_info = get_mounts_info(mounts)
+                drives_info = get_mounts_info(list(MOUNT_LABELS.keys()))
+                
+                mount_parts = []
+                for path, label in MOUNT_LABELS.items():
+                    mount_parts.append(
+                        fmt(label, drives_info.get(path, "N/A|N/A|N/A"), color)
+                    )
+
+                mounts_str = " &nbsp;&nbsp;&nbsp; ".join(mount_parts)
                 
                 line1 = (
                     f'<span style="color:white;">〔 <span style="color:{color};">{ws}</span> 〉 </span>'
@@ -92,10 +101,7 @@ class StudioBar(QWidget):
                     f'{fmt("MEMR", ram_str, color)} &nbsp;&nbsp;&nbsp; '
                     f'{fmt("SWAP", swap_str, color)} &nbsp;&nbsp;&nbsp; '
                     f'{fmt("BLNK", data.get("blanking_timeout", "??"), color)} &nbsp;&nbsp;&nbsp; '
-                    f'{fmt("SDA5", drives_info.get("/mnt/internal1500", "N/A|N/A|N/A"), color)} &nbsp;&nbsp;&nbsp; '
-                    f'{fmt("SDB1", drives_info.get("/", "N/A|N/A|N/A"), color)} &nbsp;&nbsp;&nbsp; '
-                    f'{fmt("SDB3", drives_info.get("/home", "N/A|N/A|N/A"), color)} &nbsp;&nbsp;&nbsp; '
-                    f'{fmt("SDC1", drives_info.get("/mnt/internal2000", "N/A|N/A|N/A"), color)}'
+                    f'{mounts_str}'
                 )
                 report = f'<div style="line-height: 125%; text-align: center;">{line1}<br>{line2}</div>'
                 self.label.setText(report)

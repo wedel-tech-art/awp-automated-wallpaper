@@ -3,26 +3,8 @@
 # Customize this script to add your own startup commands (Conky, etc.)
 
 # Kill any previous instances
-pkill -f "$HOME/awp/awp_daemon.py" 2>/dev/null
+pkill -f "$HOME/awp/daemon.py" 2>/dev/null
 sleep 1
 
 # Start the AWP daemon
-python3 "$HOME/awp/awp_daemon.py" &
-
-# =============================================================================
-# CUSTOM INTEGRATIONS - UNCOMMENT AND MODIFY AS NEEDED
-# =============================================================================
-
-sleep 1
-pkill -f conky
-sleep 1
-# Example: Start Conky with your custom configuration
-conky -c "$HOME/awp/conky/conkyrc_wp_sys" &
-
-# Example: Start Conky with AWP-specific configuration  
-# conky -c "$HOME/awp/conky/my_conky_config" &
-
-# Example: Start other desktop widgets or integrations
-# your_custom_widget_command &
-
-# =============================================================================
+python3 "$HOME/awp/daemon.py" &

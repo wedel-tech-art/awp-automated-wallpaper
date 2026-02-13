@@ -128,7 +128,7 @@ class WorkspaceTab(QWidget):
         self.icon_preview.setFixedSize(64, 64)
         self.icon_preview.setToolTip("Loading identity...")
         # Position it freely
-        self.icon_preview.move(335, self.folder_edit.y() + 39)
+        self.icon_preview.move(335, self.folder_edit.y() + 35)
         self.icon_preview.raise_()
 
         # === WORKSPACE BEHAVIOR SECTION ===
@@ -888,7 +888,8 @@ class AWPDashboard(QWidget):
                 tab.save_to_config()
             
             QMessageBox.information(self, "Success", "Configuration saved!")
-        
+            from core.actions import refresh_current_workspace
+            refresh_current_workspace()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
 
