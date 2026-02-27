@@ -14,6 +14,7 @@ from datetime import datetime
 
 os.environ['NO_AT_BRIDGE'] = '1'
 
+from backends import get_backend
 from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH
 from core.config import AWPConfig, ConfigError
 from core.utils import x11_blanking
@@ -28,22 +29,10 @@ from core.actions import (
     parse_timing,
     set_backend,
     force_single_workspace_off,
-    set_wallpaper
+    set_wallpaper,
+    set_panel_icon,
+    show_hud
 )
-from backends import get_backend
-
-# =============================================================================
-# REMOVED ALL DUPLICATE FUNCTIONS:
-# - load_images (now from core.actions)
-# - sort_images (now from core.actions)
-# - load_state (now from core.actions)
-# - save_state (now from core.actions)
-# - get_ws_key (now from core.actions)
-# - get_current_workspace (now from core.actions)
-# - parse_timing (now from core.actions)
-# - set_wallpaper (now from core.actions)
-# - force_single_workspace_off (now from core.actions)
-# =============================================================================
 
 def optimize_desktop_environment():
     """Universal optimization: Disables heavy desktop managers."""
@@ -53,14 +42,6 @@ def optimize_desktop_environment():
         if func:
             print(f"[AWP] Initializing Lean Mode for {DE}...")
             func()
-
-def set_panel_icon(icon_path: str):
-    """Set panel/menu icon for current desktop environment."""
-    backend = get_backend(DE)
-    if backend:
-        func = backend.get("icon")
-        if func:
-            func(icon_path)
 
 def set_themes(ws_num: int, config=None):
     """Apply theme settings for specified workspace."""
@@ -145,22 +126,22 @@ class Workspace:
 # =============================================================================
 
 def main_loop(workspaces: dict, config: AWPConfig):
-    """Main daemon loop managing workspace wallpaper rotation."""
+    """Refactored daemon: Logic first, Execution last."""
     last_ws = None
     while True:
         now = time.time()
         ws_num = get_current_workspace()
         ws = workspaces.get(ws_num)
-        
-        if ws:  # Only do work if workspace exists
+        change_required = False
+
+        if ws:
             force_single_workspace_off()
 
+            # 1. Workspace Changed
             if ws_num != last_ws:
                 ws.reload_images_and_index()
                 ws.apply_index(ws.index)
-                ws.next_switch_time = now + ws.timing
                 
-                ws_key = get_ws_key(ws_num)
                 ws_config = config.get_workspace_config(ws_num)
                 if ws_config['icon']:
                     set_panel_icon(ws_config['icon'])
@@ -168,15 +149,32 @@ def main_loop(workspaces: dict, config: AWPConfig):
                 config.reload()
                 set_themes(ws_num, config.config)
                 
-                last_ws = ws_num
-
-            if now >= ws.next_switch_time:
-                ws.reload_images_and_index()
-                if ws.images:
-                    new_idx = ws.pick_next_index()
-                    ws.apply_index(new_idx)
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] WS{ws.num+1}: index -> {ws.index}")
                 ws.next_switch_time = now + ws.timing
+                last_ws = ws_num
+                change_required = True
+
+            # 2. LOGIC: Timer Expired (Auto-Rotate)
+            elif now >= ws.next_switch_time:
+                # IMPORTANT: We reload FIRST to see if nav.py changed anything
+                ws.reload_images_and_index()
+                
+                if ws.images:
+                    ws.index = ws.pick_next_index()
+                    
+                    # SYNC: We must save like nav.py does!
+                    from core.actions import load_state, save_state
+                    state = load_state()
+                    state[f"ws{ws.num+1}"] = ws.index
+                    save_state(state)
+                    
+                    ws.apply_index(ws.index)
+                    change_required = True # This triggers the HUD below
+                
+                ws.next_switch_time = now + ws.timing
+
+            # 3. Execution
+            #if change_required:
+                #show_hud()
 
         time.sleep(2)
 
@@ -197,7 +195,7 @@ def main():
 
     optimize_desktop_environment()
     configure_screen_blanking(config)
-    force_single_workspace_off()  # Now using imported function
+    force_single_workspace_off()
     
     n_ws = config.workspaces_count
     workspaces = {}

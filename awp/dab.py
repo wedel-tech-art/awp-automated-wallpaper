@@ -17,20 +17,19 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QStandardPaths
 from PyQt6.QtGui import QPixmap
-from PIL import Image
 
 # OTHER IMPORTS
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR
+from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR, DEFAULT_ICON
 from core.config import AWPConfig
-from core.utils import get_icon_color, get_available_themes, bake_awp_theme
+from core.utils import get_icon_color
+from core.themes import get_available_themes, bake_awp_theme, bake_awp_icon
+from core.actions import refresh_current_workspace
 from backends import BACKEND_NAMES
 
 BASE_FOLDER = QStandardPaths.writableLocation(
     QStandardPaths.StandardLocation.HomeLocation
 )
-
-DEFAULT_ICON = os.path.join(AWP_DIR, "debian.png")
 
 # =============================================================================
 # WORKSPACE CONFIGURATION TAB
@@ -268,7 +267,7 @@ class WorkspaceTab(QWidget):
         start_dir = ICON_DIR if os.path.exists(ICON_DIR) else BASE_FOLDER
         f, _ = QFileDialog.getOpenFileName(
             self, f"Select icon for WS{self.index}", start_dir, 
-            "Images (*.png *.jpg *.jpeg *.svg *.gif)"
+            "Images (*.png *.jpg *.jpeg *.svg *.gif, *.webp)"
         )
         if f:
             self.icon_edit.setText(f)
@@ -487,7 +486,7 @@ class AWPDashboard(QWidget):
         super().__init__()
         self.setStyleSheet("QWidget { background-color: #2e2e2e; } QWidget:enabled { color: white; }")
         self.setWindowTitle("AWP Dashboard - Configuration Editor (Qt6)")
-        self.resize(500, 670)
+        self.setFixedSize(550, 670)
 
         self.config = AWPConfig()
 
@@ -776,47 +775,57 @@ class AWPDashboard(QWidget):
 
     def sync_genetic_themes(self):
         """
-        Genetic Synchronization: Physically creates ~/.themes folders with 
-        thumbnails based on the standardized 'icon' key in the .ini.
+        Genetic Synchronization: Physically creates ~/.themes and ~/.icons folders
+        based on the 'icon_color' key in the .ini.
         """
-        from core.utils import bake_awp_theme
-        baked_count = 0
+        baked_themes_count = 0
+        baked_icons_count = 0
         
-        # Iterate through tabs, skipping General Settings (index 0)
-        # In Qt6, Workspace 1 corresponds to Tab Index 1
+        # Iterate through workspace tabs
         for i in range(1, self.tab_widget.count()):
             section = f'ws{i}' 
             
-            # 1. Retrieve the hex signature from the configuration
             hex_color = self.config.get(section, 'icon_color')
-            
-            # 2. Retrieve the icon path (standardized as 'icon' in the .ini)
             icon = self.config.get(section, 'icon') 
             
             if not hex_color:
                 continue
                 
-            theme_name = f"awp-{hex_color.lstrip('#').lower()}"
-            theme_path = os.path.expanduser(f"~/.themes/{theme_name}")
+            clean_hex = hex_color.lstrip('#').lower()
             
-            # 3. Only bake if the folder is physically missing
+            # Define expected paths
+            theme_name = f"awp-{clean_hex}"
+            icon_name = f"awp-icons-{clean_hex}"
+            
+            theme_path = os.path.expanduser(f"~/.themes/{theme_name}")
+            icon_path = os.path.expanduser(f"~/.icons/{icon_name}")
+            
+            # --- Check & Bake GTK Theme ---
             if not os.path.exists(theme_path):
-                print(f"Syncing: {theme_name} is missing. Initiating bake...")
-                # Pass the hex color for DNA swap and icon for folder.png thumbnail
+                print(f"Syncing: Theme {theme_name} missing. Initiating bake...")
                 bake_awp_theme(hex_color, icon)
-                baked_count += 1
+                baked_themes_count += 1
+
+            # --- Check & Bake Icons ---
+            if not os.path.exists(icon_path):
+                print(f"Syncing: Icons {icon_name} missing. Initiating bake...")
+                # Add 'icon' here!
+                bake_awp_icon(hex_color, icon) 
+                baked_icons_count += 1
         
-        # Trigger the refresh engine!
+        # Refresh the UI dropdowns/lists
         self.refresh_theme_lists()
         
-        if baked_count > 0:
-            QMessageBox.information(self, "Sync Complete", f"Successfully baked {baked_count} new themes.")
+        # Comprehensive feedback
+        total_new = baked_themes_count + baked_icons_count
+        if total_new > 0:
+            msg = f"Baked {baked_themes_count} themes and {baked_icons_count} icon sets."
+            QMessageBox.information(self, "Sync Complete", msg)
         else:
-            QMessageBox.information(self, "Sync Complete", "All themes are already present.")
+            QMessageBox.information(self, "Sync Complete", "Everything is already up to date.")
 
     def refresh_theme_lists(self):
         """Universal Refresh: Updates data but respects the UI's visual state."""
-        from core.utils import get_available_themes
         all_themes_dict = get_available_themes()
         
         mapping = {
@@ -888,7 +897,6 @@ class AWPDashboard(QWidget):
                 tab.save_to_config()
             
             QMessageBox.information(self, "Success", "Configuration saved!")
-            from core.actions import refresh_current_workspace
             refresh_current_workspace()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")

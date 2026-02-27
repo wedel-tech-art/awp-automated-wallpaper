@@ -14,3 +14,4 @@ CONFIG_PATH = str(AWP_DIR / "awp_config.ini")
 STATE_PATH = str(AWP_DIR / "indexes.json")
 ICON_DIR = str(AWP_DIR / "logos")
 RUNTIME_STATE_PATH = "/dev/shm/awp_full_state.json"
+DEFAULT_ICON = str(AWP_DIR / "debian.png")

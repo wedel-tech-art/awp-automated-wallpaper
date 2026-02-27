@@ -15,13 +15,13 @@ It treats each workspace as a distinct visual environment — synchronizing them
 
 ## 🚀 Key Features
 
-* **🧬 Genetic Theme Generation (V3.4)**:  
-    * **Automated Asset Creation**: Analyzes workspace icons to physically "bake" custom GTK and Xfwm4 themes in `~/.themes` based on a neutral template.
-    * **Visual Identity Sync**: Automatically extracts hex accent colors from icons to synchronize the visual "signature" across themes and Conky scripts.
-    * **Dynamic Thumbnails**: Generates `folder.png` assets inside the themes, ensuring your file manager (Thunar/PCManFM) matches the active workspace style.
-    * **Accelerated Asset Pipeline**: Pre-defined genetic asset list enables rapid PNG hue transformation via ImageMagick.
-    * **🔍 Real-Time Metadata (Hover-to-Hex)**: Hover over any workspace preview icon in the Dashboard to instantly see the extracted Hex color code—the 'DNA' of your theme—rendered in real-time.
-    
+* **🧬 Genetic Theme & Icon Generation (V3.5)**:  
+    * **Full Identity Baking**: Analyzes workspace icons to physically "bake" both custom GTK themes (`~/.themes`) and Icon themes (`~/.icons`) simultaneously.
+    * **The "Mom" Inheritance**: Uses the `awp-icon-mom` directory as a master reference for procedural hue-shifting of icon sets based on the Mint-Y architecture.
+    * **Visual Identity Sync**: Automatically extracts hex accent colors from icons to synchronize the visual "signature" across themes, icons, and Conky scripts.
+    * **🔍 Real-Time Metadata (Hover-to-Hex)**: Hover over any workspace preview icon in the Dashboard to instantly see the extracted Hex color code rendered in real-time.
+    * **Dedicated Theme Engine**: Powered by `core/themes.py`, a specialized module for procedural asset generation and theme list management.    
+
 * **🏗️ Modernized Qt6 Controller**:
     * **Zero-Restart Workflow**: Features a standalone **Sync & Refresh** engine that updates system themes and UI dropdowns in real-time without requiring a restart.
     * **Professional UI Styling**: Optimized dark-mode aesthetics with "faded" read-only states for locked system fields (Adwaita).
@@ -57,6 +57,7 @@ AWP now uses a dynamic backend factory, supporting both native desktop setters a
 | Backend | Mode | Desktop Environment |
 | :--- | :--- | :--- |
 | **XFCE** | Native + Lean | xfdesktop / feh |
+| **Qtile/XFCE** | Hybrid | qtile(X11)/xfsettingsd |
 | **Cinnamon** | Native | gsettings |
 | **GNOME** | Native | gsettings |
 | **MATE** | Native | dconf |
@@ -166,25 +167,30 @@ See `awp_config.ini.example` for a complete configuration reference.
 ## 📁 Project Structure
 ```
 awp-automated-wallpaper/
-├── awp/                      # Main Application Directory
-│   ├── backends/             # Desktop-specific scripts (XFCE, Cinnamon, Gnome, Openbox, etc.)
-│   ├── core/                 # Centralized business logic
-│   │   ├── actions.py        # ✨ NEW - Single source of truth for all wallpaper operations
-│   │   ├── config.py         # Configuration management
-│   │   ├── constants.py      # Paths and constants
-│   │   ├── runtime.py        # Runtime state management
-│   │   └── utils.py          # Utility functions
-│   ├── logos/                # Branding assets (ws1, ws2, ws3)
-│   ├── template/             # Master Theme DNA (Breeze Dark Gtk based) 🧬
-│   ├── daemon.py              # ✨ RENAMED - Background service (was awp_daemon.py)
-│   ├── nav.py                 # ✨ RENAMED - Navigation controller (was awp_nav.py)
-│   ├── dab.py                 # ✨ RENAMED - Qt6 Dashboard (was awp_dab_qt6.py)
-│   ├── hud_vertical.py        # ✨ RENAMED - Native Qt vertical HUD (mount points externalized)
-│   ├── hud_bottom.py          # ✨ RENAMED - Native Qt bottom HUD (mount points externalized)
+├── awp/                            # Main Application Directory
+│   ├── core/                       # Centralized business logic
+│   │   ├── actions.py              # ✨ IMPROVED - Smart logic (only applies changes if different)
+│   │   ├── config.py               # Configuration management
+│   │   ├── constants.py            # Paths and constants
+│   │   ├── runtime.py              # Runtime state management
+│   │   ├── themes.py               # ✨ NEW - Theming & Baking engine (Genetic logic)
+│   │   └── utils.py                # Utility functions
+│   ├── template-themes/            # 🧬 Theme DNA (Breeze Dark base)
+│   ├── template-icons/             # 🧬 Icon DNA (Mint-Y base)
+│   ├── awp-icon-mom/               # 👩 The "Mother" of all icons (Mint-Y master assets)
+│   ├── branding-assets/            # 🎨 AWP Spectrum Hunt (180 procedural tones)
+│   ├── logos/                      # Workspace-specific Debian logos (synced to accent colors)
+│   ├── backends/                   # Desktop scripts (now includes qtile_xfce.py)
+│   ├── daemon.py                   # Background service (integrated with mini-HUD)
+│   ├── dab.py                      # Qt6 Dashboard (integrated with mini-HUD)
+│   ├── nav.py                      # Navigation controller (was awp_nav.py)
+│   ├── hud_ws_info.py              # Transient Workspace/WP "Flash" HUD
+│   ├── hud_vertical.py             # Sidebar system monitor
+│   ├── hud_bottom.py               # Bottom dock system monitor
 │   ├── awp_setup.py          # Setup wizard (keep as is)
 │   ├── awp_start.sh          # Quick-start script (keep as is)
 │   ├── awp_config.ini        # Configuration file
-│   └── *.png                 # UI icons (debian.png, ws1-3.png)
+│   └── *.png                 # UI icons (debian.png, awp-148-if0096.png)
 ├── screenshots/              # Previews for GitHub README
 ├── .gitignore                # Git exclusion rules
 ├── LICENSE                   # MIT License
@@ -192,6 +198,20 @@ awp-automated-wallpaper/
 ```
 
 ## 🔄 Recent Architecture Improvements
+
+### 🧬 Dual-Genetic Baking & Efficiency Engine (V3.5 - February 2026)
+
+**Version 3.5 – The "Spectrum" Update**
+
+The system now creates a complete visual identity by "baking" both GTK themes and Icon themes simultaneously.
+
+* **Dual-Baking Engine**: 
+    * `template-themes`: Generates custom GTK 2/3/4 and Xfwm4 styles.
+    * `template-icons`: Generates custom Icon sets based on the "Mother" (`awp-icon-mom`) assets.
+* **Intelligent Sync**: The `set_themes` function is now "Diff-Aware." It compares the new workspace requirements against the current state. If the Icon theme is already correct, it skips the reload to save CPU and prevent flickering.
+* **Transient Workspace HUD (`hud-ws-info.py`)**: A new, lightweight horizontal HUD that "flashes" workspace and wallpaper metadata for a few seconds during transitions, integrated directly into the `daemon` and `dab`.
+* **New Hybrid Backend**: Added `qtile_xfce.py` for users running the Qtile Tiling Window Manager within an XFCE session.
+* **Branding Assets**: Integration of the `branding-assets` library, offering 180 different color tones for procedural UI elements.
 
 ### 🧬 Core Consolidation & Zero-Duplication Architecture (V3.4 - Current)
 
@@ -335,6 +355,7 @@ This prepares AWP for future:
     ✅ Wallpapers, GTK Themes
 
     ❌ Icons & Cursors (Requires manual Xresources)
+    
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.

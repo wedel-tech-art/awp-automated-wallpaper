@@ -31,21 +31,10 @@ from core.actions import (
     get_current_workspace,
     set_backend,
     force_single_workspace_off,
-    set_wallpaper
+    set_wallpaper,
+    show_hud
 )
 from backends import get_backend
-
-# =============================================================================
-# REMOVED ALL DUPLICATE FUNCTIONS:
-# - load_images (now from core.actions)
-# - sort_images (now from core.actions)
-# - load_state (now from core.actions)
-# - save_state (now from core.actions)
-# - get_ws_key (now from core.actions)
-# - get_current_workspace (now from core.actions)
-# - set_wallpaper (now from core.actions)
-# - force_single_workspace_off (now from core.actions)
-# =============================================================================
 
 DE = None
 
@@ -190,6 +179,9 @@ def delete_current_wallpaper_and_advance() -> bool:
     
     full_info = config.generate_runtime_state(f"ws{ws_num+1}", wallpaper_path)
     update_runtime_state(full_info)
+    
+    # TRIGGER HUD
+    show_hud()
     
     print(f"WS{ws_num+1}: After deletion -> index {new_idx}, wallpaper '{wallpaper_path}'")
     return True
@@ -345,6 +337,8 @@ def main():
     
     full_info = config.generate_runtime_state(f"ws{ws_num+1}", wallpaper_path)
     update_runtime_state(full_info)
+    
+    show_hud()
     
     print(f"WS{ws_num+1}: {direction} -> index {new_idx}, scaling '{scaling}', wallpaper '{wallpaper_path}'")
 

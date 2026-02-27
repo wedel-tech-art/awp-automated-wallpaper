@@ -3,7 +3,7 @@
 AWP - Automated Wallpaper Program
 Core Actions Module
 
-Shared business logic - START WITH JUST THE HELPER FUNCTIONS
+Shared business logic
 """
 import os
 import json
@@ -16,16 +16,23 @@ from .constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH
 from .config import AWPConfig
 from backends import get_backend
 
-# =============================================================================
-# STEP 1: JUST THE PURE HELPER FUNCTIONS (NO SIDE EFFECTS)
-# =============================================================================
-
 def load_images(folder_path: str) -> List[Path]:
-    """Load all JPEG and PNG images from specified folder."""
+    """Load all supported images (JPG, PNG, WebP, AVIF)."""
     p = Path(folder_path)
     if not p.is_dir():
         return []
-    return list(p.glob("*.[jJ][pP][gG]")) + list(p.glob("*.[pP][nN][gG]"))
+    
+    # Define the formats you want to support
+    extensions = ['*.jpg', '*.jpeg', '*.png', '*.webp', '*.avif']
+    
+    images = []
+    for ext in extensions:
+        # This catches both .jpg and .JPG because glob is case-insensitive 
+        # on some systems, but to be safe on Linux, we can do this:
+        images.extend(p.glob(ext.lower()))
+        images.extend(p.glob(ext.upper()))
+        
+    return images
 
 def sort_images(images: List[Path], order_key: str) -> List[Path]:
     """Sort images based on specified order preference."""
@@ -63,7 +70,6 @@ def get_ws_key(ws_num: int) -> str:
 def get_current_workspace() -> int:
     """Get current workspace number using xprop."""
     try:
-        import subprocess
         ws_num = subprocess.check_output(
             ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
             text=True
@@ -82,10 +88,6 @@ def parse_timing(timing_str: str) -> int:
         return number * units.get(unit, 60)
     except Exception:
         return 60  # Default to 60 seconds
-
-# =============================================================================
-# STEP 2: BACKEND HELPERS (WE'LL ADD MORE LATER)
-# =============================================================================
 
 _DE = None
 
@@ -137,9 +139,9 @@ def refresh_current_workspace():
     set_themes(ws_num, config.config)
     
     # Update panel icon if changed
-    if ws_config['icon']:
-        set_panel_icon(ws_config['icon'])
-    
+    icon_path = ws_config.get('icon') or DEFAULT_ICON
+    set_panel_icon(icon_path)
+       
     # Update runtime state
     full_info = config.generate_runtime_state(f"ws{ws_num+1}", wallpaper_path)
     update_runtime_state(full_info)
@@ -185,3 +187,16 @@ def set_panel_icon(icon_path: str):
     if func:
         func(icon_path)
         
+def show_hud():
+    """
+    Launches the fading info HUD.
+    The HUD script handles its own delay and cleanup.
+    """
+    try:
+        hud_script = os.path.expanduser("~/awp/hud_ws_info.py")
+        # Popen is non-blocking; the daemon continues immediately
+        subprocess.Popen(["python3", hud_script], 
+                         stdout=subprocess.DEVNULL, 
+                         stderr=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"HUD Error: {e}")
