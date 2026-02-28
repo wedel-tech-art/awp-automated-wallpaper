@@ -1,26 +1,24 @@
 #!/usr/bin/env python3
 """
 Generic Backend for AWP
-For any window manager without desktop environment dependencies.
-Uses feh for wallpapers, minimal theme support.
+For pure window managers without desktop environment dependencies.
+Provides minimal functionality: wallpapers via feh, theme hints only.
 """
 
 import os
 import subprocess
 
-# ANSI Colors
-CLR_RED    = "\033[91m"
-CLR_GREEN  = "\033[92m"
-CLR_YELLOW = "\033[93m"
-CLR_CYAN   = "\033[96m"
-CLR_RESET  = "\033[0m"
-CLR_BOLD   = "\033[1m"
+from core.constants import SCALING_FEH
+from core.printer import get_printer
+
+# Get printer instance
+_printer = get_printer()
 
 def generic_lean_mode():
     """
     Generic lean mode - nothing to kill, already using feh.
     """
-    print(f"{CLR_CYAN}[AWP-Generic]{CLR_RESET} {CLR_GREEN}Already lean (feh only){CLR_RESET}")
+    _printer.info("Already lean (feh only)", backend="generic")
 
 def generic_force_single_workspace_off():
     """
@@ -32,74 +30,103 @@ def generic_set_wallpaper(ws_num: int, image_path: str, scaling: str):
     """
     Set wallpaper using feh (works with any WM).
     """
-    scaling_map = {
-        'centered': '--bg-center',
-        'scaled': '--bg-scale',
-        'zoomed': '--bg-fill'
-    }
-    style_flag = scaling_map.get(scaling, '--bg-fill')
+    style_flag = SCALING_FEH.get(scaling, '--bg-fill')
     wp_name = os.path.basename(image_path)
     
     try:
         subprocess.run(["feh", style_flag, image_path], check=True)
-        print(f"{CLR_CYAN}[AWP-Generic]{CLR_RESET} WS{ws_num + 1} → "
-              f"{CLR_GREEN}{CLR_BOLD}{wp_name}{CLR_RESET}")
+        _printer.wallpaper(ws_num, wp_name, backend="generic")
     except Exception as e:
-        print(f"{CLR_RED}[AWP-Generic] feh failed: {e}{CLR_RESET}")
+        _printer.error(f"feh failed: {e}", backend="generic")
 
-def generic_set_icon(icon_path):
+def generic_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """
-    Safe generic icon setter. 
-    Does not modify files to prevent path corruption in hybrid sessions.
+    No native method - always uses feh.
     """
-    # Simply log the attempt without executing sed commands
-    # This prevents the 'tint2' path corruption you experienced
-    print(f"[AWP-Generic] Icon update requested: {icon_path} (No action taken in generic mode)")
-    pass
+    generic_set_wallpaper(ws_num, image_path, scaling)
+
+def generic_set_icon(icon_path: str):
+    """
+    Generic icon setter - just logs the request.
+    Panel/dock icons are WM/panel specific.
+    """
+    icon_name = os.path.basename(icon_path)
+    _printer.info(f"Icon request: {icon_name} (install panel-specific backend)", backend="generic")
+    return False
 
 def generic_set_themes(ws_num: int, config):
     """
-    Basic theme support using gsettings (GNOME/GTK) or lxappearance.
+    Minimal theme support - attempts gsettings, but doesn't pretend to be comprehensive.
+    For real theme management, use a DE-specific backend.
     """
     section = f"ws{ws_num + 1}"
     if not config.has_section(section):
         return
     
-    gtk_theme = config.get(section, 'gtk_theme', fallback=None)
-    icon_theme = config.get(section, 'icon_theme', fallback=None)
+    changes = []
     
-    applied = []
+    # Get what SHOULD be from config
+    should_gtk = config.get(section, 'gtk_theme', fallback=None)
+    should_icon = config.get(section, 'icon_theme', fallback=None)
+    should_cursor = config.get(section, 'cursor_theme', fallback=None)
     
-    # Try gsettings (works on most GTK systems)
-    if gtk_theme:
+    # Try gsettings for GTK theme (works on most GTK systems)
+    if should_gtk:
         try:
-            subprocess.run([
-                "gsettings", "set",
-                "org.gnome.desktop.interface", "gtk-theme",
-                gtk_theme
-            ], check=True)
-            applied.append(f"GTK: {gtk_theme}")
+            # Check current value first
+            result = subprocess.run(
+                ["gsettings", "get", "org.gnome.desktop.interface", "gtk-theme"],
+                capture_output=True, text=True, check=True
+            )
+            current = result.stdout.strip().strip("'")
+            
+            if current != should_gtk:
+                subprocess.run([
+                    "gsettings", "set", "org.gnome.desktop.interface", 
+                    "gtk-theme", should_gtk
+                ], check=True)
+                changes.append("gtk")
         except:
-            pass
+            _printer.debug("gsettings not available for GTK theme", backend="generic")
     
-    if icon_theme:
+    # Try gsettings for icon theme
+    if should_icon:
         try:
-            subprocess.run([
-                "gsettings", "set",
-                "org.gnome.desktop.interface", "icon-theme",
-                icon_theme
-            ], check=True)
-            applied.append(f"Icons: {icon_theme}")
+            result = subprocess.run(
+                ["gsettings", "get", "org.gnome.desktop.interface", "icon-theme"],
+                capture_output=True, text=True, check=True
+            )
+            current = result.stdout.strip().strip("'")
+            
+            if current != should_icon:
+                subprocess.run([
+                    "gsettings", "set", "org.gnome.desktop.interface", 
+                    "icon-theme", should_icon
+                ], check=True)
+                changes.append("icons")
         except:
-            pass
+            _printer.debug("gsettings not available for icon theme", backend="generic")
     
-    if applied:
-        print(f"{CLR_CYAN}[AWP-Generic]{CLR_RESET} Themes: {', '.join(applied)}")
+    # Try gsettings for cursor theme
+    if should_cursor:
+        try:
+            result = subprocess.run(
+                ["gsettings", "get", "org.gnome.desktop.interface", "cursor-theme"],
+                capture_output=True, text=True, check=True
+            )
+            current = result.stdout.strip().strip("'")
+            
+            if current != should_cursor:
+                subprocess.run([
+                    "gsettings", "set", "org.gnome.desktop.interface", 
+                    "cursor-theme", should_cursor
+                ], check=True)
+                changes.append("cursor")
+        except:
+            _printer.debug("gsettings not available for cursor theme", backend="generic")
+    
+    # Report what was applied (if anything)
+    if changes:
+        _printer.themes(ws_num, changes, backend="generic")
     else:
-        print(f"{CLR_YELLOW}[AWP-Generic] No theme support (install lxappearance){CLR_RESET}")
-
-def generic_wallpaper_native(ws_num: int, image_path: str, scaling: str):
-    """
-    No native method - always uses feh.
-    """
-    generic_set_wallpaper(ws_num, image_path, scaling)
+        _printer.info(f"No theme changes (WM may need manual theme tools)", backend="generic")

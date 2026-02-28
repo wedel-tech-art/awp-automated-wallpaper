@@ -33,6 +33,11 @@ from core.actions import (
     set_panel_icon,
     show_hud
 )
+from core.printer import get_printer
+
+# Get printer instance
+_printer = get_printer()
+_printer.set_backend("daemon")
 
 def optimize_desktop_environment():
     """Universal optimization: Disables heavy desktop managers."""
@@ -40,7 +45,7 @@ def optimize_desktop_environment():
     if backend:
         func = backend.get("lean_mode")
         if func:
-            print(f"[AWP] Initializing Lean Mode for {DE}...")
+            _printer.info(f"Initializing Lean Mode for {DE}...", backend="daemon")
             func()
 
 def set_themes(ws_num: int, config=None):
@@ -206,7 +211,7 @@ def main():
         except Exception as e:
             print(f"Warning: failed to load ws{i+1}: {e}")
 
-    print(f"Loaded {len(workspaces)} workspaces. State: {STATE_PATH}")
+    _printer.info(f"Loaded {len(workspaces)} workspaces. State: {STATE_PATH}")
     main_loop(workspaces, config)
 
 if __name__ == "__main__":

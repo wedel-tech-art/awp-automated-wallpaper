@@ -7,6 +7,12 @@ import sys
 import importlib
 from pathlib import Path
 
+from core.printer import get_printer
+
+# Get printer instance
+_printer = get_printer()
+_printer.set_backend("backends")
+
 # ============================================================================
 # BACKEND CONFIGURATION
 # ============================================================================
@@ -18,7 +24,7 @@ BACKEND_NAMES = [f.stem for f in _backend_dir.glob("*.py") if f.stem != "__init_
 
 BACKENDS = {}
 
-print("[AWP Backends] Loading...")
+_printer.info("Loading backends...")
 
 for name in BACKEND_NAMES:
     try:
@@ -35,7 +41,6 @@ for name in BACKEND_NAMES:
         }
         
         # OPTIONAL: native wallpaper method (some backends have both)
-        # Note: Cinnamon/GNOME/MATE will have this as an alias
         native_func = getattr(module, f"{prefix}_set_wallpaper_native", None)
         if native_func:
             funcs["wallpaper_native"] = native_func
@@ -46,35 +51,37 @@ for name in BACKEND_NAMES:
         # Store backend
         BACKENDS[name] = funcs
         
-        # Status message with more detail
+        # Status message with more detail using printer
         if name == "xfce":
-            print(f"  ✓ {name}{native_status} - xfdesktop or feh (dual-mode)")
+            _printer.success(f"{name}{native_status} - xfdesktop or feh (dual-mode)")
         elif name in ["generic", "openbox_xfce", "qtile_xfce"]:
-            print(f"  ✓ {name}{native_status} - feh only")
+            _printer.success(f"{name}{native_status} - feh only")
         elif name in ["cinnamon", "gnome", "mate"]:
-            print(f"  ✓ {name}{native_status} - native only")
+            _printer.success(f"{name}{native_status} - native only")
         else:
-            print(f"  ✓ {name}{native_status}")
+            _printer.success(f"{name}{native_status}")
         
     except AttributeError as e:
-        print(f"  ✗ {name} (missing function: {e})")
+        _printer.error(f"{name} (missing function: {e})")
         BACKENDS[name] = None
     except ModuleNotFoundError:
-        print(f"  ✗ {name} (file not found)")
+        _printer.error(f"{name} (file not found)")
         BACKENDS[name] = None
     except Exception as e:
-        print(f"  ✗ {name} (error: {e})")
+        _printer.error(f"{name} (error: {e})")
         BACKENDS[name] = None
 
 # Remove failed backends
 BACKENDS = {k: v for k, v in BACKENDS.items() if v is not None}
+
+#_printer.set_backend(None)
 
 # ============================================================================
 # STATUS & API
 # ============================================================================
 available = list(BACKENDS.keys())
 if not available:
-    print("[AWP Backends] ERROR: No backends loaded!")
+    _printer.error("No backends loaded!")
     sys.exit(1)
 
 # Categorize backends
@@ -83,11 +90,11 @@ native_backends = [name for name, funcs in BACKENDS.items()
 feh_only_backends = [name for name in available 
                      if name not in native_backends]
 
-print(f"\n[AWP Backends] Available: {', '.join(available)}")
+_printer.info(f"Available: {', '.join(available)}")
 if native_backends:
-    print(f"[AWP Backends] Native wallpaper support: {', '.join(native_backends)}")
+    _printer.info(f"Native wallpaper support: {', '.join(native_backends)}")
 if feh_only_backends:
-    print(f"[AWP Backends] Feh-only (always lean): {', '.join(feh_only_backends)}")
+    _printer.info(f"Feh-only (always lean): {', '.join(feh_only_backends)}")
 
 # Export
 backend_funcs = BACKENDS

@@ -9,6 +9,8 @@ import os
 import shutil
 import subprocess
 import colorsys
+from core.printer import get_printer
+_printer = get_printer()
 
 # The master list of assets to be re-hued during the bake process
 TARGET_ASSETS = [
@@ -50,7 +52,9 @@ TARGET_ASSETS = [
 
 def bake_awp_theme(hex_color: str, icon: str = None):
     """Dynamic Theme Synthesis Engine (AWP-G2) - List-Based Stable Edition"""
-    if not hex_color or hex_color == "": return None
+    if not hex_color or hex_color == "": 
+        return None
+        
     clean_hex = hex_color.lstrip('#').lower()
     theme_name = f"awp-{clean_hex}"
     home = os.path.expanduser("~")
@@ -59,6 +63,7 @@ def bake_awp_theme(hex_color: str, icon: str = None):
 
     if not os.path.exists(target_path):
         try:
+            _printer.info(f"Baking Theme: {theme_name}", backend="themes")
             shutil.copytree(template_path, target_path)
             
             # --- 1. Icon Handling ---
@@ -69,6 +74,7 @@ def bake_awp_theme(hex_color: str, icon: str = None):
                     shutil.copy2(icon, dest_icon)
                 else:
                     subprocess.run(["convert", icon, dest_icon], check=True)
+                _printer.info(f"Icon added to theme: {os.path.basename(icon)}", backend="themes")
 
             # --- 2. Color Conversion ---
             r_int = int(clean_hex[0:2], 16)
@@ -139,6 +145,8 @@ def bake_awp_theme(hex_color: str, icon: str = None):
                 brightness = 65 
                 saturation = 160
 
+            _printer.info(f"Theme Processing: Hue:{target_hue_deg:.1f}° B:{brightness} S:{saturation}", backend="themes")
+
             # --- Surgery Execution ---
             assets_dir = os.path.join(target_path, "assets")
             for filename in TARGET_ASSETS:
@@ -158,15 +166,20 @@ def bake_awp_theme(hex_color: str, icon: str = None):
             
             subprocess.run(["find", target_path, "-type", "f", "(", "-name", "*.css", "-o", "-name", "*.svg", ")", "-exec", "sed", "-i", "s/##/#/g", "{}", "+"])
             
+            _printer.success(f"Theme {theme_name} baked successfully!", backend="themes")
+            
         except Exception as e:
-            print(f"System Error: {e}")
+            _printer.error(f"System Error (Theme): {e}", backend="themes")
             return None
             
     return theme_name
 
 def bake_awp_icon(hex_color: str, icon: str = None):
     """Dynamic Icon Synthesis Engine (AWP-G2) - Optimized Execution Order"""
-    if not hex_color or hex_color == "": return None
+    
+    if not hex_color or hex_color == "": 
+        return None
+        
     clean_hex = hex_color.lstrip('#').lower()
     theme_name = f"awp-icons-{clean_hex}"
     home = os.path.expanduser("~")
@@ -175,6 +188,8 @@ def bake_awp_icon(hex_color: str, icon: str = None):
 
     if not os.path.exists(target_path):
         try:
+            _printer.info(f"Baking Icons: {theme_name}", backend="themes")
+            
             # 1. Clone the template
             shutil.copytree(template_path, target_path, symlinks=True)
             
@@ -213,7 +228,7 @@ def bake_awp_icon(hex_color: str, icon: str = None):
                 subprocess.run(["sed", "-i", f"s/Mint-Y-Purple/{theme_name}/gI", index_file], check=True)
             
             # --- 4. Global Graphics Surgery ---
-            print(f"Baking Icons: {theme_name} | Hue: {target_hue_deg:.1f}° | B:{brightness} S:{saturation}")
+            _printer.info(f"Applying color adjustments: Hue:{target_hue_deg:.1f}° B:{brightness} S:{saturation}", backend="themes")
             subprocess.run([
                 "find", target_path, "-type", "f", "-name", "*.png", 
                 "-exec", "mogrify", "-modulate", f"{brightness},{saturation},{im_hue}", "{}", "+"
@@ -227,12 +242,36 @@ def bake_awp_icon(hex_color: str, icon: str = None):
                     shutil.copy2(icon, dest_icon)
                 else:
                     subprocess.run(["convert", icon, dest_icon], check=True)
+                _printer.info(f"Folder icon added: {os.path.basename(icon)}", backend="themes")
             
             # 6. Final Cleanup & Cache
-            subprocess.run(["gtk-update-icon-cache", "-t", target_path], check=False)
+            result = subprocess.run(["gtk-update-icon-cache", "-t", target_path], 
+                                    check=False, 
+                                    capture_output=True, 
+                                    text=True)
+
+            # Print stdout as success (green)
+            if result.stdout:
+                for line in result.stdout.splitlines():
+                    if line.strip():
+                        _printer.success(line.strip(), backend="themes")
+                        
+            # Print stderr as info (cyan) or warning (yellow) depending on content
+            if result.stderr:
+                for line in result.stderr.splitlines():
+                    if line.strip():
+                        # Check if it's actually an error message or just info
+                        if "error" in line.lower() or "failed" in line.lower():
+                            _printer.error(line.strip(), backend="themes")
+                        else:
+                            # Treat as info message (cyan) instead of error
+                            _printer.info(line.strip(), backend="themes")
+
+            # Summary message (green)
+            _printer.success(f"Icon theme {theme_name} ready", backend="themes")
             
         except Exception as e:
-            print(f"System Error (Icons): {e}")
+            _printer.error(f"System Error (Icons): {e}", backend="themes")
             return None
             
     return theme_name

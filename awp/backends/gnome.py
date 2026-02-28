@@ -7,31 +7,92 @@ Contains all GNOME-specific wallpaper and theme management functions.
 import os
 import subprocess
 
-# ANSI Color Codes for clean terminal output (matching xfce.py)
-CLR_RED    = "\033[91m"
-CLR_GREEN  = "\033[92m"
-CLR_YELLOW = "\033[93m"
-CLR_CYAN   = "\033[96m"
-CLR_RESET  = "\033[0m"
-CLR_BOLD   = "\033[1m"
+from core.constants import SCALING_FEH
+from core.printer import get_printer
 
+# Get printer instance
+_printer = get_printer()
+
+# GNOME-specific scaling mapping
 SCALING_GNOME = {'centered': 'centered', 'scaled': 'scaled', 'zoomed': 'zoom'}
+
+def _get_current_gsetting(schema, key):
+    """Get current gsettings value."""
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", schema, key],
+            capture_output=True, text=True, check=True
+        )
+        # Remove quotes from string output
+        return result.stdout.strip().strip("'")
+    except:
+        return None
+
+def gnome_set_themes(ws_num: int, config):
+    """
+    Simple orchestrator - applies theme components only if they differ from current.
+    Handles: gtk_theme, icon_theme, cursor_theme
+    GNOME doesn't have separate WM theme (uses GTK theme).
+    """
+    section = f"ws{ws_num + 1}"
+    if not config.has_section(section):
+        return
+    
+    changes = []
+    
+    # Get what SHOULD be from config
+    should_gtk = config.get(section, 'gtk_theme', fallback=None)
+    should_icon = config.get(section, 'icon_theme', fallback=None)
+    should_cursor = config.get(section, 'cursor_theme', fallback=None)
+    # wm_theme is ignored - GNOME uses GTK theme for window decorations
+    
+    # Check GTK theme
+    if should_gtk:
+        current = _get_current_gsetting("org.gnome.desktop.interface", "gtk-theme")
+        if current != should_gtk:
+            subprocess.run([
+                "gsettings", "set", "org.gnome.desktop.interface", 
+                "gtk-theme", should_gtk
+            ], check=False)
+            changes.append("gtk")
+    
+    # Check Icon theme
+    if should_icon:
+        current = _get_current_gsetting("org.gnome.desktop.interface", "icon-theme")
+        if current != should_icon:
+            subprocess.run([
+                "gsettings", "set", "org.gnome.desktop.interface", 
+                "icon-theme", should_icon
+            ], check=False)
+            changes.append("icons")
+    
+    # Check Cursor theme
+    if should_cursor:
+        current = _get_current_gsetting("org.gnome.desktop.interface", "cursor-theme")
+        if current != should_cursor:
+            subprocess.run([
+                "gsettings", "set", "org.gnome.desktop.interface", 
+                "cursor-theme", should_cursor
+            ], check=False)
+            changes.append("cursor")
+    
+    # Use printer with explicit backend
+    _printer.themes(ws_num, changes, backend="gnome")
 
 def gnome_lean_mode():
     """
     GNOME already uses native wallpaper methods.
     This is a compatibility placeholder.
     """
-    print(f"{CLR_CYAN}[AWP-GNOME]{CLR_RESET} {CLR_YELLOW}Note: GNOME uses native wallpaper methods{CLR_RESET}")
+    _printer.info("GNOME uses native wallpaper methods", backend="gnome")
 
 def gnome_force_single_workspace_off():
     """GNOME doesn't have single workspace mode to disable."""
-    print(f"{CLR_CYAN}[AWP-GNOME]{CLR_RESET} {CLR_YELLOW}Note: GNOME doesn't have single workspace mode{CLR_RESET}")
+    _printer.info("GNOME doesn't have single workspace mode", backend="gnome")
 
 def gnome_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """
     Alias for gnome_set_wallpaper since GNOME is already native.
-    Uses gsettings to set wallpaper with visual feedback.
     """
     return gnome_set_wallpaper(ws_num, image_path, scaling)
 
@@ -43,17 +104,26 @@ def gnome_set_wallpaper(ws_num: int, image_path: str, scaling: str):
         wp_name = os.path.basename(image_path)
         
         # Set wallpaper properties (both light and dark mode)
-        subprocess.run(["gsettings", "set", "org.gnome.desktop.background", "picture-uri", uri], check=True)
-        subprocess.run(["gsettings", "set", "org.gnome.desktop.background", "picture-uri-dark", uri], check=True)
-        subprocess.run(["gsettings", "set", "org.gnome.desktop.background", "picture-options", style_val], check=True)
+        subprocess.run([
+            "gsettings", "set", "org.gnome.desktop.background", 
+            "picture-uri", uri
+        ], check=True)
+        subprocess.run([
+            "gsettings", "set", "org.gnome.desktop.background", 
+            "picture-uri-dark", uri
+        ], check=True)
+        subprocess.run([
+            "gsettings", "set", "org.gnome.desktop.background", 
+            "picture-options", style_val
+        ], check=True)
         
-        # Visual feedback
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} Workspace {ws_num + 1} -> {CLR_GREEN}{CLR_BOLD}{wp_name}{CLR_RESET}")
+        # Use printer for feedback
+        _printer.wallpaper(ws_num, wp_name, backend="gnome")
         
     except subprocess.CalledProcessError as e:
-        print(f"{CLR_RED}[AWP-GNOME] Failed to set wallpaper via gsettings: {e}{CLR_RESET}")
+        _printer.error(f"Failed to set wallpaper via gsettings: {e}", backend="gnome")
     except Exception as e:
-        print(f"{CLR_RED}[AWP-GNOME] Unexpected error: {e}{CLR_RESET}")
+        _printer.error(f"Unexpected error: {e}", backend="gnome")
 
 def gnome_set_icon(icon_path: str):
     """
@@ -64,34 +134,10 @@ def gnome_set_icon(icon_path: str):
         icon_path (str): Full path to icon image file (ignored)
     """
     icon_name = os.path.basename(icon_path)
-    print(f"{CLR_YELLOW}[AWP-GNOME]{CLR_RESET} Panel icon setting not available in GNOME (would set: {CLR_CYAN}{icon_name}{CLR_RESET})")
+    _printer.info(f"Panel icon setting not available in GNOME (would set: {icon_name})", backend="gnome")
+    return False
 
-def gnome_set_themes(ws_num: int, config):
-    """Set GNOME theme parameters from configuration."""
-    section = f"ws{ws_num + 1}"
-    
-    if not config.has_section(section):
-        print(f"{CLR_YELLOW}[AWP-GNOME] No theme config found for {section}{CLR_RESET}")
-        return
-    
-    icon_theme = config.get(section, 'icon_theme', fallback=None)
-    gtk_theme = config.get(section, 'gtk_theme', fallback=None)
-    cursor_theme = config.get(section, 'cursor_theme', fallback=None)
-    
-    try:
-        if icon_theme:
-            subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", icon_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} GNOME icon theme: {CLR_CYAN}{icon_theme}{CLR_RESET}")
-        
-        if gtk_theme:
-            subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", gtk_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} GNOME GTK theme: {CLR_CYAN}{gtk_theme}{CLR_RESET}")
-        
-        if cursor_theme:
-            subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "cursor-theme", cursor_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} GNOME cursor theme: {CLR_CYAN}{cursor_theme}{CLR_RESET}")
-        
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} Themes Applied for {CLR_BOLD}WS{ws_num + 1}{CLR_RESET}")
-        
-    except Exception as e:
-        print(f"{CLR_RED}Error applying GNOME themes: {e}{CLR_RESET}")
+# Optional: Add helper function for API consistency
+def gnome_get_monitors_for_workspace(ws_num: int):
+    """Get list of monitors (placeholder for API compatibility)."""
+    return []  # GNOME handles multi-monitor automatically

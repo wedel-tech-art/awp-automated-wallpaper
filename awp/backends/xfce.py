@@ -8,21 +8,12 @@ import os
 import subprocess
 import configparser
 
-# ANSI Color Codes
-CLR_RED    = "\033[91m"
-CLR_GREEN  = "\033[92m"
-CLR_YELLOW = "\033[93m"
-CLR_CYAN   = "\033[96m"
-CLR_RESET  = "\033[0m"
-CLR_BOLD   = "\033[1m"
+from core.constants import SCALING_FEH
+from core.printer import get_printer
 
-# XFCE specific mapping
-SCALING_XFCE = {'centered': 1, 'scaled': 4, 'zoomed': 5}
-SCALING_FEH = {
-    'centered': '--bg-center',
-    'scaled': '--bg-scale',
-    'zoomed': '--bg-fill'
-}
+# Get printer instance
+_printer = get_printer()
+# No set_backend here - we'll pass it explicitly in each function
 
 def _get_current_value(channel, property):
     """Get current XFCE setting value."""
@@ -93,12 +84,9 @@ def xfce_set_themes(ws_num: int, config):
             ], check=False)
             changes.append("wm")
     
-    # Simple feedback if anything changed
-    if changes:
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} WS{ws_num + 1} themes: {CLR_GREEN}{', '.join(changes)}{CLR_RESET}")
+    # Use printer with explicit backend
+    _printer.themes(ws_num, changes, backend="xfce")
 
-
-# Keep all your existing functions exactly as they were...
 def xfce_lean_mode():
     """Kills xfdesktop and prevents XFCE from restarting it."""
     try:
@@ -108,9 +96,9 @@ def xfce_lean_mode():
             "-t", "string", "-s", "true", "--create"
         ], stderr=subprocess.DEVNULL)
         subprocess.run(["xfdesktop", "--quit"], stderr=subprocess.DEVNULL)
-        print(f"{CLR_CYAN}[AWP-XFCE]{CLR_RESET} {CLR_YELLOW}Lean Mode Activated{CLR_RESET}")
+        _printer.lean_mode("Activated", backend="xfce")
     except Exception as e:
-        print(f"{CLR_RED}[AWP-XFCE] Lean Mode Error: {e}{CLR_RESET}")
+        _printer.error(str(e), backend="xfce")
 
 def xfce_force_single_workspace_off():
     """Disable single workspace mode in XFCE."""
@@ -135,6 +123,8 @@ def xfce_get_monitors_for_workspace(ws_num: int):
 
 def xfce_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """LEGACY: Set wallpaper using XFCE's native desktop manager."""
+    # XFCE-specific scaling (stays here, not in constants)
+    SCALING_XFCE = {'centered': 1, 'scaled': 4, 'zoomed': 5}
     style_code = SCALING_XFCE.get(scaling, 5)
     for mon in xfce_get_monitors_for_workspace(ws_num):
         subprocess.run([
@@ -156,9 +146,9 @@ def xfce_set_wallpaper(ws_num: int, image_path: str, scaling: str):
     
     try:
         subprocess.run(["feh", style_flag, image_path], check=True)
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} Workspace {ws_num + 1} -> {CLR_GREEN}{CLR_BOLD}{wp_name}{CLR_RESET}")
+        _printer.wallpaper(ws_num, wp_name, backend="xfce")
     except Exception as e:
-        print(f"{CLR_YELLOW}[AWP-XFCE] feh failed, falling back to native: {e}{CLR_RESET}")
+        _printer.warning(f"feh failed, falling back to native: {e}", backend="xfce")
         xfce_set_wallpaper_native(ws_num, image_path, scaling)
 
 def xfce_set_icon(icon_path: str):
@@ -175,8 +165,9 @@ def xfce_set_icon(icon_path: str):
              "-s", icon_path, "--create", "-t", "string"],
             capture_output=True, check=True
         )
-        print(f"{CLR_GREEN}✓{CLR_RESET} XFCE whiskermenu icon refreshed: {CLR_CYAN}{os.path.basename(icon_path)}{CLR_RESET}")
+        icon_name = os.path.basename(icon_path)
+        _printer.icon(icon_name, backend="xfce")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"{CLR_RED}✗ Failed to set icon: {e.stderr}{CLR_RESET}")
+        _printer.error(f"Failed to set icon: {e.stderr}", backend="xfce")
         return False

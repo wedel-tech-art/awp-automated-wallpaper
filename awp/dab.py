@@ -20,12 +20,16 @@ from PyQt6.QtGui import QPixmap
 
 # OTHER IMPORTS
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR, DEFAULT_ICON
+from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR, DEFAULT_ICON, THEME_CAPABILITIES
 from core.config import AWPConfig
 from core.utils import get_icon_color
 from core.themes import get_available_themes, bake_awp_theme, bake_awp_icon
 from core.actions import refresh_current_workspace
 from backends import BACKEND_NAMES
+from core.printer import get_printer
+
+# Initialize printer for dashboard
+_printer = get_printer()
 
 BASE_FOLDER = QStandardPaths.writableLocation(
     QStandardPaths.StandardLocation.HomeLocation
@@ -215,44 +219,36 @@ class WorkspaceTab(QWidget):
         self.update_theme_availability()
         self.update_icon_preview()
 
-
     def update_theme_availability(self):
-        """Update theme dropdown availability and tooltips based on current DE/WM."""
-        # 1. Get current DE from the parent window's combo
+        """Update theme dropdown availability based on current DE/WM."""
         de = self.parent_window.get_current_de().lower()
         
-        # 2. Logic for Window Theme (WM)
-        # It's modular if it's XFCE, MATE, Generic, or a hybrid (openbox/qtile)
-        is_wm_modular = any(k in de for k in ["xfce", "mate", "openbox", "qtile", "generic"])
+        # Get capabilities for this DE, fallback to generic
+        caps = THEME_CAPABILITIES.get(de, THEME_CAPABILITIES['generic'])
         
+        # Window Theme
         wm_combo = self.theme_controls.get('wm_theme')
         if wm_combo:
-            wm_combo.setEnabled(is_wm_modular)
-            if is_wm_modular:
+            wm_combo.setEnabled(caps['has_wm_theme'])
+            if caps['has_wm_theme']:
                 wm_combo.setToolTip(f"Select window borders/decorations for {de.upper()}")
             else:
-                wm_combo.setToolTip(f"Window borders are integrated into the GTK theme in {de.upper()}")
+                wm_combo.setToolTip(f"Window borders integrated into GTK theme")
 
-        # 3. Logic for Desktop Theme
-        # Currently, only Cinnamon uses this specific 'desktop_theme' key
-        is_cinnamon = (de == "cinnamon")
-        
+        # Desktop Theme
         dt_combo = self.theme_controls.get('desktop_theme')
         if dt_combo:
-            dt_combo.setEnabled(is_cinnamon)
-            if is_cinnamon:
-                dt_combo.setToolTip("Select the Cinnamon Shell/Desktop theme")
+            dt_combo.setEnabled(caps['has_desktop_theme'])
+            if caps['has_desktop_theme']:
+                dt_combo.setToolTip("Select the desktop shell theme")
             else:
-                dt_combo.setToolTip(f"Desktop/Shell themes are not applicable to {de.upper()}")
+                dt_combo.setToolTip("Desktop shell themes not applicable")
 
-        # 4. Universal Basics (Icons, GTK, Cursors)
-        # These are always enabled in our suite
+        # Universal Basics (always enabled for now)
         for key in ['icon_theme', 'gtk_theme', 'cursor_theme']:
             combo = self.theme_controls.get(key)
             if combo:
                 combo.setEnabled(True)
-                label = key.replace('_', ' ').capitalize()
-                combo.setToolTip(f"Select {label} for this workspace")
                 
     # --- SIGNAL HANDLERS ---
     
@@ -430,14 +426,14 @@ class WorkspaceTab(QWidget):
                 # Copy the file with try-except for SameFileError
                 try:
                     shutil.copy2(current_icon_path, new_icon_path)
-                    print(f"Icon saved as: {new_icon_path}")
+                    _printer.info(f"Icon saved as: {new_icon_path}", backend="dab")
                     self.icon_edit.setText(new_icon_path)
                     self.update_icon_preview()
                 except shutil.SameFileError:
                     pass  # File is already where it should be - this is fine!
                 
             except Exception as e:
-                print(f"Could not copy icon: {e}")
+                _printer.error(f"Could not copy icon: {e}", backend="dab")
     
         # Save all settings
         config.set(section, 'folder', folder)
@@ -453,9 +449,9 @@ class WorkspaceTab(QWidget):
                 color = get_icon_color(new_icon_path)
                 if color:
                     config.set(section, 'icon_color', color)
-                    print(f"WS{self.index}: Color detected: {color}")
+                    _printer.info(f"WS{self.index}: Color detected: {color}", backend="dab")
             except Exception as e:
-                print(f"WS{self.index}: Error detecting color: {e}")
+                _printer.warning(f"WS{self.index}: Error detecting color: {e}", backend="dab")
 
         # Theme settings
         for key, combo in self.theme_controls.items():
@@ -484,6 +480,7 @@ class AWPDashboard(QWidget):
     def __init__(self):
         """Initialize dashboard and load existing configuration."""
         super().__init__()
+        _printer.info("Starting AWP Dashboard...", backend="dab")
         self.setStyleSheet("QWidget { background-color: #2e2e2e; } QWidget:enabled { color: white; }")
         self.setWindowTitle("AWP Dashboard - Configuration Editor (Qt6)")
         self.setFixedSize(550, 670)
@@ -781,6 +778,8 @@ class AWPDashboard(QWidget):
         baked_themes_count = 0
         baked_icons_count = 0
         
+        _printer.info("Starting genetic themes sync...", backend="dab")
+        
         # Iterate through workspace tabs
         for i in range(1, self.tab_widget.count()):
             section = f'ws{i}' 
@@ -802,13 +801,13 @@ class AWPDashboard(QWidget):
             
             # --- Check & Bake GTK Theme ---
             if not os.path.exists(theme_path):
-                print(f"Syncing: Theme {theme_name} missing. Initiating bake...")
+                _printer.info(f"Syncing: Theme {theme_name} missing. Initiating bake...", backend="dab")
                 bake_awp_theme(hex_color, icon)
                 baked_themes_count += 1
 
             # --- Check & Bake Icons ---
             if not os.path.exists(icon_path):
-                print(f"Syncing: Icons {icon_name} missing. Initiating bake...")
+                _printer.info(f"Syncing: Icons {icon_name} missing. Initiating bake...", backend="dab")
                 # Add 'icon' here!
                 bake_awp_icon(hex_color, icon) 
                 baked_icons_count += 1
@@ -820,8 +819,10 @@ class AWPDashboard(QWidget):
         total_new = baked_themes_count + baked_icons_count
         if total_new > 0:
             msg = f"Baked {baked_themes_count} themes and {baked_icons_count} icon sets."
+            _printer.success(f"Sync complete: {msg}", backend="dab")
             QMessageBox.information(self, "Sync Complete", msg)
         else:
+            _printer.info("Sync complete: Everything is already up to date.", backend="dab")
             QMessageBox.information(self, "Sync Complete", "Everything is already up to date.")
 
     def refresh_theme_lists(self):
@@ -879,6 +880,8 @@ class AWPDashboard(QWidget):
     def save_config(self):
         """Save using AWPConfig API."""
         try:
+            _printer.info("Saving configuration...", backend="dab")
+            
             # General settings
             self.config.set('general', 'os_detected', self.de_combo.currentText())
             self.config.set('general', 'session_type', self.session_combo.currentText())
@@ -896,9 +899,11 @@ class AWPDashboard(QWidget):
             for tab in self.workspace_tabs:
                 tab.save_to_config()
             
+            _printer.success("Configuration saved successfully!", backend="dab")
             QMessageBox.information(self, "Success", "Configuration saved!")
             refresh_current_workspace()
         except Exception as e:
+            _printer.error(f"Failed to save: {str(e)}", backend="dab")
             QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
 
 
@@ -999,9 +1004,11 @@ class AWPDashboard(QWidget):
         if os.path.exists(self.config.path):
             backup_path = str(self.config.path) + ".backup"
             shutil.copy(str(self.config.path), backup_path)
+            _printer.success(f"Configuration backed up to: {backup_path}", backend="dab")
             QMessageBox.information(self, "Backup Created", 
                                   f"Configuration backed up to:\n{backup_path}")
         else:
+            _printer.warning("No configuration file found to backup.", backend="dab")
             QMessageBox.warning(self, "No Config", "No configuration file found.")
 
 # =============================================================================
@@ -1014,4 +1021,3 @@ if __name__ == "__main__":
     window = AWPDashboard()
     window.show()
     sys.exit(app.exec())
-

@@ -9,38 +9,54 @@ import subprocess
 import colorsys
 from PIL import Image
 
+from core.printer import get_printer
 
-# Terminal Colors for Status Output
-CLR_CYAN = "\033[96m"
-CLR_GREEN = "\033[92m"
-CLR_RED = "\033[91m"
-CLR_YELLOW = "\033[93m"
-CLR_RESET = "\033[0m"
+# Initialize printer once at module level
+_printer = get_printer()
 
 def x11_blanking(timeout_seconds: int):
     """Universal X11 screen blanking control via xset."""
     try:
         if timeout_seconds == 0:
             subprocess.run(["xset", "s", "off", "-dpms"], check=False)
-            print(f"{CLR_CYAN}[AWP]{CLR_RESET} Screen blanking: {CLR_RED}DISABLED{CLR_RESET}")
+            _printer.info(f"Screen blanking: DISABLED", backend="utils")
         else:
             subprocess.run(["xset", "s", str(timeout_seconds)], check=False)
             subprocess.run(["xset", "+dpms", "dpms", str(timeout_seconds), str(timeout_seconds), str(timeout_seconds)], check=False)
-            print(f"{CLR_CYAN}[AWP]{CLR_RESET} Screen blanking: {CLR_GREEN}{timeout_seconds}s{CLR_RESET}")
+            _printer.info(f"Screen blanking: {timeout_seconds}s", backend="utils")
     except Exception as e:
-        print(f"{CLR_RED}[AWP-UTILS] Blanking Error: {e}{CLR_RESET}")
+        _printer.error(f"Blanking Error: {e}", backend="utils")
 
 def get_icon_color(image_path: str) -> str:
-    """Extract dominant color from the first non-transparent pixel."""
+    """Extract dominant color by sampling multiple pixels."""
     try:
         with Image.open(image_path) as img:
             rgba = img.convert("RGBA")
-            pixels = list(rgba.getdata())
-            for r, g, b, a in pixels:
-                if a > 0:
-                    return f'#{r:02x}{g:02x}{b:02x}'
-            return ""
-    except Exception:
+            
+            # Sample 100 pixels across the image (10x10 grid)
+            width, height = rgba.size
+            samples = []
+            
+            for i in range(10):
+                for j in range(10):
+                    x = int(width * i / 10)
+                    y = int(height * j / 10)
+                    if x < width and y < height:
+                        r, g, b, a = rgba.getpixel((x, y))
+                        if a > 0:  # Only use non-transparent pixels
+                            samples.append((r, g, b))
+            
+            if not samples:
+                return ""
+            
+            # Average the samples
+            avg_r = sum(c[0] for c in samples) // len(samples)
+            avg_g = sum(c[1] for c in samples) // len(samples)
+            avg_b = sum(c[2] for c in samples) // len(samples)
+            
+            return f'#{avg_r:02x}{avg_g:02x}{avg_b:02x}'
+            
+    except Exception as e:
         return ""
 
 def get_ram_info():

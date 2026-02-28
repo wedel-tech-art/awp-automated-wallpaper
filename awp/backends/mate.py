@@ -8,26 +8,88 @@ import os
 import subprocess
 import time
 
-# ANSI Color Codes
-CLR_RED    = "\033[91m"
-CLR_GREEN  = "\033[92m"
-CLR_YELLOW = "\033[93m"
-CLR_CYAN   = "\033[96m"
-CLR_RESET  = "\033[0m"
-CLR_BOLD   = "\033[1m"
+from core.constants import SCALING_FEH
+from core.printer import get_printer
+
+# Get printer instance
+_printer = get_printer()
 
 # MATE native scaling
 SCALING_MATE = {'centered': 'centered', 'scaled': 'scaled', 'zoomed': 'zoom'}
 
-# feh scaling (same as XFCE)
-SCALING_FEH = {
-    'centered': '--bg-center',
-    'scaled': '--bg-scale',
-    'zoomed': '--bg-fill'
-}
-
 # Simple state tracking
 _lean_mode_active = False
+
+def _get_current_gsetting(schema, key):
+    """Get current gsettings value."""
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", schema, key],
+            capture_output=True, text=True, check=True
+        )
+        return result.stdout.strip().strip("'")
+    except:
+        return None
+
+def mate_set_themes(ws_num: int, config):
+    """
+    Simple orchestrator - applies theme components only if they differ from current.
+    Handles: gtk_theme, icon_theme, cursor_theme, wm_theme
+    """
+    section = f"ws{ws_num + 1}"
+    if not config.has_section(section):
+        return
+    
+    changes = []
+    
+    # Get what SHOULD be from config
+    should_gtk = config.get(section, 'gtk_theme', fallback=None)
+    should_icon = config.get(section, 'icon_theme', fallback=None)
+    should_cursor = config.get(section, 'cursor_theme', fallback=None)
+    should_wm = config.get(section, 'wm_theme', fallback=None)
+    
+    # Check GTK theme
+    if should_gtk:
+        current = _get_current_gsetting("org.mate.interface", "gtk-theme")
+        if current != should_gtk:
+            subprocess.run([
+                "gsettings", "set", "org.mate.interface", 
+                "gtk-theme", should_gtk
+            ], check=False)
+            changes.append("gtk")
+    
+    # Check Icon theme
+    if should_icon:
+        current = _get_current_gsetting("org.mate.interface", "icon-theme")
+        if current != should_icon:
+            subprocess.run([
+                "gsettings", "set", "org.mate.interface", 
+                "icon-theme", should_icon
+            ], check=False)
+            changes.append("icons")
+    
+    # Check Cursor theme
+    if should_cursor:
+        current = _get_current_gsetting("org.mate.peripherals-mouse", "cursor-theme")
+        if current != should_cursor:
+            subprocess.run([
+                "gsettings", "set", "org.mate.peripherals-mouse", 
+                "cursor-theme", should_cursor
+            ], check=False)
+            changes.append("cursor")
+    
+    # Check Window Manager theme (Marco)
+    if should_wm:
+        current = _get_current_gsetting("org.mate.Marco.general", "theme")
+        if current != should_wm:
+            subprocess.run([
+                "gsettings", "set", "org.mate.Marco.general", 
+                "theme", should_wm
+            ], check=False)
+            changes.append("wm")
+    
+    # Use printer with explicit backend
+    _printer.themes(ws_num, changes, backend="mate")
 
 def mate_lean_mode():
     """
@@ -37,7 +99,7 @@ def mate_lean_mode():
     global _lean_mode_active
     
     try:
-        print(f"{CLR_CYAN}[AWP-MATE]{CLR_RESET} {CLR_YELLOW}Activating Lean Mode...{CLR_RESET}")
+        _printer.info("Activating Lean Mode...", backend="mate")
         
         # Kill caja-desktop (MATE's desktop manager)
         subprocess.run(["pkill", "-f", "caja-desktop"], stderr=subprocess.DEVNULL)
@@ -46,21 +108,18 @@ def mate_lean_mode():
         # Kill cairo-dock if present (common MATE dock)
         subprocess.run(["pkill", "-f", "cairo-dock"], stderr=subprocess.DEVNULL)
         
-        # Optional: Try to prevent auto-restart (not always possible in MATE)
-        # MATE sessions are usually less aggressive about restarting than GNOME
-        
         _lean_mode_active = True
-        print(f"{CLR_CYAN}[AWP-MATE]{CLR_RESET} {CLR_GREEN}Lean Mode Activated: caja-desktop terminated{CLR_RESET}")
+        _printer.lean_mode("Activated - caja-desktop terminated", backend="mate")
         return True
         
     except Exception as e:
-        print(f"{CLR_RED}[AWP-MATE] Lean Mode Error: {e}{CLR_RESET}")
+        _printer.error(f"Lean Mode Error: {e}", backend="mate")
         _lean_mode_active = False
         return False
 
 def mate_force_single_workspace_off():
     """MATE doesn't have single workspace mode to disable."""
-    print(f"{CLR_CYAN}[AWP-MATE]{CLR_RESET} {CLR_YELLOW}Note: MATE doesn't have single workspace mode{CLR_RESET}")
+    _printer.info("MATE doesn't have single workspace mode", backend="mate")
 
 def mate_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """
@@ -72,17 +131,23 @@ def mate_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
         wp_name = os.path.basename(image_path)
         
         # Set wallpaper using MATE's gsettings
-        subprocess.run(["gsettings", "set", "org.mate.background", "picture-filename", image_path], check=True)
-        subprocess.run(["gsettings", "set", "org.mate.background", "picture-options", style_val], check=True)
+        subprocess.run([
+            "gsettings", "set", "org.mate.background", 
+            "picture-filename", image_path
+        ], check=True)
+        subprocess.run([
+            "gsettings", "set", "org.mate.background", 
+            "picture-options", style_val
+        ], check=True)
         
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} Workspace {ws_num + 1} -> {CLR_GREEN}{CLR_BOLD}{wp_name}{CLR_RESET} (MATE native)")
+        _printer.wallpaper(ws_num, wp_name, backend="mate")
         return True
         
     except subprocess.CalledProcessError as e:
-        print(f"{CLR_RED}[AWP-MATE] Native wallpaper failed: {e}{CLR_RESET}")
+        _printer.error(f"Native wallpaper failed: {e}", backend="mate")
         return False
     except Exception as e:
-        print(f"{CLR_RED}[AWP-MATE] Unexpected error: {e}{CLR_RESET}")
+        _printer.error(f"Unexpected error: {e}", backend="mate")
         return False
 
 def mate_set_wallpaper(ws_num: int, image_path: str, scaling: str):
@@ -94,48 +159,19 @@ def mate_set_wallpaper(ws_num: int, image_path: str, scaling: str):
     
     try:
         subprocess.run(["feh", style_flag, image_path], check=True)
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} Workspace {ws_num + 1} -> {CLR_GREEN}{CLR_BOLD}{wp_name}{CLR_RESET} (feh)")
+        _printer.wallpaper(ws_num, wp_name, backend="mate")
         return True
     except Exception as e:
-        print(f"{CLR_YELLOW}[AWP-MATE] feh failed, falling back to native: {e}{CLR_RESET}")
-        return mate_set_wallpaper_native(ws_num, image_path, scaling)  # Fallback to native
+        _printer.warning(f"feh failed, falling back to native: {e}", backend="mate")
+        return mate_set_wallpaper_native(ws_num, image_path, scaling)
 
 def mate_set_icon(icon_path: str):
     """MATE icon setting placeholder."""
     icon_name = os.path.basename(icon_path)
-    print(f"{CLR_YELLOW}[AWP-MATE]{CLR_RESET} Panel icon setting not available in MATE (would set: {CLR_CYAN}{icon_name}{CLR_RESET})")
+    _printer.info(f"Panel icon setting not available in MATE (would set: {icon_name})", backend="mate")
+    return False
 
-def mate_set_themes(ws_num: int, config):
-    """Set MATE theme parameters from configuration."""
-    section = f"ws{ws_num + 1}"
-    
-    if not config.has_section(section):
-        print(f"{CLR_YELLOW}[AWP-MATE] No theme config found for {section}{CLR_RESET}")
-        return
-    
-    icon_theme = config.get(section, 'icon_theme', fallback=None)
-    gtk_theme = config.get(section, 'gtk_theme', fallback=None)
-    cursor_theme = config.get(section, 'cursor_theme', fallback=None)
-    wm_theme = config.get(section, 'wm_theme', fallback=None)
-    
-    try:
-        if icon_theme:
-            subprocess.run(["gsettings", "set", "org.mate.interface", "icon-theme", icon_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} MATE icon theme: {CLR_CYAN}{icon_theme}{CLR_RESET}")
-        
-        if gtk_theme:
-            subprocess.run(["gsettings", "set", "org.mate.interface", "gtk-theme", gtk_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} MATE GTK theme: {CLR_CYAN}{gtk_theme}{CLR_RESET}")
-        
-        if cursor_theme:
-            subprocess.run(["gsettings", "set", "org.mate.peripherals-mouse", "cursor-theme", cursor_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} MATE cursor theme: {CLR_CYAN}{cursor_theme}{CLR_RESET}")
-        
-        if wm_theme:
-            subprocess.run(["gsettings", "set", "org.mate.Marco.general", "theme", wm_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} MATE window theme: {CLR_CYAN}{wm_theme}{CLR_RESET}")
-        
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} Themes Applied for {CLR_BOLD}WS{ws_num + 1}{CLR_RESET}")
-        
-    except Exception as e:
-        print(f"{CLR_RED}Error applying MATE themes: {e}{CLR_RESET}")
+# Optional: Add helper function for API consistency
+def mate_get_monitors_for_workspace(ws_num: int):
+    """Get list of monitors (placeholder for API compatibility)."""
+    return []  # MATE handles multi-monitor automatically

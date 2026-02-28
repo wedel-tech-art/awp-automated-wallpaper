@@ -1,17 +1,16 @@
-# AWP - Automated Wallpaper Program
+# AWP - Desktop Alchemy 🧪✨
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-green)](https://python.org)
 [![Qt](https://img.shields.io/badge/Qt-6-purple)](https://qt.io)
-[![Refactored](https://img.shields.io/badge/status-core--consolidated-brightgreen)](https://github.com/wedel-tech-art/awp-automated-wallpaper)
+[![Refactored](https://img.shields.io/badge/status-desktop--alchemy-brightgreen)](https://github.com/wedel-tech-art/awp-automated-wallpaper)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-## 🎯 Why AWP?
+## 🎯 What is Desktop Alchemy?
 
 Most wallpaper managers rotate images.
-AWP orchestrates the entire desktop identity.
+AWP **transmutes** your entire desktop environment.
 
-It treats each workspace as a distinct visual environment — synchronizing themes, icons, cursors, and now runtime telemetry — under a unified architecture.
-
+Each workspace becomes a distinct visual identity — with its own themes, icons, cursors, and wallpapers — all synchronized through a unified, intelligent architecture. From a single color, AWP **bakes** complete GTK and icon themes, creating harmony across your entire system.
 
 ## 🚀 Key Features
 
@@ -22,18 +21,21 @@ It treats each workspace as a distinct visual environment — synchronizing them
     * **🔍 Real-Time Metadata (Hover-to-Hex)**: Hover over any workspace preview icon in the Dashboard to instantly see the extracted Hex color code rendered in real-time.
     * **Dedicated Theme Engine**: Powered by `core/themes.py`, a specialized module for procedural asset generation and theme list management.    
 
-* **🏗️ Modernized Qt6 Controller**:
-    * **Zero-Restart Workflow**: Features a standalone **Sync & Refresh** engine that updates system themes and UI dropdowns in real-time without requiring a restart.
-    * **Professional UI Styling**: Optimized dark-mode aesthetics with "faded" read-only states for locked system fields (Adwaita).
+* **🖨️ Unified Printer System (V3.6)**:
+    * **Single Source of Truth**: All terminal output now flows through `core/printer.py` – no more scattered color codes.
+    * **Context-Aware Prefixes**: Every module identifies itself clearly:
+        - `[AWP-backends]` (🟡 Yellow) - Backend loader
+        - `[AWP-daemon]` (🔵 Cyan) - Main daemon
+        - `[AWP-xfce]`, `[AWP-qtile_xfce]` (🔵 Cyan) - Runtime backends
+        - `[AWP-dab]` (🔵 Cyan) - Qt6 Dashboard
+        - `[AWP-nav]` (🔵 Cyan) - Navigation tool
+        - `[AWP-utils]` (🔵 Cyan) - Utilities
+        - `[AWP-themes]` (🔵 Cyan) - Theme baking engine
+    * **Zero Duplication**: Change formatting once, affects everywhere.
+    * **Professional Output**: Clean, consistent, color-coded logs across all components.
 
-* **📦 Comprehensive "Deep" Theming**: Total environment synchronization per workspace.
-    * **Visual Atmosphere**: Orchestrates a complete aesthetic shift by synchronizing Wallpapers, Icon Sets, GTK Widgets, and Window Decorations (GTK 2/3/4) in real-time.
-    * **Cursor Themes**: Seamless mouse pointer synchronization to match your active style.
-    * **🧪 Experimental "Generic" Scope**: Expanded support for **Icon, GTK, and Cursor** switching in hybrid environments (e.g., Openbox + XFCE), allowing AWP to act as a standalone theme manager.
-    * **Universal Compatibility**: Designed to "embellish" the workspace across both **X11 and Wayland** sessions (Gnome/Cinnamon) using native backend integration.
-
-* **🎮 Interactive Navigation & Aesthetic Effects**: Powered by `nav.py`.
-    * **Dynamic Library Control**: Rapid **Next** and **Previous** wallpaper cycling via keyboard shortcuts for an evolving workspace.
+* **🎮 Interactive Navigation & Aesthetic Effects**:
+    * **Dynamic Library Control**: Rapid **Next** and **Previous** wallpaper cycling via keyboard shortcuts.
     * **Real-time Image Processing**: Instantly adapt your wallpaper's look with non-destructive effects:
         * **Sharpen**: Enhance detail and clarity for high-resolution displays.
         * **Black & White**: Instant minimalist grayscale conversion.
@@ -41,42 +43,40 @@ It treats each workspace as a distinct visual environment — synchronizing them
     * **Asset Management**: Integrated **Delete** functionality to curate your wallpaper library on the fly.
 
 * **⚡ Optimized for Low-Resource Hardware**:
-    * **"Lean Mode"**: Specifically tailored for old systems. Includes an optional bypass for `xfdesktop`, utilizing `feh` for ultra-lightweight wallpaper rendering without sacrificing the "Deep Theming" experience.
+    * **"Lean Mode"**: Specifically tailored for old systems. Kills desktop managers (xfdesktop, caja-desktop) and uses `feh` for ultra-lightweight wallpaper rendering without sacrificing the "Deep Theming" experience.
 
 * **🏗️ Universal Modular Architecture**:
-    * **DE-Centric Design**: Focuses on Desktop Environments (**XFCE, Cinnamon, Gnome, and Mate**) rather than specific distributions, making it truly distro-agnostic.
-    * **Unified Logic Core**: Centralized libraries ensure that the "Desktop Experience" remains consistent and high-quality across all supported backends.
+    * **DE-Centric Design**: Focuses on Desktop Environments (**XFCE, Cinnamon, GNOME, MATE, Qtile/XFCE**) rather than specific distributions.
+    * **Smart Backend Factory**: `backends/__init__.py` dynamically loads only what's available.
+    * **Capability Matrix**: UI knows exactly what each backend supports (window themes, desktop themes, etc.).
 
 * **🖥️ Native X11 Blanking Management**: 
     * **Independent Power Control**: Integrated direct management of screen timeouts and DPMS via X11 (`xset`).
     * **Lean System Design**: Specifically designed to provide display control for users who choose to remove `xfce4-power-manager` or `light-locker`.
 
-### 🚀 Supported Backends
-AWP now uses a dynamic backend factory, supporting both native desktop setters and a "Lean Mode" via `feh`.
+### 🚀 Desktop Environment Support
 
-| Backend | Mode | Desktop Environment |
-| :--- | :--- | :--- |
-| **XFCE** | Native + Lean | xfdesktop / feh |
-| **Qtile/XFCE** | Hybrid | qtile(X11)/xfsettingsd |
-| **Cinnamon** | Native | gsettings |
-| **GNOME** | Native | gsettings |
-| **MATE** | Native | dconf |
-| **Openbox/XFCE**| Lean | feh (Hybrid setup) |
-| **Generic** | Lean | feh (Fallback) |
+| Environment | Wallpaper | Icons | GTK | Cursors | WM Theme | Desktop Theme |
+|-------------|-----------|-------|-----|---------|----------|---------------|
+| **XFCE** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Qtile/XFCE** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Cinnamon** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **GNOME** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **MATE** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Generic WM** | ✅ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ |
+
+> ⚠️ Generic WM support depends on gsettings availability
 
 ## 🚀 Quick Start
 
 ### 📦 Prerequisites
-Before installing, ensure your system has the necessary background tools:
-
 ```bash
 # Install System Tools & Python Bindings
 sudo apt update
 sudo apt install imagemagick python3-pyqt6 feh
-```
 
 ### Installation
-```bash
+```
 # Clone the repository
 git clone https://github.com/wedel-tech-art/awp-automated-wallpaper.git
 cd awp-automated-wallpaper
@@ -91,24 +91,24 @@ python3 awp_setup.py
 3. The daemon will start automatically on login
 
 ### Manual Start
-```bash
+```
 # Start the daemon manually
 python3 daemon.py
 
 # Or use the startup script
-./awp_start.sh
+./awp_start.sh (Recommended)
 ```
 
 ## 🎮 Usage
 
 
-### Or newer Dashboard Qt6
-```bash
+### Or Dashboard Qt6
+```
 python3 dab.py
 ```
 
 ### Manual Navigation
-```bash
+```
 # Next wallpaper
 python3 nav.py next
 
@@ -169,35 +169,88 @@ See `awp_config.ini.example` for a complete configuration reference.
 awp-automated-wallpaper/
 ├── awp/                            # Main Application Directory
 │   ├── core/                       # Centralized business logic
-│   │   ├── actions.py              # ✨ IMPROVED - Smart logic (only applies changes if different)
+│   │   ├── actions.py              # Core wallpaper operations
 │   │   ├── config.py               # Configuration management
-│   │   ├── constants.py            # Paths and constants
+│   │   ├── constants.py            # Paths, colors, capability matrix
+│   │   ├── printer.py              # 🖨️ Unified printing system (V3.6)
 │   │   ├── runtime.py              # Runtime state management
-│   │   ├── themes.py               # ✨ NEW - Theming & Baking engine (Genetic logic)
+│   │   ├── themes.py               # Theme baking engine (Genetic logic)
 │   │   └── utils.py                # Utility functions
-│   ├── template-themes/            # 🧬 Theme DNA (Breeze Dark base)
-│   ├── template-icons/             # 🧬 Icon DNA (Mint-Y base)
-│   ├── awp-icon-mom/               # 👩 The "Mother" of all icons (Mint-Y master assets)
-│   ├── branding-assets/            # 🎨 AWP Spectrum Hunt (180 procedural tones)
-│   ├── logos/                      # Workspace-specific Debian logos (synced to accent colors)
-│   ├── backends/                   # Desktop scripts (now includes qtile_xfce.py)
-│   ├── daemon.py                   # Background service (integrated with mini-HUD)
-│   ├── dab.py                      # Qt6 Dashboard (integrated with mini-HUD)
-│   ├── nav.py                      # Navigation controller (was awp_nav.py)
-│   ├── hud_ws_info.py              # Transient Workspace/WP "Flash" HUD
+│   ├── backends/                   # Desktop environment backends
+│   │   ├── __init__.py             # Dynamic backend factory
+│   │   ├── xfce.py                 # XFCE backend (with orchestrator)
+│   │   ├── qtile_xfce.py           # Qtile/XFCE hybrid
+│   │   ├── cinnamon.py             # Cinnamon backend
+│   │   ├── gnome.py                # GNOME backend
+│   │   ├── mate.py                 # MATE backend
+│   │   └── generic.py              # Generic WM fallback
+│   ├── template-themes/            # Theme DNA (Breeze Dark base)
+│   ├── template-icons/             # Icon DNA (Mint-Y base)
+│   ├── awp-icon-mom/               # The "Mother" icon template
+│   ├── branding-assets/            # 180 procedural color tones
+│   ├── logos/                      # Workspace-specific icons
+│   ├── daemon.py                   # Background service
+│   ├── dab.py                      # Qt6 Dashboard
+│   ├── nav.py                      # Navigation controller
+│   ├── hud_ws_info.py              # Workspace transition HUD
 │   ├── hud_vertical.py             # Sidebar system monitor
-│   ├── hud_bottom.py               # Bottom dock system monitor
-│   ├── awp_setup.py          # Setup wizard (keep as is)
-│   ├── awp_start.sh          # Quick-start script (keep as is)
-│   ├── awp_config.ini        # Configuration file
-│   └── *.png                 # UI icons (debian.png, awp-148-if0096.png)
-├── screenshots/              # Previews for GitHub README
-├── .gitignore                # Git exclusion rules
-├── LICENSE                   # MIT License
-└── README.md                 # Project Documentation
+│   ├── hud_bottom.py               # Bottom dock monitor
+│   ├── awp_setup.py                # Setup wizard
+│   ├── awp_start.sh                # Quick-start script
+│   └── awp_config.ini              # Configuration file
+├── screenshots/                    # GitHub previews
+├── .gitignore
+├── LICENSE
+└── README.md
 ```
 
 ## 🔄 Recent Architecture Improvements
+
+### 🖨️ Unified Printer System (V3.6 - February 2026)
+
+**Version 3.6 – The "Clear Voice" Update**
+
+Every component now speaks with consistent, color-coded prefixes:
+
+| Prefix | Color | Source |
+|--------|-------|--------|
+| `[AWP-backends]` | 🟡 Yellow | Backend loader (`__init__.py`) |
+| `[AWP-daemon]` | 🔵 Cyan | Main daemon |
+| `[AWP-xfce]` | 🔵 Cyan | XFCE backend |
+| `[AWP-qtile_xfce]` | 🔵 Cyan | Qtile/XFCE hybrid |
+| `[AWP-cinnamon]` | 🔵 Cyan | Cinnamon backend |
+| `[AWP-gnome]` | 🔵 Cyan | GNOME backend |
+| `[AWP-mate]` | 🔵 Cyan | MATE backend |
+| `[AWP-generic]` | 🔵 Cyan | Generic WM fallback |
+| `[AWP-dab]` | 🔵 Cyan | Qt6 Dashboard |
+| `[AWP-nav]` | 🔵 Cyan | Navigation tool |
+| `[AWP-utils]` | 🔵 Cyan | Utilities |
+| `[AWP-themes]` | 🔵 Cyan | Theme baking engine |
+
+**Benefits:**
+- **Instant context** - Know exactly which module is speaking
+- **Beautiful output** - Consistent colors and formatting
+- **Easy debugging** - Trace messages to their source
+- **Single source of truth** - All formatting in `core/printer.py`
+- **Future-proof** - Add new modules with zero formatting code
+
+### 🧠 Smart UI Capability Matrix (V3.6)
+
+The dashboard now dynamically enables/disables theme options based on what your desktop environment actually supports:
+
+```python
+THEME_CAPABILITIES = {
+    'xfce': {'has_wm_theme': True, 'has_desktop_theme': False},
+    'qtile_xfce': {'has_wm_theme': False, 'has_desktop_theme': False},
+    'cinnamon': {'has_wm_theme': True, 'has_desktop_theme': True},
+    'gnome': {'has_wm_theme': False, 'has_desktop_theme': False},
+    'mate': {'has_wm_theme': True, 'has_desktop_theme': False},
+    'generic': {'has_wm_theme': False, 'has_desktop_theme': False},
+}
+- **Window Theme enabled only for DEs with separate window managers (XFCE, MATE, Cinnamon)
+- **Desktop Theme enabled only for Cinnamon (its unique shell theme)
+- **Icons/GTK/Cursors always available across all backends
+- **The UI self-adjusts when you change your desktop environment selection - no more trying to set themes that don't exist!
 
 ### 🧬 Dual-Genetic Baking & Efficiency Engine (V3.5 - February 2026)
 
@@ -212,6 +265,20 @@ The system now creates a complete visual identity by "baking" both GTK themes an
 * **Transient Workspace HUD (`hud-ws-info.py`)**: A new, lightweight horizontal HUD that "flashes" workspace and wallpaper metadata for a few seconds during transitions, integrated directly into the `daemon` and `dab`.
 * **New Hybrid Backend**: Added `qtile_xfce.py` for users running the Qtile Tiling Window Manager within an XFCE session.
 * **Branding Assets**: Integration of the `branding-assets` library, offering 180 different color tones for procedural UI elements.
+
+### 📅 Version Timeline
+
+| Version | Date | Key Feature |
+|---------|------|-------------|
+| **V3.6** | Feb 2026 | 🖨️ Unified Printer System + Capability Matrix |
+| **V3.5** | Feb 2026 | 🧬 Dual-Genetic Baking (Themes + Icons) |
+| **V3.4** | Feb 2026 | 🏗️ Core Consolidation (Zero Duplication) |
+| **V3.3** | Feb 2026 | 🛰️ Runtime State Engine + Native HUDs |
+| **V3.2** | Feb 2026 | 🔍 Surgical Precision + Hover-to-Hex |
+| **V3.1** | Feb 2026 | 🔌 Universal Logic + Core Sanitization |
+| **V3.0** | Jan 2026 | 🧠 Genetic Intelligence + Qt6 |
+| **V2.2** | Jan 2026 | ⚡ Lean Mode + Hybrid Backends |
+| **V2.1** | Jan 2025 | 🧰 Centralized Utilities |
 
 ### 🧬 Core Consolidation & Zero-Duplication Architecture (V3.4 - Current)
 
@@ -302,7 +369,6 @@ This prepares AWP for future:
 - Multi-monitor HUDs
 - Expanded workspace telemetry
 
-
 **Version 3.2 - Surgical Precision & Metadata (February 2026)**
 - **Swift Graphics Engine**: Optimized `bake_awp_theme` to use a hardcoded `TARGET_ASSETS` list. This removes the need for reference folders and speeds up theme generation significantly.
 - **Hover-to-Hex Preview**: Added a "Human-Readable" feature to the Dashboard. Hovering over a workspace icon now performs a real-time first-pixel analysis to display the exact Hex color code.
@@ -330,32 +396,24 @@ This prepares AWP for future:
 - Consolidated `get_icon_color()` and `get_available_themes()` functions.
 - All dashboard components now share common utilities for a cleaner codebase.
 
-## 🌐 Supported Desktop Environments
+## 🔧 Troubleshooting
 
-🖥️ XFCE (Optimized)
+### Missing Printer Prefixes?
+If you see `[AWP]` instead of `[AWP-xfce]` or similar, ensure:
+- You're using the latest version (V3.6+)
+- The printer is properly imported in each module
+- Backend functions pass `backend="name"` parameter
 
-    ✅ Wallpapers, Icons, GTK Themes, Cursors, Window Dec.
+### Themes Not Applying?
+- Run `dab.py` and click **Sync Themes** to bake missing themes
+- Check `~/.themes/` and `~/.icons/` for generated folders
+- Ensure your DE is correctly detected in `awp_config.ini`
 
-🌿 Cinnamon
+### Dashboard Shows Greyed Out Options?
+That's normal! The UI intelligently disables options your DE doesn't support:
+- **Window Theme**: Only for XFCE, MATE, Cinnamon
+- **Desktop Theme**: Only for Cinnamon
 
-    ✅ Wallpapers, Icons, GTK Themes, Cursors, Window Dec., Desktop Icons
-
-👤 GNOME
-
-    ✅ Wallpapers, Icons, GTK Themes, Cursors
-
-    ❌ Window Decorations (Limited by Libadwaita)
-
-🧉 MATE
-
-    ✅ Wallpapers, Icons, GTK Themes, Cursors, Window Dec.
-
-⚙️ Generic WMs (Openbox/i3)
-
-    ✅ Wallpapers, GTK Themes
-
-    ❌ Icons & Cursors (Requires manual Xresources)
-    
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
@@ -366,6 +424,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
-- Built with Python 3 and PyQt5 and experimental PyQt6
-- Tested on Linux Mint XFCE, Cinnamon, and other major distributions
-- Icons from the system theme collections
+- Built with Python 3 and PyQt6
+- Tested on Linux Mint XFCE, Debian, and other major distributions
+- Theme templates based on **Breeze Dark** (KDE) and **Mint-Y** (Linux Mint)
+- Special thanks to the open-source community and all AWP users

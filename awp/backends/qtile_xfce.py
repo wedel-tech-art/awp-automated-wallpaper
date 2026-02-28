@@ -11,20 +11,12 @@ import os
 import subprocess
 import configparser
 
-# ANSI Color Codes
-CLR_RED    = "\033[91m"
-CLR_GREEN  = "\033[92m"
-CLR_YELLOW = "\033[93m"
-CLR_CYAN   = "\033[96m"
-CLR_RESET  = "\033[0m"
-CLR_BOLD   = "\033[1m"
+from core.constants import SCALING_FEH
+from core.printer import get_printer
 
-# Wallpaper scaling for feh (works with any WM)
-SCALING_FEH = {
-    'centered': '--bg-center',
-    'scaled': '--bg-scale',
-    'zoomed': '--bg-fill'
-}
+# Get printer instance
+_printer = get_printer()
+# No set_backend here - we'll pass it explicitly in each function
 
 def _get_current_value(channel, property):
     """Get current XFCE setting value via xfsettingsd."""
@@ -85,9 +77,8 @@ def qtile_xfce_set_themes(ws_num: int, config):
             ], check=False)
             changes.append("cursor")
     
-    # Simple feedback if anything changed
-    if changes:
-        print(f"{CLR_CYAN}[AWP-Qtile]{CLR_RESET} WS{ws_num + 1} themes: {CLR_GREEN}{', '.join(changes)}{CLR_RESET}")
+    # Use printer with explicit backend
+    _printer.themes(ws_num, changes, backend="qtile_xfce")
 
 
 # =============================================================================
@@ -101,7 +92,7 @@ def qtile_xfce_lean_mode():
         subprocess.run(["pgrep", "xfsettingsd"], check=True)
     except:
         subprocess.Popen(["xfsettingsd"])
-        print(f"{CLR_CYAN}[AWP-Qtile]{CLR_RESET} {CLR_GREEN}Started xfsettingsd for themes{CLR_RESET}")
+        _printer.info("Started xfsettingsd for themes", backend="qtile_xfce")
 
 
 # =============================================================================
@@ -137,10 +128,9 @@ def qtile_xfce_set_wallpaper(ws_num: int, image_path: str, scaling: str):
     
     try:
         subprocess.run(["feh", style_flag, image_path], check=True)
-        print(f"{CLR_CYAN}[AWP-Qtile]{CLR_RESET} Workspace {ws_num + 1} -> {CLR_GREEN}{CLR_BOLD}{wp_name}{CLR_RESET}")
+        _printer.wallpaper(ws_num, wp_name, backend="qtile_xfce")
     except Exception as e:
-        print(f"{CLR_RED}[AWP-Qtile] feh failed: {e}{CLR_RESET}")
-        # Fallback to something? Maybe just warn
+        _printer.error(f"feh failed: {e}", backend="qtile_xfce")
 
 
 # =============================================================================

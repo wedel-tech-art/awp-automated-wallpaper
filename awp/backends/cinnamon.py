@@ -8,38 +8,112 @@ import os
 import subprocess
 import json
 
-# ANSI Color Codes for clean terminal output (matching xfce.py)
-CLR_RED    = "\033[91m"
-CLR_GREEN  = "\033[92m"
-CLR_YELLOW = "\033[93m"
-CLR_CYAN   = "\033[96m"
-CLR_RESET  = "\033[0m"
-CLR_BOLD   = "\033[1m"
+from core.constants import SCALING_FEH
+from core.printer import get_printer
 
+# Get printer instance
+_printer = get_printer()
+
+# Cinnamon-specific scaling mapping
 SCALING_CINNAMON = {'centered': 'centered', 'scaled': 'scaled', 'zoomed': 'zoom'}
+
+def _get_current_gsetting(schema, key):
+    """Get current gsettings value."""
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", schema, key],
+            capture_output=True, text=True, check=True
+        )
+        # Remove quotes from string output
+        return result.stdout.strip().strip("'")
+    except:
+        return None
+
+def cinnamon_set_themes(ws_num: int, config):
+    """
+    Simple orchestrator - applies theme components only if they differ from current.
+    Handles: gtk_theme, icon_theme, cursor_theme, desktop_theme, wm_theme
+    """
+    section = f"ws{ws_num + 1}"
+    if not config.has_section(section):
+        return
+    
+    changes = []
+    
+    # Get what SHOULD be from config
+    should_gtk = config.get(section, 'gtk_theme', fallback=None)
+    should_icon = config.get(section, 'icon_theme', fallback=None)
+    should_cursor = config.get(section, 'cursor_theme', fallback=None)
+    should_desktop = config.get(section, 'desktop_theme', fallback=None)
+    should_wm = config.get(section, 'wm_theme', fallback=None)
+    
+    # Check GTK theme
+    if should_gtk:
+        current = _get_current_gsetting("org.cinnamon.desktop.interface", "gtk-theme")
+        if current != should_gtk:
+            subprocess.run([
+                "gsettings", "set", "org.cinnamon.desktop.interface", 
+                "gtk-theme", should_gtk
+            ], check=False)
+            changes.append("gtk")
+    
+    # Check Icon theme
+    if should_icon:
+        current = _get_current_gsetting("org.cinnamon.desktop.interface", "icon-theme")
+        if current != should_icon:
+            subprocess.run([
+                "gsettings", "set", "org.cinnamon.desktop.interface", 
+                "icon-theme", should_icon
+            ], check=False)
+            changes.append("icons")
+    
+    # Check Cursor theme
+    if should_cursor:
+        current = _get_current_gsetting("org.cinnamon.desktop.interface", "cursor-theme")
+        if current != should_cursor:
+            subprocess.run([
+                "gsettings", "set", "org.cinnamon.desktop.interface", 
+                "cursor-theme", should_cursor
+            ], check=False)
+            changes.append("cursor")
+    
+    # Check Desktop theme (Cinnamon shell theme)
+    if should_desktop:
+        current = _get_current_gsetting("org.cinnamon.theme", "name")
+        if current != should_desktop:
+            subprocess.run([
+                "gsettings", "set", "org.cinnamon.theme", 
+                "name", should_desktop
+            ], check=False)
+            changes.append("desktop")
+    
+    # Check Window Manager theme
+    if should_wm:
+        current = _get_current_gsetting("org.cinnamon.desktop.wm.preferences", "theme")
+        if current != should_wm:
+            subprocess.run([
+                "gsettings", "set", "org.cinnamon.desktop.wm.preferences", 
+                "theme", should_wm
+            ], check=False)
+            changes.append("wm")
+    
+    # Use printer with explicit backend
+    _printer.themes(ws_num, changes, backend="cinnamon")
 
 def cinnamon_lean_mode():
     """
     Cinnamon already uses native wallpaper methods.
-    This is a compatibility placeholder with optional optimizations.
+    This is a compatibility placeholder.
     """
-    try:
-        # Optional: Disable some visual effects for better performance
-        # subprocess.run(["gsettings", "set", "org.cinnamon", "desktop-effects", "false"], check=False)
-        # subprocess.run(["gsettings", "set", "org.cinnamon", "effects-desktop", "false"], check=False)
-        
-        print(f"{CLR_CYAN}[AWP-Cinnamon]{CLR_RESET} {CLR_YELLOW}Note: Cinnamon uses native wallpaper methods{CLR_RESET}")
-    except Exception as e:
-        print(f"{CLR_RED}[AWP-Cinnamon] Lean Mode Error: {e}{CLR_RESET}")
+    _printer.info("Cinnamon uses native wallpaper methods", backend="cinnamon")
 
 def cinnamon_force_single_workspace_off():
     """Cinnamon doesn't have single workspace mode to disable."""
-    print(f"{CLR_CYAN}[AWP-Cinnamon]{CLR_RESET} {CLR_YELLOW}Note: Cinnamon doesn't have single workspace mode{CLR_RESET}")
+    _printer.info("Cinnamon doesn't have single workspace mode", backend="cinnamon")
 
 def cinnamon_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """
     Alias for cinnamon_set_wallpaper since Cinnamon is already native.
-    Uses gsettings to set wallpaper with visual feedback.
     """
     return cinnamon_set_wallpaper(ws_num, image_path, scaling)
 
@@ -51,16 +125,22 @@ def cinnamon_set_wallpaper(ws_num: int, image_path: str, scaling: str):
         wp_name = os.path.basename(image_path)
         
         # Set wallpaper properties
-        subprocess.run(["gsettings", "set", "org.cinnamon.desktop.background", "picture-uri", uri], check=True)
-        subprocess.run(["gsettings", "set", "org.cinnamon.desktop.background", "picture-options", style_val], check=True)
+        subprocess.run([
+            "gsettings", "set", "org.cinnamon.desktop.background", 
+            "picture-uri", uri
+        ], check=True)
+        subprocess.run([
+            "gsettings", "set", "org.cinnamon.desktop.background", 
+            "picture-options", style_val
+        ], check=True)
         
-        # Visual feedback
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} Workspace {ws_num + 1} -> {CLR_GREEN}{CLR_BOLD}{wp_name}{CLR_RESET}")
+        # Use printer for feedback
+        _printer.wallpaper(ws_num, wp_name, backend="cinnamon")
         
     except subprocess.CalledProcessError as e:
-        print(f"{CLR_RED}[AWP-Cinnamon] Failed to set wallpaper via gsettings: {e}{CLR_RESET}")
+        _printer.error(f"Failed to set wallpaper via gsettings: {e}", backend="cinnamon")
     except Exception as e:
-        print(f"{CLR_RED}[AWP-Cinnamon] Unexpected error: {e}{CLR_RESET}")
+        _printer.error(f"Unexpected error: {e}", backend="cinnamon")
 
 def cinnamon_set_icon(icon_path: str):
     """
@@ -73,7 +153,7 @@ def cinnamon_set_icon(icon_path: str):
     
     try:
         if not os.path.exists(config_file):
-            print(f"{CLR_YELLOW}[AWP-Cinnamon] Menu config not found at {config_file}{CLR_RESET}")
+            _printer.warning(f"Menu config not found at {config_file}", backend="cinnamon")
             return False
         
         with open(config_file, "r") as f:
@@ -85,52 +165,17 @@ def cinnamon_set_icon(icon_path: str):
             json.dump(data, f, indent=4)
         
         icon_name = os.path.basename(icon_path)
-        print(f"{CLR_GREEN}✓{CLR_RESET} Cinnamon menu icon: {CLR_CYAN}{icon_name}{CLR_RESET}")
+        _printer.icon(icon_name, backend="cinnamon")
         return True
         
     except json.JSONDecodeError as e:
-        print(f"{CLR_RED}✗ Failed to parse menu config: {e}{CLR_RESET}")
+        _printer.error(f"Failed to parse menu config: {e}", backend="cinnamon")
         return False
     except Exception as e:
-        print(f"{CLR_RED}✗ Error setting Cinnamon menu icon: {e}{CLR_RESET}")
+        _printer.error(f"Error setting Cinnamon menu icon: {e}", backend="cinnamon")
         return False
 
-def cinnamon_set_themes(ws_num: int, config):
-    """Set Cinnamon theme parameters from configuration."""
-    section = f"ws{ws_num + 1}"
-    
-    if not config.has_section(section):
-        print(f"{CLR_YELLOW}[AWP-Cinnamon] No theme config found for {section}{CLR_RESET}")
-        return
-    
-    icon_theme = config.get(section, 'icon_theme', fallback=None)
-    gtk_theme = config.get(section, 'gtk_theme', fallback=None)
-    cursor_theme = config.get(section, 'cursor_theme', fallback=None)
-    desktop_theme = config.get(section, 'desktop_theme', fallback=None)
-    wm_theme = config.get(section, 'wm_theme', fallback=None)
-    
-    try:
-        if icon_theme:
-            subprocess.run(["gsettings", "set", "org.cinnamon.desktop.interface", "icon-theme", icon_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} Cinnamon icon theme: {CLR_CYAN}{icon_theme}{CLR_RESET}")
-        
-        if gtk_theme:
-            subprocess.run(["gsettings", "set", "org.cinnamon.desktop.interface", "gtk-theme", gtk_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} Cinnamon GTK theme: {CLR_CYAN}{gtk_theme}{CLR_RESET}")
-        
-        if cursor_theme:
-            subprocess.run(["gsettings", "set", "org.cinnamon.desktop.interface", "cursor-theme", cursor_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} Cinnamon cursor theme: {CLR_CYAN}{cursor_theme}{CLR_RESET}")
-        
-        if desktop_theme:
-            subprocess.run(["gsettings", "set", "org.cinnamon.theme", "name", desktop_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} Cinnamon desktop theme: {CLR_CYAN}{desktop_theme}{CLR_RESET}")
-        
-        if wm_theme:
-            subprocess.run(["gsettings", "set", "org.cinnamon.desktop.wm.preferences", "theme", wm_theme], check=False)
-            print(f"{CLR_GREEN}✓{CLR_RESET} Cinnamon window theme: {CLR_CYAN}{wm_theme}{CLR_RESET}")
-        
-        print(f"{CLR_CYAN}[AWP]{CLR_RESET} Themes Applied for {CLR_BOLD}WS{ws_num + 1}{CLR_RESET}")
-        
-    except Exception as e:
-        print(f"{CLR_RED}Error applying Cinnamon themes: {e}{CLR_RESET}")
+# Optional: Add helper function to get monitors if needed for multi-monitor setups
+def cinnamon_get_monitors_for_workspace(ws_num: int):
+    """Get list of monitors (placeholder for API compatibility)."""
+    return []  # Cinnamon handles multi-monitor automatically
