@@ -70,37 +70,42 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 ## 🚀 Quick Start
 
 ### 📦 Prerequisites
-```bash
+
 # Install System Tools & Python Bindings
+```
 sudo apt update
 sudo apt install imagemagick python3-pyqt6 feh
-
-### Installation
 ```
+
 # Clone the repository
+```
 git clone https://github.com/wedel-tech-art/awp-automated-wallpaper.git
 cd awp-automated-wallpaper
+```
 
 # Run the setup wizard
+```
 python3 awp_setup.py
 ```
 
 ### First-Time Setup
+```
 1. Run `python3 awp_setup.py` to create your initial configuration
 2. Follow the interactive wizard to configure workspaces
 3. The daemon will start automatically on login
+```
 
 ### Manual Start
 ```
-# Start the daemon manually
 python3 daemon.py
+```
 
-# Or use the startup script
+# Or use the startup script instead
+```
 ./awp_start.sh (Recommended)
 ```
 
 ## 🎮 Usage
-
 
 ### Or Dashboard Qt6
 ```
@@ -108,42 +113,47 @@ python3 dab.py
 ```
 
 ### Manual Navigation
-```
+
 # Next wallpaper
+```
 python3 nav.py next
-
+```
 # Previous wallpaper
+```
 python3 nav.py prev
-
+```
 # Delete current wallpaper
+```
 python3 nav.py delete
-
+```
 # Sharpen current wallpaper (temporary, via ImageMagick)
+```
 python3 nav.py sharpen
-
+```
 # Apply saturation to wallpaper (temporary, via ImageMagick)
+```
 python3 nav.py color
-
+```
 # Convert wallpaper to black and white (temporary, via ImageMagick)
+```
 python3 nav.py black
 ```
 
 ### Recommended Keybindings
+
 - `Super + Right` → Next wallpaper
 - `Super + Left` → Previous wallpaper
 - `Super + Delete` → Delete current wallpaper
 - `Super + s` → Sharpen wallpaper
 - `Super + c` → Colorize wallpaper
 - `Super + b` → Convert wallpaper to black and white
----
+
 > [!TIP]
 > **Non-Destructive Editing:** Last 3 effects are applied to a temporary copy in the `awp/` folder. The original wallpaper remains untouched. If you love a modified version (e.g., a sharpened or B&W version), you can manually replace the original file in your library with the processed one from the `awp/` directory.
 
 ## 🛠️ Configuration
-
+```
 Edit `~/awp/awp_config.ini` directly or use the dashboard:
-
-```bash
 python3 dab.py
 ```
 
@@ -153,16 +163,16 @@ See `awp_config.ini.example` for a complete configuration reference.
 ## Screenshots
 
 ### General Settings
-![General Settings](screenshots/dab.py%20General%20Settings.png)
+![General Settings](screenshots/General_Settings.png)
 
 ### Workspace 1 Configuration
-![Workspace 1](screenshots/dab.py%20Workspace%201%20Configuration%20Example.png)
+![Workspace 1 Configuration](screenshots/ws1_config.png)
 
-### Workspace 2 Configuration  
-![Workspace 2](screenshots/dab.py%20Workspace%202%20Configuration%20Example.png)
+### Workspace 2 Configuration
+![Workspace 2 Configuration](screenshots/ws2_config.png)
 
 ### Workspace 3 Configuration
-![Workspace 3](screenshots/dab.py%20Workspace%203%20Configuration%20Example.png)
+![Workspace 3 Configuration](screenshots/ws3_config.png)
 
 ## 📁 Project Structure
 ```
@@ -208,7 +218,7 @@ awp-automated-wallpaper/
 
 ### 🖨️ Unified Printer System (V3.6 - February 2026)
 
-**Version 3.6 – The "Clear Voice" Update**
+* **Version 3.6 – The "Clear Voice" Update**
 
 Every component now speaks with consistent, color-coded prefixes:
 
@@ -227,7 +237,7 @@ Every component now speaks with consistent, color-coded prefixes:
 | `[AWP-utils]` | 🔵 Cyan | Utilities |
 | `[AWP-themes]` | 🔵 Cyan | Theme baking engine |
 
-**Benefits:**
+* **Benefits:**
 - **Instant context** - Know exactly which module is speaking
 - **Beautiful output** - Consistent colors and formatting
 - **Easy debugging** - Trace messages to their source
@@ -246,11 +256,12 @@ THEME_CAPABILITIES = {
     'gnome': {'has_wm_theme': False, 'has_desktop_theme': False},
     'mate': {'has_wm_theme': True, 'has_desktop_theme': False},
     'generic': {'has_wm_theme': False, 'has_desktop_theme': False},
-}
-- **Window Theme enabled only for DEs with separate window managers (XFCE, MATE, Cinnamon)
-- **Desktop Theme enabled only for Cinnamon (its unique shell theme)
-- **Icons/GTK/Cursors always available across all backends
-- **The UI self-adjusts when you change your desktop environment selection - no more trying to set themes that don't exist!
+}```
+
+- **Window Theme enabled** only for DEs with separate window managers (XFCE, MATE, Cinnamon)
+- **Desktop Theme enabled** only for Cinnamon (its unique shell theme)
+- **Icons/GTK/Cursors** always available across all backends
+- **The UI self-adjusts** when you change your desktop environment selection - no more trying to set themes that don't exist!
 
 ### 🧬 Dual-Genetic Baking & Efficiency Engine (V3.5 - February 2026)
 
@@ -258,13 +269,13 @@ THEME_CAPABILITIES = {
 
 The system now creates a complete visual identity by "baking" both GTK themes and Icon themes simultaneously.
 
-* **Dual-Baking Engine**: 
+- **Dual-Baking Engine**: 
     * `template-themes`: Generates custom GTK 2/3/4 and Xfwm4 styles.
     * `template-icons`: Generates custom Icon sets based on the "Mother" (`awp-icon-mom`) assets.
-* **Intelligent Sync**: The `set_themes` function is now "Diff-Aware." It compares the new workspace requirements against the current state. If the Icon theme is already correct, it skips the reload to save CPU and prevent flickering.
-* **Transient Workspace HUD (`hud-ws-info.py`)**: A new, lightweight horizontal HUD that "flashes" workspace and wallpaper metadata for a few seconds during transitions, integrated directly into the `daemon` and `dab`.
-* **New Hybrid Backend**: Added `qtile_xfce.py` for users running the Qtile Tiling Window Manager within an XFCE session.
-* **Branding Assets**: Integration of the `branding-assets` library, offering 180 different color tones for procedural UI elements.
+- **Intelligent Sync**: The `set_themes` function is now "Diff-Aware." It compares the new workspace requirements against the current state. If the Icon theme is already correct, it skips the reload to save CPU and prevent flickering.
+- **Transient Workspace HUD (`hud-ws-info.py`)**: A new, lightweight horizontal HUD that "flashes" workspace and wallpaper metadata for a few seconds during transitions, integrated directly into the `daemon` and `dab`.
+- **New Hybrid Backend**: Added `qtile_xfce.py` for users running the Qtile Tiling Window Manager within an XFCE session.
+- **Branding Assets**: Integration of the `branding-assets` library, offering 180 different color tones for procedural UI elements.
 
 ### 📅 Version Timeline
 
@@ -306,18 +317,19 @@ All three major components now use the **exact same core functions**:
 | **Dashboard** (`dab.py`) | Had to restart | Calls `refresh_current_workspace()` from core |
 
 #### ✨ Instant Feedback Dashboard
-
+```
 **Theme changes apply immediately** when saving in the dashboard. No more switching workspaces twice to see your new theme!
-
+```
 # One line in dab.py after saving:
+```
 from core.actions import refresh_current_workspace
 refresh_current_workspace()  # Applies themes NOW
-
+```
 ### 🛰️ Runtime State Engine & Native HUD (V3.3)
 
 **Version 3.3 – Native Runtime Monitoring (February 2026)**
 
-AWP now includes a lightweight, backend-agnostic Runtime State engine with fully native Qt Heads-Up Displays (HUDs). This replaces the previous external monitoring bridge used in earlier versions.
+ - AWP now includes a lightweight, backend-agnostic Runtime State engine with fully native Qt Heads-Up Displays (HUDs). This replaces the previous external monitoring bridge used in earlier versions.
 
 ### 🧠 Runtime State Engine
 
