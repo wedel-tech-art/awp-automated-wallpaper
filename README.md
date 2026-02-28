@@ -100,7 +100,7 @@ python3 awp_setup.py
 python3 daemon.py
 ```
 
-# Or use the startup script instead
+### Or use the startup script instead
 ```
 ./awp_start.sh (Recommended)
 ```
@@ -112,29 +112,29 @@ python3 daemon.py
 python3 dab.py
 ```
 
-### Manual Navigation
+## Manual Navigation
 
-# Next wallpaper
+### Next wallpaper
 ```
 python3 nav.py next
 ```
-# Previous wallpaper
+### Previous wallpaper
 ```
 python3 nav.py prev
 ```
-# Delete current wallpaper
+### Delete current wallpaper
 ```
 python3 nav.py delete
 ```
-# Sharpen current wallpaper (temporary, via ImageMagick)
+### Sharpen current wallpaper (temporary, via ImageMagick)
 ```
 python3 nav.py sharpen
 ```
-# Apply saturation to wallpaper (temporary, via ImageMagick)
+### Apply saturation to wallpaper (temporary, via ImageMagick)
 ```
 python3 nav.py color
 ```
-# Convert wallpaper to black and white (temporary, via ImageMagick)
+### Convert wallpaper to black and white (temporary, via ImageMagick)
 ```
 python3 nav.py black
 ```
@@ -248,7 +248,6 @@ Every component now speaks with consistent, color-coded prefixes:
 
 The dashboard now dynamically enables/disables theme options based on what your desktop environment actually supports:
 
-```python
 THEME_CAPABILITIES = {
     'xfce': {'has_wm_theme': True, 'has_desktop_theme': False},
     'qtile_xfce': {'has_wm_theme': False, 'has_desktop_theme': False},
@@ -256,7 +255,7 @@ THEME_CAPABILITIES = {
     'gnome': {'has_wm_theme': False, 'has_desktop_theme': False},
     'mate': {'has_wm_theme': True, 'has_desktop_theme': False},
     'generic': {'has_wm_theme': False, 'has_desktop_theme': False},
-}```
+}
 
 - **Window Theme enabled** only for DEs with separate window managers (XFCE, MATE, Cinnamon)
 - **Desktop Theme enabled** only for Cinnamon (its unique shell theme)
