@@ -14,13 +14,6 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 ## 🚀 Key Features
 
-* **🧬 Genetic Theme & Icon Generation (V3.5)**:  
-    * **Full Identity Baking**: Analyzes workspace icons to physically "bake" both custom GTK themes (`~/.themes`) and Icon themes (`~/.icons`) simultaneously.
-    * **The "Mom" Inheritance**: Uses the `awp-icon-mom` directory as a master reference for procedural hue-shifting of icon sets based on the Mint-Y architecture.
-    * **Visual Identity Sync**: Automatically extracts hex accent colors from icons to synchronize the visual "signature" across themes, icons, and Conky scripts.
-    * **🔍 Real-Time Metadata (Hover-to-Hex)**: Hover over any workspace preview icon in the Dashboard to instantly see the extracted Hex color code rendered in real-time.
-    * **Dedicated Theme Engine**: Powered by `core/themes.py`, a specialized module for procedural asset generation and theme list management.    
-
 * **🖨️ Unified Printer System (V3.6)**:
     * **Single Source of Truth**: All terminal output now flows through `core/printer.py` – no more scattered color codes.
     * **Context-Aware Prefixes**: Every module identifies itself clearly:
@@ -33,6 +26,13 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
         - `[AWP-themes]` (🔵 Cyan) - Theme baking engine
     * **Zero Duplication**: Change formatting once, affects everywhere.
     * **Professional Output**: Clean, consistent, color-coded logs across all components.
+
+* **🧬 Genetic Theme & Icon Generation (V3.5)**:  
+    * **Full Identity Baking**: Analyzes workspace icons to physically "bake" both custom GTK themes (`~/.themes`) and Icon themes (`~/.icons`) simultaneously.
+    * **The "Mom" Inheritance**: Uses the `awp-icon-mom` directory as a master reference for procedural hue-shifting of icon sets based on the Mint-Y architecture.
+    * **Visual Identity Sync**: Automatically extracts hex accent colors from icons to synchronize the visual "signature" across themes, icons, and Conky scripts.
+    * **🔍 Real-Time Metadata (Hover-to-Hex)**: Hover over any workspace preview icon in the Dashboard to instantly see the extracted Hex color code rendered in real-time.
+    * **Dedicated Theme Engine**: Powered by `core/themes.py`, a specialized module for procedural asset generation and theme list management.    
 
 * **🎮 Interactive Navigation & Aesthetic Effects**:
     * **Dynamic Library Control**: Rapid **Next** and **Previous** wallpaper cycling via keyboard shortcuts.
@@ -216,6 +216,14 @@ awp-automated-wallpaper/
 
 ## 🔄 Recent Architecture Improvements
 
+### 🖱️ Cursor Refresh Enhancement (V3.6)
+
+Stubborn applications that don't update their cursor immediately after a theme change are now handled with a gentle 0.5-second delay followed by a forced refresh. This ensures that **every application** - from Thunar to Geany - respects your per-workspace cursor theme without requiring restarts.
+
+Affected backends:
+- **XFCE** - Full cursor refresh on theme change
+- **Qtile/XFCE** - Same robust cursor handling
+
 ### 🖨️ Unified Printer System (V3.6 - February 2026)
 
 * **Version 3.6 – The "Clear Voice" Update**
@@ -280,6 +288,7 @@ The system now creates a complete visual identity by "baking" both GTK themes an
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
+| **V3.6** | Feb 2026 | 🖨️ Unified Printer System + 🖱️ Cursor Refresh + 🧠 Capability Matrix |
 | **V3.6** | Feb 2026 | 🖨️ Unified Printer System + Capability Matrix |
 | **V3.5** | Feb 2026 | 🧬 Dual-Genetic Baking (Themes + Icons) |
 | **V3.4** | Feb 2026 | 🏗️ Core Consolidation (Zero Duplication) |

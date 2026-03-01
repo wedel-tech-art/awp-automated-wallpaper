@@ -35,6 +35,10 @@ from core.actions import (
     show_hud
 )
 from backends import get_backend
+from core.printer import get_printer  # ADD THIS
+
+# Initialize printer
+_printer = get_printer()
 
 DE = None
 
@@ -91,10 +95,10 @@ QPushButton:hover {
             return result == QMessageBox.StandardButton.Yes
 
         except Exception as e:
-            logging.error(f"Qt confirmation dialog failed: {e}")
+            _printer.error(f"Qt confirmation dialog failed: {e}", backend="nav")
 
     # Fallback to terminal
-    print(f"\n🚨 WARNING: About to delete: {os.path.basename(wallpaper_name)}")
+    _printer.warning(f"About to delete: {os.path.basename(wallpaper_name)}", backend="nav")
     response = input("Type 'DELETE' to confirm, or anything else to cancel: ")
     return response.strip().upper() == "DELETE"
 
@@ -119,7 +123,7 @@ def delete_current_wallpaper_and_advance() -> bool:
     # Get current images and index
     imgs = load_images(folder)
     if not imgs:
-        logging.error(f"No images in {folder}")
+        _printer.error(f"No images in {folder}", backend="nav")
         return False
     
     if mode == 'sequential':
@@ -135,21 +139,21 @@ def delete_current_wallpaper_and_advance() -> bool:
     
     # Confirm deletion
     if not universal_confirm_deletion(str(current_wallpaper)):
-        print("Deletion cancelled")
+        _printer.info("Deletion cancelled", backend="nav")
         return False
     
     # Delete the file
     try:
         os.remove(current_wallpaper)
-        print(f"Deleted: {current_wallpaper}")
+        _printer.info(f"Deleted: {os.path.basename(current_wallpaper)}", backend="nav")
     except Exception as e:
-        logging.error(f"Failed to delete {current_wallpaper}: {e}")
+        _printer.error(f"Failed to delete {current_wallpaper}: {e}", backend="nav")
         return False
     
     # Reload images and re-sort
     imgs = load_images(folder)
     if not imgs:
-        logging.error("No wallpapers left after deletion")
+        _printer.warning("No wallpapers left after deletion", backend="nav")
         return True
     
     if mode == 'sequential':
@@ -183,7 +187,7 @@ def delete_current_wallpaper_and_advance() -> bool:
     # TRIGGER HUD
     show_hud()
     
-    print(f"WS{ws_num+1}: After deletion -> index {new_idx}, wallpaper '{wallpaper_path}'")
+    _printer.info(f"WS{ws_num+1}: After deletion -> index {new_idx}", backend="nav")
     return True
 
 # =============================================================================
@@ -211,7 +215,7 @@ def apply_effect_preview(effect: str = "sharpen"):
 
     imgs = load_images(folder)
     if not imgs:
-        logging.error(f"No images in {folder}")
+        _printer.error(f"No images in {folder}", backend="nav")
         return
 
     if mode == 'sequential':
@@ -225,7 +229,7 @@ def apply_effect_preview(effect: str = "sharpen"):
     wallpaper_path = str(imgs[idx])
 
     if not os.path.isfile(wallpaper_path):
-        logging.error("Cannot determine current wallpaper path.")
+        _printer.error("Cannot determine current wallpaper path.", backend="nav")
         return
 
     # Temporary file inside AWP_DIR
@@ -242,7 +246,7 @@ def apply_effect_preview(effect: str = "sharpen"):
     elif effect == "color":
         cmd += ["-modulate", "100,130,100"]
     else:
-        logging.error(f"Unknown effect: {effect}")
+        _printer.error(f"Unknown effect: {effect}", backend="nav")
         return
 
     cmd.append(temp_file)
@@ -250,9 +254,9 @@ def apply_effect_preview(effect: str = "sharpen"):
     try:
         subprocess.run(cmd, check=True)
         set_wallpaper(ws_num, temp_file, scaling)
-        print(f"Applied temporary effect '{effect}' to wallpaper: {temp_file}")
+        _printer.info(f"Applied temporary effect '{effect}' to wallpaper", backend="nav")
     except Exception as e:
-        logging.error(f"Failed to apply effect '{effect}': {e}")
+        _printer.error(f"Failed to apply effect '{effect}': {e}", backend="nav")
 
 # =============================================================================
 # MAIN EXECUTION
@@ -262,19 +266,21 @@ def main():
     """Main navigation controller entry point."""
     allowed = ("next", "prev", "delete", "sharpen", "black", "color")
     if len(sys.argv) != 2 or sys.argv[1] not in allowed:
-        print(f"Usage: {sys.argv[0]} " + " | ".join(allowed))
+        _printer.error(f"Usage: {sys.argv[0]} " + " | ".join(allowed), backend="nav")
         sys.exit(1)
 
     command = sys.argv[1]
     
     if command in ("sharpen", "black", "color"):
         os.makedirs(AWP_DIR, exist_ok=True)
+        _printer.info(f"Applying effect: {command}", backend="nav")
         apply_effect_preview(command)
         return
     
     if command == "delete":
         os.makedirs(AWP_DIR, exist_ok=True)
         force_single_workspace_off()
+        _printer.info("Deleting current wallpaper...", backend="nav")
         success = delete_current_wallpaper_and_advance()
         sys.exit(0 if success else 1)
     
@@ -298,7 +304,7 @@ def main():
 
     imgs = load_images(folder)
     if not imgs:
-        logging.error(f"No images in {folder}")
+        _printer.error(f"No images in {folder}", backend="nav")
         sys.exit(1)
 
     if mode == 'sequential':
@@ -340,7 +346,7 @@ def main():
     
     show_hud()
     
-    print(f"WS{ws_num+1}: {direction} -> index {new_idx}, scaling '{scaling}', wallpaper '{wallpaper_path}'")
+    _printer.info(f"WS{ws_num+1}: {direction} wallpaper changed", backend="nav")
 
 if __name__ == "__main__":
     main()

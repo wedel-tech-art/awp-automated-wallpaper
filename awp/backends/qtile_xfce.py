@@ -10,7 +10,7 @@ All functions maintained for backend API consistency.
 import os
 import subprocess
 import configparser
-
+import time
 from core.constants import SCALING_FEH
 from core.printer import get_printer
 
@@ -40,6 +40,7 @@ def qtile_xfce_set_themes(ws_num: int, config):
         return
     
     changes = []
+    cursor_changed = False  # Track cursor changes
     
     # Get what SHOULD be from config
     should_gtk = config.get(section, 'gtk_theme', fallback=None)
@@ -76,6 +77,17 @@ def qtile_xfce_set_themes(ws_num: int, config):
                 "-s", should_cursor, "--create"
             ], check=False)
             changes.append("cursor")
+            cursor_changed = True
+    
+    # Force cursor refresh if it changed (fixes stubborn apps)
+    if cursor_changed:
+        time.sleep(0.5)
+        subprocess.run(["xsetroot", "-cursor_name", "left_ptr"], check=False)
+        subprocess.run([
+            "xprop", "-root", "-f", "_XSETTINGS_SETTINGS", "8s",
+            "-set", "_XSETTINGS_SETTINGS", ""
+        ], check=False)
+        _printer.info("Cursor refresh triggered", backend="qtile_xfce")
     
     # Use printer with explicit backend
     _printer.themes(ws_num, changes, backend="qtile_xfce")

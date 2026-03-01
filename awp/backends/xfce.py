@@ -7,7 +7,7 @@ Simple orchestrator - applies theme components only if they differ from config
 import os
 import subprocess
 import configparser
-
+import time
 from core.constants import SCALING_FEH
 from core.printer import get_printer
 
@@ -37,6 +37,7 @@ def xfce_set_themes(ws_num: int, config):
         return
     
     changes = []
+    cursor_changed = False  # Track if cursor was updated
     
     # Get what SHOULD be from config
     should_gtk = config.get(section, 'gtk_theme', fallback=None)
@@ -73,6 +74,7 @@ def xfce_set_themes(ws_num: int, config):
                 "-s", should_cursor, "--create"
             ], check=False)
             changes.append("cursor")
+            cursor_changed = True  # Mark that cursor was updated
     
     # Check Window Manager theme
     if should_wm:
@@ -83,6 +85,22 @@ def xfce_set_themes(ws_num: int, config):
                 "-s", should_wm, "--create"
             ], check=False)
             changes.append("wm")
+    
+    # Force cursor refresh if it changed (fixes stubborn apps)
+    if cursor_changed:
+        # Small delay to let the setting propagate
+        time.sleep(0.5)
+        
+        # Method 1: Tell X to reload the cursor
+        subprocess.run(["xsetroot", "-cursor_name", "left_ptr"], check=False)
+        
+        # Method 2: Broadcast Xsettings change (more thorough)
+        subprocess.run([
+            "xprop", "-root", "-f", "_XSETTINGS_SETTINGS", "8s",
+            "-set", "_XSETTINGS_SETTINGS", ""
+        ], check=False)
+        
+        _printer.info("Cursor refresh triggered", backend="xfce")
     
     # Use printer with explicit backend
     _printer.themes(ws_num, changes, backend="xfce")
