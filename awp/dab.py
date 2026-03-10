@@ -10,6 +10,10 @@ import os
 import sys
 import shutil
 
+if not os.environ.get('AWP_DEBUG'):
+    fd = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(fd, 2)
+
 # QT6 IMPORTS
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
@@ -481,7 +485,7 @@ class AWPDashboard(QWidget):
         """Initialize dashboard and load existing configuration."""
         super().__init__()
         _printer.info("Starting AWP Dashboard...", backend="dab")
-        self.setStyleSheet("QWidget { background-color: #2e2e2e; } QWidget:enabled { color: white; }")
+        #self.setStyleSheet("QWidget { background-color: #2e2e2e; } QWidget:enabled { color: white; }")
         self.setWindowTitle("AWP Dashboard - Configuration Editor (Qt6)")
         self.setFixedSize(550, 670)
 
@@ -685,9 +689,6 @@ class AWPDashboard(QWidget):
 
     def on_de_changed(self, text):
         """Handle DE change and update UI availability."""
-        # Update the internal config
-        self.config.set('general', 'desktop_environment', text)
-        
         # Trigger the gatekeeper to enable/disable combos in all workspace tabs
         for i in range(self.tab_widget.count()):
             tab = self.tab_widget.widget(i)
@@ -878,11 +879,11 @@ class AWPDashboard(QWidget):
                 combo.blockSignals(False)
 
     def save_config(self):
-        """Save using AWPConfig API."""
+        """Save current GUI state to the active preset via AWPConfig API."""
         try:
             _printer.info("Saving configuration...", backend="dab")
             
-            # General settings
+            # 1. Update the 'general' section with UI values
             self.config.set('general', 'os_detected', self.de_combo.currentText())
             self.config.set('general', 'session_type', self.session_combo.currentText())
         
@@ -890,22 +891,32 @@ class AWPDashboard(QWidget):
                 self.config.set('general', 'blanking_timeout', '0')
                 self.config.set('general', 'blanking_pause', 'true')
             else:
-                self.config.set('general', 'blanking_timeout', str(self.blanking_combo.currentData() or '0'))
+                # currentData() handles the integer seconds mapping
+                timeout_val = str(self.blanking_combo.currentData() or '0')
+                self.config.set('general', 'blanking_timeout', timeout_val)
                 self.config.set('general', 'blanking_pause', 'false')
         
             self.config.set('general', 'workspaces', self.ws_count_combo.currentText())
         
-            # Workspaces
+            # 2. Update all Workspace Tab settings (Wallpaper, Themes, etc.)
             for tab in self.workspace_tabs:
                 tab.save_to_config()
             
+            # 3. Trigger the Core Save
+            # Because we updated core/config.py with .resolve(), this will
+            # automatically 'tunnel' through the symlink to your preset folder.
+            self.config.save()
+            
             _printer.success("Configuration saved successfully!", backend="dab")
-            QMessageBox.information(self, "Success", "Configuration saved!")
-            refresh_current_workspace()
+            QMessageBox.information(self, "Success", "Preset updated successfully!")
+            
+            # Refresh the daemon/UI state if the method exists
+            if hasattr(self, 'refresh_current_workspace'):
+                self.refresh_current_workspace()
+                
         except Exception as e:
             _printer.error(f"Failed to save: {str(e)}", backend="dab")
             QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
-
 
     def get_new_general_value(self, key):
         """

@@ -67,7 +67,7 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 > ⚠️ Generic WM support depends on gsettings availability
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Presets and Symlinks Technology)
 
 ### 📦 Prerequisites
 
@@ -77,39 +77,29 @@ sudo apt update
 sudo apt install imagemagick python3-pyqt6 feh
 ```
 
+# ⚡ Installation & First Run
+
+For AWP to function correctly, the main directory must be named awp and reside in your home folder.
+
 # Clone the repository
 ```
-git clone https://github.com/wedel-tech-art/awp-automated-wallpaper.git
-cd awp-automated-wallpaper
+git clone [https://github.com/wedel-tech-art/awp-automated-wallpaper.git](https://github.com/wedel-tech-art/awp-automated-wallpaper.git)
+mv awp-automated-wallpaper/awp ~/awp
+cd ~/awp
 ```
 
-# Run the setup wizard
+### Use the startup script with TEMPLATE
 ```
-python3 awp_setup.py
-```
-
-### First-Time Setup
-```
-1. Run `python3 awp_setup.py` to create your initial configuration
-2. Follow the interactive wizard to configure workspaces
-3. The daemon will start automatically on login
-```
-
-### Manual Start
-```
-python3 daemon.py
-```
-
-### Or use the startup script instead
-```
-./awp_start.sh (Recommended)
+Once you have awp as ~/awp then you can open a terminal there and do:
+./awp_start.sh TEMPLATE (this will start your AWP with default values for a typical 4 workspaces OS)
+The format is ./awp_start.sh [PRESET_NAME] so you can have your own presets all with different values, the possibilities are endless.
 ```
 
 ## 🎮 Usage
 
-### Or Dashboard Qt6
+### Dashboard Qt6
 ```
-python3 dab.py
+In ~/awp you do "python3 dab.py" for editing all default values and make AWP really "your own".
 ```
 
 ## Manual Navigation
@@ -153,12 +143,9 @@ python3 nav.py black
 
 ## 🛠️ Configuration
 ```
-Edit `~/awp/awp_config.ini` directly or use the dashboard:
+Use the dashboard:
 python3 dab.py
 ```
-
-### Example Configuration
-See `awp_config.ini.example` for a complete configuration reference.
 
 ## Screenshots
 
@@ -194,20 +181,23 @@ awp-automated-wallpaper/
 │   │   ├── gnome.py                # GNOME backend
 │   │   ├── mate.py                 # MATE backend
 │   │   └── generic.py              # Generic WM fallback
+│   ├── presets/                    # Identity Robbery Presets 🎭
+│   │   ├── TEMPLATE/               # Generic self-healing baseline
+│   │   └── [preset_name]/          # Custom user-defined identities
+│   ├── presets-backup/             # Pre-flight safety mirror 🛡️
 │   ├── template-themes/            # Theme DNA (Breeze Dark base)
 │   ├── template-icons/             # Icon DNA (Mint-Y base)
 │   ├── awp-icon-mom/               # The "Mother" icon template
 │   ├── branding-assets/            # 180 procedural color tones
-│   ├── logos/                      # Workspace-specific icons
+│   ├── logos/                      # Active workspace icons (symlinks)
 │   ├── daemon.py                   # Background service
 │   ├── dab.py                      # Qt6 Dashboard
 │   ├── nav.py                      # Navigation controller
 │   ├── hud_ws_info.py              # Workspace transition HUD
 │   ├── hud_vertical.py             # Sidebar system monitor
 │   ├── hud_bottom.py               # Bottom dock monitor
-│   ├── awp_setup.py                # Setup wizard
-│   ├── awp_start.sh                # Quick-start script
-│   └── awp_config.ini              # Configuration file
+│   ├── awp_setup.py                # Setup wizard (Legacy fallback)
+│   └── awp_start.sh                # Identity manager & startup script
 ├── screenshots/                    # GitHub previews
 ├── .gitignore
 ├── LICENSE
@@ -215,6 +205,13 @@ awp-automated-wallpaper/
 ```
 
 ## 🔄 Recent Architecture Improvements
+
+### 🎭 The "Identity Robbery" System (V3.6 - March 2026)
+
+- **Zero-Manual Setup:** Replaces the tedious awp_setup.py with a self-healing template system.
+- **Path Localization:** Automatically detects and injects the current $USER home path into the .ini configuration using sed.
+- **Pre-Flight Safety Mirror:** Every startup triggers a recursive rsync backup of your presets/ folder to presets-backup/ to prevent data loss.
+- **Dynamic Asset Swapping:** Instantly swaps workspace icons (logos) and configuration files via symlinks based on the selected identity.
 
 ### 🖱️ Cursor Refresh Enhancement (V3.6)
 

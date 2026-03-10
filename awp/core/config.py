@@ -212,21 +212,27 @@ class AWPConfig:
         self.save()
 
     def save(self):
-        """Save configuration with atomic backup."""
+        """Save configuration with symlink-aware atomic backup."""
         if not self._loaded:
             return
             
-        backup_path = self.path.with_suffix('.bak')
-        if self.path.exists():
-            self.path.rename(backup_path)
+        # --- THE FIX: Resolve the symlink to the ACTUAL preset file ---
+        # .resolve() turns '~/awp/awp_config.ini' into '~/awp/presets/mood/mood.ini'
+        actual_path = self.path.resolve()
+        backup_path = actual_path.with_suffix('.bak')
+        
+        # Now we rename the PHYSICAL file, not the link
+        if actual_path.exists():
+            actual_path.rename(backup_path)
         
         try:
-            with open(self.path, 'w') as f:
+            # Write directly to the physical file in the preset folder
+            with open(actual_path, 'w') as f:
                 self.config.write(f)
         except Exception as e:
-            # Restore backup on failure
+            # Restore physical backup on failure
             if backup_path.exists():
-                backup_path.rename(self.path)
+                backup_path.rename(actual_path)
             raise ConfigError(f"Failed to save config: {e}")
 
     def reload(self):

@@ -132,18 +132,47 @@ class Workspace:
 
 def main_loop(workspaces: dict, config: AWPConfig):
     """Refactored daemon: Logic first, Execution last."""
+    global DE, BLANKING_PAUSE, BLANKING_TIMEOUT # Access globals for live updates
     last_ws = None
+    
+    # 1. Initialize timestamp tracking
+    last_config_mtime = os.path.getmtime(config.path)
+
     while True:
         now = time.time()
+        
+        # 2. THE INTEGRATION CHECK: Did Dab save changes?
+        current_mtime = os.path.getmtime(config.path)
+        if current_mtime > last_config_mtime:
+            _printer.info("Config change detected! Re-Syncing ...", backend="daemon")
+            config.reload()
+            last_config_mtime = current_mtime
+            
+            # Update Backend/Engine if os_detected changed
+            if config.de != DE:
+                _printer.warning(f"Backend switch: {DE} -> {config.de}", backend="daemon")
+                DE = config.de
+                set_backend(DE)
+                optimize_desktop_environment()
+            
+            # Update Screen Blanking for your X11 setup
+            configure_screen_blanking(config)
+            
+            # Force all Workspace objects to refresh their internal folders/timing
+            for ws in workspaces.values():
+                ws.reload_images_and_index()
+                # Update next switch time based on potentially new timing
+                ws.next_switch_time = now + ws.timing
+
         ws_num = get_current_workspace()
         ws = workspaces.get(ws_num)
-        change_required = False
 
         if ws:
             force_single_workspace_off()
 
-            # 1. Workspace Changed
+            # 3. Workspace Changed (Much faster now without config.reload)
             if ws_num != last_ws:
+                # No more config.reload() here! The block above handles it.
                 ws.reload_images_and_index()
                 ws.apply_index(ws.index)
                 
@@ -151,35 +180,21 @@ def main_loop(workspaces: dict, config: AWPConfig):
                 if ws_config['icon']:
                     set_panel_icon(ws_config['icon'])
 
-                config.reload()
                 set_themes(ws_num, config.config)
                 
                 ws.next_switch_time = now + ws.timing
                 last_ws = ws_num
-                change_required = True
 
-            # 2. LOGIC: Timer Expired (Auto-Rotate)
+            # 4. Timer Expired (Auto-Rotate)
             elif now >= ws.next_switch_time:
-                # IMPORTANT: We reload FIRST to see if nav.py changed anything
+                # We still reload images here in case nav.py moved files
                 ws.reload_images_and_index()
                 
                 if ws.images:
                     ws.index = ws.pick_next_index()
-                    
-                    # SYNC: We must save like nav.py does!
-                    from core.actions import load_state, save_state
-                    state = load_state()
-                    state[f"ws{ws.num+1}"] = ws.index
-                    save_state(state)
-                    
                     ws.apply_index(ws.index)
-                    change_required = True # This triggers the HUD below
                 
                 ws.next_switch_time = now + ws.timing
-
-            # 3. Execution
-            #if change_required:
-                #show_hud()
 
         time.sleep(2)
 
