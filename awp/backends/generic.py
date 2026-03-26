@@ -14,17 +14,31 @@ from core.printer import get_printer
 # Get printer instance
 _printer = get_printer()
 
+def generic_current_ws():
+    """
+    Standard X11 Workspace Detection.
+    Provides safety and logging for the GENERIC backend.
+    """
+    try:
+        import subprocess
+        # Get the raw workspace index from the root window
+        ws_num = subprocess.check_output(
+            ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
+            text=True
+        ).strip().split()[-1]
+        
+        return int(ws_num)
+    except Exception as e:
+        # Using your existing printer logic
+        _printer.error(f"X11 xprop failed: {e}", backend="generic")
+        return 0
+
 def generic_lean_mode():
     """
     Generic lean mode - nothing to kill, already using feh.
     """
     _printer.info("Already lean (feh only)", backend="generic")
 
-def generic_force_single_workspace_off():
-    """
-    No-op for generic WM - workspace handling is WM-specific.
-    """
-    pass
 
 def generic_set_wallpaper(ws_num: int, image_path: str, scaling: str):
     """

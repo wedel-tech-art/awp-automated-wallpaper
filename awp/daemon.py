@@ -15,20 +15,15 @@ from datetime import datetime
 os.environ['NO_AT_BRIDGE'] = '1'
 
 from backends import get_backend
-from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH
+from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH, AWP_CONFIG_RAM
 from core.config import AWPConfig, ConfigError
-from core.utils import x11_blanking
-from core.runtime import update_runtime_state
+from core.utils import x11_blanking, load_images, sort_images
+from core.runtime import update_runtime_state, load_index_state, save_index_state, update_ram_config
 from core.actions import (
-    load_images,
-    sort_images,
-    load_state,
-    save_state,
     get_ws_key,
     get_current_workspace,
     parse_timing,
     set_backend,
-    force_single_workspace_off,
     set_wallpaper,
     set_panel_icon,
     show_hud
@@ -71,6 +66,10 @@ class Workspace:
         self.num = num
         self.key = get_ws_key(num)
         self.config = config
+
+        # Preload state
+        self.next_index = None
+
         self.reload_images_and_index()
         self.next_switch_time = time.time() + self.timing
 
@@ -85,40 +84,89 @@ class Workspace:
         self.order = ws_config['order']
         self.scaling = ws_config['scaling']
 
-        # Reload images and index
+        # Load & sort images
         self.images = load_images(self.folder)
         if self.mode == 'sequential':
             self.images = sort_images(self.images, self.order)
         else:
             self.images = sort_images(self.images, 'name_az')
 
-        state = load_state()
+        # Load index
+        state = load_index_state()
         self.index = int(state.get(self.key, 0) or 0)
+
         if not self.images or self.index >= len(self.images):
             self.index = 0
+
+        # Reset preload (important if folder changed)
+        self.next_index = None
+
+        # Track folder mtime (for change detection)
+        try:
+            self._last_folder_mtime = os.path.getmtime(self.folder)
+        except Exception:
+            self._last_folder_mtime = 0
+
+    def folder_changed(self) -> bool:
+        """Detect if folder contents changed."""
+        try:
+            current_mtime = os.path.getmtime(self.folder)
+        except Exception:
+            return False
+
+        if current_mtime != self._last_folder_mtime:
+            self._last_folder_mtime = current_mtime
+            return True
+
+        return False
 
     def pick_next_index(self) -> int:
         """Determine next wallpaper index based on rotation mode."""
         if not self.images:
             return 0
+
         if self.mode == 'random':
             if len(self.images) == 1:
                 return 0
             new_idx = self.index
             while new_idx == self.index:
-                new_idx = random.randint(0, len(self.images)-1)
+                new_idx = random.randint(0, len(self.images) - 1)
             return new_idx
+
         return (self.index + 1) % len(self.images)
+
+    def preload_next(self):
+        """Pre-calculate next index (lightweight preload)."""
+        if not self.images:
+            return
+
+        next_idx = self.pick_next_index()
+
+        # Safety: avoid same index edge case
+        if len(self.images) > 1 and next_idx == self.index:
+            next_idx = (self.index + 1) % len(self.images)
+
+        self.next_index = next_idx
+
+    def get_next_index(self) -> int:
+        """Return preloaded index if available, else compute."""
+        if self.next_index is not None:
+            idx = self.next_index
+            self.next_index = None
+            return idx
+
+        return self.pick_next_index()
 
     def apply_index(self, new_index: int):
         """Apply new wallpaper index and update runtime state."""
-        state = load_state()
+        state = load_index_state()
+
         self.index = new_index
         state[self.key] = self.index
-        save_state(state)
+        save_index_state(state)
 
         current_wallpaper_path = str(self.images[self.index])
-        set_wallpaper(self.num, current_wallpaper_path, self.scaling)  # Now using imported function
+        set_wallpaper(self.num, current_wallpaper_path, self.scaling)
 
         full_info = self.config.generate_runtime_state(
             f"ws{self.num+1}",
@@ -126,53 +174,82 @@ class Workspace:
         )
         update_runtime_state(full_info)
 
+        # 🔥 Preload next AFTER applying
+        self.preload_next()
+
 # =============================================================================
 # MAIN LOOP
 # =============================================================================
 
 def main_loop(workspaces: dict, config: AWPConfig):
     """Refactored daemon: Logic first, Execution last."""
-    global DE, BLANKING_PAUSE, BLANKING_TIMEOUT # Access globals for live updates
+    global DE, BLANKING_PAUSE, BLANKING_TIMEOUT
     last_ws = None
     
-    # 1. Initialize timestamp tracking
+    # Track config file changes
     last_config_mtime = os.path.getmtime(config.path)
 
     while True:
         now = time.time()
         
-        # 2. THE INTEGRATION CHECK: Did Dab save changes?
+        # -------------------------------------------------
+        # 1. CONFIG CHANGE DETECTION (FROM dab.py)
+        # -------------------------------------------------
         current_mtime = os.path.getmtime(config.path)
         if current_mtime > last_config_mtime:
             _printer.info("Config change detected! Re-Syncing ...", backend="daemon")
             config.reload()
+            try:
+                # Convert ConfigParser to a clean dictionary for JSON export
+                full_data = {s: dict(config.config.items(s)) for s in config.config.sections()}
+                update_ram_config(full_data)
+                _printer.info("RAM Config updated successfully.", backend="daemon")
+            except Exception as e:
+                _printer.error(f"Failed to sync RAM Config: {e}")
             last_config_mtime = current_mtime
             
-            # Update Backend/Engine if os_detected changed
+            # Backend change
             if config.de != DE:
                 _printer.warning(f"Backend switch: {DE} -> {config.de}", backend="daemon")
                 DE = config.de
                 set_backend(DE)
                 optimize_desktop_environment()
             
-            # Update Screen Blanking for your X11 setup
+            # Screen blanking
             configure_screen_blanking(config)
             
-            # Force all Workspace objects to refresh their internal folders/timing
+            # Reload all workspace internal state
             for ws in workspaces.values():
                 ws.reload_images_and_index()
-                # Update next switch time based on potentially new timing
                 ws.next_switch_time = now + ws.timing
 
+            # 🔥 APPLY CURRENT WORKSPACE IMMEDIATELY
+            ws_num = get_current_workspace()
+            ws = workspaces.get(ws_num)
+
+            if ws:
+                _printer.info(f"Re-applying current workspace WS{ws_num+1}", backend="daemon")
+
+                ws.reload_images_and_index()
+                ws.apply_index(ws.index)
+
+                ws_config = config.get_workspace_config(ws_num)
+                if ws_config['icon']:
+                    set_panel_icon(ws_config['icon'])
+
+                set_themes(ws_num, config.config)
+
+                ws.next_switch_time = now + ws.timing
+
+        # -------------------------------------------------
+        # 2. NORMAL WORKFLOW
+        # -------------------------------------------------
         ws_num = get_current_workspace()
         ws = workspaces.get(ws_num)
 
         if ws:
-            force_single_workspace_off()
-
-            # 3. Workspace Changed (Much faster now without config.reload)
+            # Workspace changed
             if ws_num != last_ws:
-                # No more config.reload() here! The block above handles it.
                 ws.reload_images_and_index()
                 ws.apply_index(ws.index)
                 
@@ -185,23 +262,41 @@ def main_loop(workspaces: dict, config: AWPConfig):
                 ws.next_switch_time = now + ws.timing
                 last_ws = ws_num
 
-            # 4. Timer Expired (Auto-Rotate)
+            # Timer-based rotation
             elif now >= ws.next_switch_time:
-                # We still reload images here in case nav.py moved files
-                ws.reload_images_and_index()
+                
+                if ws.folder_changed():
+                    _printer.info(f"Folder change detected in WS{ws_num+1}", backend="daemon")
+                    ws.reload_images_and_index()
                 
                 if ws.images:
-                    ws.index = ws.pick_next_index()
-                    ws.apply_index(ws.index)
+                    next_idx = ws.get_next_index()
+                    ws.apply_index(next_idx)
                 
                 ws.next_switch_time = now + ws.timing
 
-        time.sleep(2)
+        # -------------------------------------------------
+        # 3. ADAPTIVE SLEEP (CURRENT WORKSPACE ONLY)
+        # -------------------------------------------------
+        if ws:
+            remaining = ws.next_switch_time - now
+            sleep_time = max(0.5, min(2, remaining))
+        else:
+            sleep_time = 1
+
+        time.sleep(sleep_time)
 
 def main():
     """Main daemon entry point."""
     os.makedirs(AWP_DIR, exist_ok=True)
     config = AWPConfig()
+    try:
+        # We ensure the RAM mirror is created before any other process needs it
+        full_data = {s: dict(config.config.items(s)) for s in config.config.sections()}
+        update_ram_config(full_data)
+        _printer.info("RAM Config initialized.", backend="daemon")
+    except Exception as e:
+        _printer.error(f"Startup RAM Config failed: {e}")
 
     # Set globals
     global DE, SESSION_TYPE, BLANKING_PAUSE, BLANKING_TIMEOUT, BLANKING_FORMATTED
@@ -215,7 +310,6 @@ def main():
 
     optimize_desktop_environment()
     configure_screen_blanking(config)
-    force_single_workspace_off()
     
     n_ws = config.workspaces_count
     workspaces = {}

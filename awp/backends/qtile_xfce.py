@@ -18,6 +18,23 @@ from core.printer import get_printer
 _printer = get_printer()
 # No set_backend here - we'll pass it explicitly in each function
 
+def qtile_xfce_current_ws():
+    """
+    Hybrid Workspace Detection: X11 Only.
+    Inherently assumes X11 due to xfsettingsd/xfconf dependencies.
+    """
+    try:
+        import subprocess
+        # Standard X11 xprop
+        ws_num = subprocess.check_output(
+            ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
+            text=True
+        ).strip().split()[-1]
+        return int(ws_num)
+    except Exception as e:
+        _printer.error(f"X11 xprop failed: {e}", backend="qtile_xfce")
+        return 0
+
 def _get_current_value(channel, property):
     """Get current XFCE setting value via xfsettingsd."""
     try:
@@ -108,15 +125,6 @@ def qtile_xfce_lean_mode():
 
 
 # =============================================================================
-# FORCE SINGLE WORKSPACE - Not needed for Qtile, kept for API
-# =============================================================================
-
-def qtile_xfce_force_single_workspace_off():
-    """Not needed for Qtile - workspaces are handled by the WM."""
-    pass
-
-
-# =============================================================================
 # MONITOR FUNCTIONS - Not needed with feh, kept for API
 # =============================================================================
 
@@ -151,5 +159,7 @@ def qtile_xfce_set_wallpaper(ws_num: int, image_path: str, scaling: str):
 
 def qtile_xfce_set_icon(icon_path: str):
     """Panel icon not used with Qtile - just returns False for API."""
-    # Optional: If you ever use xfce4-panel with Qtile, you could enable this
+    # Optional: If you ever use xfce4-panel with Qtile:
+    # from backends.xfce import xfce_set_icon
+    # return xfce_set_icon(icon_path)
     return False

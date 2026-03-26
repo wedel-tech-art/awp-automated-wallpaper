@@ -15,6 +15,25 @@ from core.printer import get_printer
 _printer = get_printer()
 # No set_backend here - we'll pass it explicitly in each function
 
+def xfce_current_ws():
+    """
+    Standard X11 Workspace Detection.
+    Provides safety and logging for the XFCE backend.
+    """
+    try:
+        import subprocess
+        # Get the raw workspace index from the root window
+        ws_num = subprocess.check_output(
+            ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
+            text=True
+        ).strip().split()[-1]
+        
+        return int(ws_num)
+    except Exception as e:
+        # Using your existing printer logic
+        _printer.error(f"X11 xprop failed: {e}", backend="xfce")
+        return 0
+
 def _get_current_value(channel, property):
     """Get current XFCE setting value."""
     try:
@@ -118,13 +137,13 @@ def xfce_lean_mode():
     except Exception as e:
         _printer.error(str(e), backend="xfce")
 
-def xfce_force_single_workspace_off():
-    """Disable single workspace mode in XFCE."""
-    subprocess.run([
-        "xfconf-query", "-c", "xfce4-desktop",
-        "-p", "/backdrop/single-workspace-mode",
-        "--set", "false", "--create"
-    ])
+#def xfce_force_single_workspace_off():
+#    """Disable single workspace mode in XFCE."""
+#    subprocess.run([
+#        "xfconf-query", "-c", "xfce4-desktop",
+#        "-p", "/backdrop/single-workspace-mode",
+#        "--set", "false", "--create"
+#    ])
 
 def xfce_get_monitors_for_workspace(ws_num: int):
     """Get list of monitors for specified XFCE workspace."""

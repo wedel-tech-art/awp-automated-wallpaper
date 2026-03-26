@@ -13,12 +13,9 @@ from core.utils import get_ram_info, get_swap_info, get_mounts_info
 # label -> mount path
 # ================================
 MOUNTS_MAP = {
-    "SDA2": "/mnt/windows",
-    "SDA3": "/mnt/owstudios",
-    "SDA5": "/mnt/internal1500",
-    "SDB1": "/",
-    "SDB3": "/home",
-    "SDC1": "/mnt/internal2000",
+    "SDA1": "/mnt/internal2000",
+    "SDB2": "/",
+    "SDC1": "/mnt/internal1500",
 }
 
 class StudioHUD(QWidget):

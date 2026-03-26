@@ -37,7 +37,7 @@ for name in BACKEND_NAMES:
             "icon": getattr(module, f"{prefix}_set_icon"),
             "themes": getattr(module, f"{prefix}_set_themes"),
             "lean_mode": getattr(module, f"{prefix}_lean_mode"),
-            "workspace_off": getattr(module, f"{prefix}_force_single_workspace_off"),
+            "current_ws": getattr(module, f"{prefix}_current_ws"),
         }
         
         # OPTIONAL: native wallpaper method (some backends have both)

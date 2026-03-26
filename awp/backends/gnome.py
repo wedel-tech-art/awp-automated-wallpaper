@@ -16,6 +16,31 @@ _printer = get_printer()
 # GNOME-specific scaling mapping
 SCALING_GNOME = {'centered': 'centered', 'scaled': 'scaled', 'zoomed': 'zoom'}
 
+def gnome_current_ws():
+    """
+    GNOME Workspace Detection via D-Bus.
+    Works on both X11 and Wayland.
+    """
+    try:
+        import subprocess
+        # This sends a message to the GNOME Shell to ask for the active workspace index
+        cmd = [
+            "dbus-send", "--print-reply", "--dest=org.gnome.Shell",
+            "/org/gnome/Shell", "org.freedesktop.DBus.Properties.Get",
+            "string:org.gnome.Shell", "string:active-workspace-index"
+        ]
+        
+        result = subprocess.check_output(cmd, text=True)
+        
+        # D-Bus replies are wordy, so we find the integer value in the output
+        # Example reply: variant int32 2
+        ws_num = result.split()[-1]
+        return int(ws_num)
+        
+    except Exception as e:
+        _printer.error(f"GNOME D-Bus detection failed: {e}", backend="gnome")
+        return 0
+
 def _get_current_gsetting(schema, key):
     """Get current gsettings value."""
     try:
@@ -85,10 +110,6 @@ def gnome_lean_mode():
     This is a compatibility placeholder.
     """
     _printer.info("GNOME uses native wallpaper methods", backend="gnome")
-
-def gnome_force_single_workspace_off():
-    """GNOME doesn't have single workspace mode to disable."""
-    _printer.info("GNOME doesn't have single workspace mode", backend="gnome")
 
 def gnome_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """

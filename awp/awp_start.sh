@@ -89,8 +89,8 @@ pkill -f "$DAEMON_PATH" 2>/dev/null
 sleep 1
 
 # Clear JSON state and persistent index to prevent workspace/wallpaper mismatches.
-rm -f "$STATE_FILE" 2>/dev/null
-rm -f "$INDEX_FILE" 2>/dev/null
+#rm -f "$STATE_FILE" 2>/dev/null
+#rm -f "$INDEX_FILE" 2>/dev/null
 sleep 1
 
 # --- 5. Execution ---

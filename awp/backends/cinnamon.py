@@ -17,6 +17,37 @@ _printer = get_printer()
 # Cinnamon-specific scaling mapping
 SCALING_CINNAMON = {'centered': 'centered', 'scaled': 'scaled', 'zoomed': 'zoom'}
 
+def cinnamon_current_ws():
+    """
+    Cinnamon Workspace Detection via D-Bus.
+    Works on X11 and is the 'Passport' for Cinnamon's Wayland future.
+    """
+    try:
+        import subprocess
+        # We ask Cinnamon directly for the active workspace index
+        cmd = [
+            "dbus-send", "--print-reply", "--dest=org.Cinnamon",
+            "/org/Cinnamon", "org.freedesktop.DBus.Properties.Get",
+            "string:org.Cinnamon", "string:active-workspace-index"
+        ]
+        
+        result = subprocess.check_output(cmd, text=True)
+        
+        # Extract the integer from the reply (e.g., variant int32 1)
+        ws_num = result.split()[-1]
+        return int(ws_num)
+        
+    except Exception as e:
+        # Fallback to xprop if D-Bus is stubborn on older Mint versions
+        try:
+            ws_num = subprocess.check_output(
+                ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
+                text=True).strip().split()[-1]
+            return int(ws_num)
+        except:
+            _printer.error(f"Cinnamon detection failed: {e}", backend="cinnamon")
+            return 0
+
 def _get_current_gsetting(schema, key):
     """Get current gsettings value."""
     try:
@@ -106,10 +137,6 @@ def cinnamon_lean_mode():
     This is a compatibility placeholder.
     """
     _printer.info("Cinnamon uses native wallpaper methods", backend="cinnamon")
-
-def cinnamon_force_single_workspace_off():
-    """Cinnamon doesn't have single workspace mode to disable."""
-    _printer.info("Cinnamon doesn't have single workspace mode", backend="cinnamon")
 
 def cinnamon_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """

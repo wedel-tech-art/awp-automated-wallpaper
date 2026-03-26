@@ -206,6 +206,13 @@ awp-automated-wallpaper/
 
 ## 🔄 Recent Architecture Improvements
 
+### ⚡ Backend-Driven Logic & Runtime Consolidation (V3.7 - March 2026)
+
+- **Delegated Workspace Logic**: The `core/actions.py` module has been refactored for lean execution. Calculation of the current workspace is now delegated directly to each backend via the `current_ws` function, ensuring perfect synchronization between `nav` and `dab`.
+- **State Unification**: All state-handling and indexing functions have been consolidated into `core/runtime.py`, simplifying the data flow across the application.
+- **Atomic RAM Configuration**: Introduced `update_ram_config` to export the full system configuration to `/dev/shm/awp_config_ram.json`. This uses atomic operations to serve as a high-speed **Single Source of Truth** for external scripts and WMs like Qtile.
+- **Orchestration Sync**: The main Daemon now acts as the sole orchestrator, ensuring that backend data is correctly loaded before any visual transmutation occurs.
+
 ### 🎭 The "Identity Robbery" System (V3.6 - March 2026)
 
 - **Zero-Manual Setup:** Replaces the tedious awp_setup.py with a self-healing template system.
@@ -285,6 +292,7 @@ The system now creates a complete visual identity by "baking" both GTK themes an
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
+| **V3.7** | Mar 2026 | ⚡ Backend Logic Delegation + State Consolidation |
 | **V3.6** | Feb 2026 | 🖨️ Unified Printer System + 🖱️ Cursor Refresh + 🧠 Capability Matrix |
 | **V3.6** | Feb 2026 | 🖨️ Unified Printer System + Capability Matrix |
 | **V3.5** | Feb 2026 | 🧬 Dual-Genetic Baking (Themes + Icons) |

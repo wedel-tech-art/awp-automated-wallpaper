@@ -28,7 +28,6 @@ from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR, DEFAULT_ICON, THEME_C
 from core.config import AWPConfig
 from core.utils import get_icon_color
 from core.themes import get_available_themes, bake_awp_theme, bake_awp_icon
-from core.actions import refresh_current_workspace
 from backends import BACKEND_NAMES
 from core.printer import get_printer
 
@@ -909,10 +908,6 @@ class AWPDashboard(QWidget):
             
             _printer.success("Configuration saved successfully!", backend="dab")
             QMessageBox.information(self, "Success", "Preset updated successfully!")
-            
-            # Refresh the daemon/UI state if the method exists
-            if hasattr(self, 'refresh_current_workspace'):
-                self.refresh_current_workspace()
                 
         except Exception as e:
             _printer.error(f"Failed to save: {str(e)}", backend="dab")

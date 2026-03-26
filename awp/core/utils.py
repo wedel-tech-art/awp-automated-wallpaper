@@ -8,10 +8,13 @@ import os
 import subprocess
 import colorsys
 from PIL import Image
+from pathlib import Path
+from typing import List, Tuple, Optional
 
 from core.printer import get_printer
 
-# Initialize printer once at module level
+VALID_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp", ".avif")
+
 _printer = get_printer()
 
 def x11_blanking(timeout_seconds: int):
@@ -113,3 +116,37 @@ def get_mounts_info(paths):
         except Exception:
             result[path] = "N/A|N/A|N/A"
     return result
+
+def load_images(folder_path: str) -> List[Path]:
+    """Fast image loader using single-pass scandir."""
+    images = []
+    
+    try:
+        for entry in os.scandir(folder_path):
+            if entry.is_file():
+                name = entry.name.lower()
+                if name.endswith(VALID_EXTENSIONS):
+                    images.append(Path(entry.path))
+    except Exception:
+        return []
+    
+    return images
+
+def sort_images(images: List[Path], order_key: str) -> List[Path]:
+    """Sort images based on specified order preference."""
+    
+    if order_key in ('name_new', 'name_old'):
+        images_with_stat = [(f, f.stat().st_mtime) for f in images]
+        
+        reverse = order_key == 'name_new'
+        images_with_stat.sort(key=lambda x: x[1], reverse=reverse)
+        
+        return [f for f, _ in images_with_stat]
+
+    elif order_key == 'name_az':
+        return sorted(images, key=lambda f: f.name.lower())
+
+    elif order_key == 'name_za':
+        return sorted(images, key=lambda f: f.name.lower(), reverse=True)
+
+    return images

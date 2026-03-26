@@ -21,16 +21,12 @@ except ImportError:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH
 from core.config import AWPConfig
-from core.runtime import update_runtime_state
+from core.runtime import update_runtime_state, load_index_state, save_index_state
+from core.utils import load_images, sort_images
 from core.actions import (
-    load_images,
-    sort_images,
-    load_state,
-    save_state,
     get_ws_key,
     get_current_workspace,
     set_backend,
-    force_single_workspace_off,
     set_wallpaper,
     show_hud
 )
@@ -112,7 +108,7 @@ def delete_current_wallpaper_and_advance() -> bool:
     DE = config.de
     set_backend(DE)
     
-    state = load_state()
+    state = load_index_state()
     ws_config = config.get_workspace_config(ws_num)
     
     folder = ws_config['folder']
@@ -175,7 +171,7 @@ def delete_current_wallpaper_and_advance() -> bool:
     # Update state
     state[ws_key + '_last'] = current_idx
     state[ws_key] = new_idx
-    save_state(state)
+    save_index_state(state)
     
     # Set new wallpaper
     wallpaper_path = str(imgs[new_idx])
@@ -204,7 +200,7 @@ def apply_effect_preview(effect: str = "sharpen"):
     ws_num = get_current_workspace()
     ws_key = get_ws_key(ws_num)
 
-    state = load_state()
+    state = load_index_state()
     idx = int(state.get(ws_key, 0) or 0)
 
     ws_config = config.get_workspace_config(ws_num)
@@ -258,10 +254,6 @@ def apply_effect_preview(effect: str = "sharpen"):
     except Exception as e:
         _printer.error(f"Failed to apply effect '{effect}': {e}", backend="nav")
 
-# =============================================================================
-# MAIN EXECUTION
-# =============================================================================
-
 def main():
     """Main navigation controller entry point."""
     allowed = ("next", "prev", "delete", "sharpen", "black", "color")
@@ -270,31 +262,35 @@ def main():
         sys.exit(1)
 
     command = sys.argv[1]
-    
+
+    # --- 1. INITIALIZE THE TRUTH & THE BACKEND ---
+    # We load the config and set the backend BEFORE asking for the workspace.
+    config = AWPConfig()
+    global DE
+    DE = config.de  # Pulls the active DE from your .ini
+    set_backend(DE) # Hires the specific backend guide (qtile_xfce, xfce, etc.)
+
+    # --- 2. TEMPORAL EFFECTS ---
     if command in ("sharpen", "black", "color"):
         os.makedirs(AWP_DIR, exist_ok=True)
         _printer.info(f"Applying effect: {command}", backend="nav")
         apply_effect_preview(command)
         return
     
+    # --- 3. DELETION ---
     if command == "delete":
         os.makedirs(AWP_DIR, exist_ok=True)
-        force_single_workspace_off()
         _printer.info("Deleting current wallpaper...", backend="nav")
         success = delete_current_wallpaper_and_advance()
         sys.exit(0 if success else 1)
     
+    # --- 4. NAVIGATION (NEXT/PREV) ---
     direction = command
     os.makedirs(AWP_DIR, exist_ok=True)
-    force_single_workspace_off()
 
-    ws_num = get_current_workspace()
+    # Now this call uses the backend we just set!
+    ws_num = get_current_workspace() 
     ws_key = get_ws_key(ws_num)
-
-    config = AWPConfig()
-    global DE
-    DE = config.de
-    set_backend(DE)
     
     ws_config = config.get_workspace_config(ws_num)
     folder = ws_config['folder']
@@ -312,9 +308,10 @@ def main():
     else:
         imgs = sort_images(imgs, 'name_az')
 
-    state = load_state()
+    state = load_index_state()
     idx = int(state.get(ws_key, 0) or 0)
     last_idx = int(state.get(ws_key + '_last', -1) or -1)
+    
     if idx >= len(imgs):
         idx = 0
 
@@ -334,16 +331,20 @@ def main():
         else:
             new_idx = (idx - 1) % len(imgs)
 
+    # Update the shared state (indexes.json)
     state[ws_key + '_last'] = idx
     state[ws_key] = new_idx
-    save_state(state)
+    save_index_state(state)
 
+    # Apply the wallpaper via the backend
     wallpaper_path = str(imgs[new_idx])
     set_wallpaper(ws_num, wallpaper_path, scaling)
     
+    # Update runtime state for the HUDs
     full_info = config.generate_runtime_state(f"ws{ws_num+1}", wallpaper_path)
     update_runtime_state(full_info)
     
+    # Trigger the HUD
     show_hud()
     
     _printer.info(f"WS{ws_num+1}: {direction} wallpaper changed", backend="nav")

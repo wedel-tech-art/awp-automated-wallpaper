@@ -20,6 +20,25 @@ SCALING_MATE = {'centered': 'centered', 'scaled': 'scaled', 'zoomed': 'zoom'}
 # Simple state tracking
 _lean_mode_active = False
 
+def mate_current_ws():
+    """
+    Standard X11 Workspace Detection.
+    Provides safety and logging for the MATE backend.
+    """
+    try:
+        import subprocess
+        # Get the raw workspace index from the root window
+        ws_num = subprocess.check_output(
+            ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
+            text=True
+        ).strip().split()[-1]
+        
+        return int(ws_num)
+    except Exception as e:
+        # Using your existing printer logic
+        _printer.error(f"X11 xprop failed: {e}", backend="mate")
+        return 0
+
 def _get_current_gsetting(schema, key):
     """Get current gsettings value."""
     try:
@@ -117,9 +136,6 @@ def mate_lean_mode():
         _lean_mode_active = False
         return False
 
-def mate_force_single_workspace_off():
-    """MATE doesn't have single workspace mode to disable."""
-    _printer.info("MATE doesn't have single workspace mode", backend="mate")
 
 def mate_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """

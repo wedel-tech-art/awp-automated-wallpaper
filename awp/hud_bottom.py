@@ -8,10 +8,9 @@ from core.utils import get_ram_info, get_swap_info, get_mounts_info
 
 # === MOUNT CONFIG (easy to edit) ===
 MOUNT_LABELS = {
-    "/mnt/internal1500": "SDA5",
-    "/": "SDB1",
-    "/home": "SDB3",
-    "/mnt/internal2000": "SDC1",
+    "/mnt/internal2000": "SDA1",
+    "/": "SDB2",
+    "/mnt/internal1500": "SDC1",
 }
 
 class StudioBar(QWidget):
