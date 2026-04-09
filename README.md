@@ -14,6 +14,18 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 ## 🚀 Key Features
 
+## ⚡ Low-Latency State Bridge & Logic (V3.7)
+
+- **RAM-Backed Sync:** The system now utilizes `/dev/shm/qtile_current_ws` as a high-speed "Single Source of Truth," allowing the Window Manager to push workspace states directly to AWP.
+
+- **Zero-Lag Transmutation:** By reading state from RAM, theme and wallpaper updates are triggered instantaneously upon workspace transition, eliminating polling delays and reducing CPU overhead on the i7-4790.
+
+- 🆕 **"Park" Action:** A new 7th navigation command in `nav.py` allows manual wallpaper application based on the current index without cycling through the library.
+
+- 🔌 **Daemon-Less Mode:** Upgraded `awp_start.sh` with a conditional toggle to skip starting the background daemon, optimized for self-theming environments like Qtile.
+
+- **Backend-Driven Logic:** Core actions are now delegated to specific backends (like `qtile_xfce.py`), ensuring perfect synchronization between the WM and the AWP dashboard.
+
 * **🖨️ Unified Printer System (V3.6)**:
     * **Single Source of Truth**: All terminal output now flows through `core/printer.py` – no more scattered color codes.
     * **Context-Aware Prefixes**: Every module identifies itself clearly:
@@ -204,14 +216,30 @@ awp-automated-wallpaper/
 └── README.md
 ```
 
-## 🔄 Recent Architecture Improvements
+## ⚡ V3.7 Architecture Refinement (April 2026)
 
-### ⚡ Backend-Driven Logic & Runtime Consolidation (V3.7 - March 2026)
+### 🧠 Low-Latency State Bridge (RAM-Backed)
 
-- **Delegated Workspace Logic**: The `core/actions.py` module has been refactored for lean execution. Calculation of the current workspace is now delegated directly to each backend via the `current_ws` function, ensuring perfect synchronization between `nav` and `dab`.
-- **State Unification**: All state-handling and indexing functions have been consolidated into `core/runtime.py`, simplifying the data flow across the application.
-- **Atomic RAM Configuration**: Introduced `update_ram_config` to export the full system configuration to `/dev/shm/awp_config_ram.json`. This uses atomic operations to serve as a high-speed **Single Source of Truth** for external scripts and WMs like Qtile.
-- **Orchestration Sync**: The main Daemon now acts as the sole orchestrator, ensuring that backend data is correctly loaded before any visual transmutation occurs.
+- **The Data:** The `qtile_xfce` backend now reads workspace indices directly from `/dev/shm/qtile_current_ws`.
+- **The Purpose:** This file acts as a high-speed Single Source of Truth, allowing the Window Manager (Qtile) to push its state to RAM once per transition.
+- **The Benefit:** This eliminates lag between workspace switching and theme updates while reducing disk I/O and CPU overhead.
+
+### 🆕 New "Park" Action (`nav.py`)
+
+- Introduced a 7th navigation command to manually trigger a wallpaper set based on the current index without cycling.
+
+### 🔌 Daemon-Less Operation
+
+- Upgraded `awp_start.sh` with a conditional variable to skip starting the main background daemon.
+- **Optimization:** Specifically designed for backends like Qtile that handle their own theming logic.
+
+### ⚡ Backend-Driven Logic
+
+- Refactored `core/actions.py` to delegate workspace calculations directly to backends (e.g., `xfce.py`), ensuring perfect synchronization.
+
+### ♻️ Cache & State Unification
+
+- Consolidated state-handling into `core/runtime.py` and optimized internal caching for faster asset retrieval.
 
 ### 🎭 The "Identity Robbery" System (V3.6 - March 2026)
 

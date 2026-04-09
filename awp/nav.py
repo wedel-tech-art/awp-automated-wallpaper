@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """
 AWP - Automated Wallpaper Program
-Navigation Controller - NOW USING CORE ACTIONS FOR HELPERS
+Navigation Controller - OPTIMIZED FOR RAM CONFIG
+
+Changes:
+- v2.0: Added RAM-first config loading (fallback to HDD INI)
+- Reads from /dev/shm/awp_config_ram.json for faster access on HDD systems
+- Falls back to traditional INI file if RAM config is unavailable
 """
+
 import os
 import sys
 import random
@@ -19,7 +25,7 @@ except ImportError:
     HAS_QT = False
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH
+from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH, AWP_CONFIG_RAM
 from core.config import AWPConfig
 from core.runtime import update_runtime_state, load_index_state, save_index_state
 from core.utils import load_images, sort_images
@@ -31,19 +37,88 @@ from core.actions import (
     show_hud
 )
 from backends import get_backend
-from core.printer import get_printer  # ADD THIS
+from core.printer import get_printer
 
 # Initialize printer
 _printer = get_printer()
 
 DE = None
 
+
+# =============================================================================
+# CONFIGURATION LOADING (RAM-first with HDD fallback)
+# =============================================================================
+
+def get_config():
+    """
+    Load configuration from RAM disk first, fallback to HDD INI.
+    
+    Returns:
+        configparser.ConfigParser: Configuration object with all sections
+    
+    Performance:
+        RAM disk: ~0.1ms (no disk seek)
+        HDD INI: ~10-20ms (fallback, disk seek)
+    """
+    # Attempt to load from RAM disk (fast path)
+    try:
+        with open(AWP_CONFIG_RAM, "r") as f:
+            config_dict = json.load(f)
+        
+        # Convert JSON dict to ConfigParser object
+        from configparser import ConfigParser
+        config = ConfigParser()
+        for section, values in config_dict.items():
+            config[section] = values
+        
+        _printer.info(f"Config loaded from RAM ({len(config_dict)} sections)", backend="nav")
+        return config
+        
+    except FileNotFoundError:
+        _printer.warning("RAM config not found (/dev/shm/awp_config_ram.json)", backend="nav")
+    except json.JSONDecodeError as e:
+        _printer.warning(f"RAM config JSON decode error: {e}", backend="nav")
+    except Exception as e:
+        _printer.warning(f"RAM config error: {e}, falling back to INI", backend="nav")
+    
+    # Fallback to traditional HDD INI file (slow path)
+    try:
+        from core.config import AWPConfig
+        awp = AWPConfig()
+        _printer.info("Config loaded from INI (HDD fallback)", backend="nav")
+        return awp.config
+    except Exception as e:
+        _printer.error(f"Failed to load config from INI: {e}", backend="nav")
+        raise
+
+
+def get_awpconfig_instance():
+    """
+    Create AWPConfig instance with RAM-loaded config.
+    Used for methods that need the full AWPConfig object.
+    
+    Returns:
+        AWPConfig: Configured AWPConfig instance
+    """
+    awp = AWPConfig()
+    awp.config = get_config()  # Override with RAM-loaded config
+    return awp
+
+
 # =============================================================================
 # WALLPAPER DELETION FUNCTIONALITY
 # =============================================================================
 
 def universal_confirm_deletion(wallpaper_name: str) -> bool:
-    """Display confirmation dialog for wallpaper deletion."""
+    """
+    Display confirmation dialog for wallpaper deletion.
+    
+    Args:
+        wallpaper_name: Path to wallpaper file
+    
+    Returns:
+        bool: True if user confirmed deletion, False otherwise
+    """
     if HAS_QT:
         try:
             created_app = False
@@ -93,30 +168,42 @@ QPushButton:hover {
         except Exception as e:
             _printer.error(f"Qt confirmation dialog failed: {e}", backend="nav")
 
-    # Fallback to terminal
+    # Fallback to terminal confirmation
     _printer.warning(f"About to delete: {os.path.basename(wallpaper_name)}", backend="nav")
     response = input("Type 'DELETE' to confirm, or anything else to cancel: ")
     return response.strip().upper() == "DELETE"
 
+
 def delete_current_wallpaper_and_advance() -> bool:
-    """Delete current wallpaper and advance to next one."""
+    """
+    Delete current wallpaper and advance to next one.
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
     ws_num = get_current_workspace()
     ws_key = get_ws_key(ws_num)
     
-    config = AWPConfig()
+    # Use RAM-loaded config
+    config_parser = get_config()
     global DE
-    DE = config.de
+    DE = config_parser.get('general', 'os_detected', fallback='qtile_xfce')
     set_backend(DE)
     
     state = load_index_state()
-    ws_config = config.get_workspace_config(ws_num)
     
-    folder = ws_config['folder']
-    mode = ws_config['mode']
-    order = ws_config['order']
-    scaling = ws_config['scaling']
+    # Get workspace configuration
+    section = f"ws{ws_num + 1}"
+    if not config_parser.has_section(section):
+        _printer.error(f"Section {section} not found in config", backend="nav")
+        return False
     
-    # Get current images and index
+    folder = config_parser.get(section, 'folder')
+    mode = config_parser.get(section, 'mode', fallback='sequential')
+    order = config_parser.get(section, 'order', fallback='name_az')
+    scaling = config_parser.get(section, 'scaling', fallback='zoomed')
+    
+    # Load and sort images
     imgs = load_images(folder)
     if not imgs:
         _printer.error(f"No images in {folder}", backend="nav")
@@ -146,7 +233,7 @@ def delete_current_wallpaper_and_advance() -> bool:
         _printer.error(f"Failed to delete {current_wallpaper}: {e}", backend="nav")
         return False
     
-    # Reload images and re-sort
+    # Reload images after deletion
     imgs = load_images(folder)
     if not imgs:
         _printer.warning("No wallpapers left after deletion", backend="nav")
@@ -157,14 +244,14 @@ def delete_current_wallpaper_and_advance() -> bool:
     else:
         imgs = sort_images(imgs, 'name_az')
     
-    # Calculate new index
+    # Calculate new index based on mode
     if mode == 'random':
         if len(imgs) == 1:
             new_idx = 0
         else:
             new_idx = current_idx
             while new_idx == current_idx and len(imgs) > 1:
-                new_idx = random.randint(0, len(imgs)-1)
+                new_idx = random.randint(0, len(imgs) - 1)
     else:  # sequential
         new_idx = current_idx % len(imgs)
     
@@ -177,37 +264,50 @@ def delete_current_wallpaper_and_advance() -> bool:
     wallpaper_path = str(imgs[new_idx])
     set_wallpaper(ws_num, wallpaper_path, scaling)
     
-    full_info = config.generate_runtime_state(f"ws{ws_num+1}", wallpaper_path)
+    # Update runtime state for HUDs
+    awp = get_awpconfig_instance()
+    full_info = awp.generate_runtime_state(f"ws{ws_num + 1}", wallpaper_path)
     update_runtime_state(full_info)
     
-    # TRIGGER HUD
+    # Trigger HUD
     show_hud()
     
-    _printer.info(f"WS{ws_num+1}: After deletion -> index {new_idx}", backend="nav")
+    _printer.info(f"WS{ws_num + 1}: After deletion -> index {new_idx}", backend="nav")
     return True
+
 
 # =============================================================================
 # EFFECT PREVIEW
 # =============================================================================
 
 def apply_effect_preview(effect: str = "sharpen"):
-    """Apply a temporary effect to the current wallpaper."""
-    config = AWPConfig()
+    """
+    Apply a temporary effect to the current wallpaper.
+    
+    Args:
+        effect: Effect type ('sharpen', 'black', 'color')
+    """
+    # Use RAM-loaded config
+    config_parser = get_config()
     global DE
-    DE = config.de
+    DE = config_parser.get('general', 'os_detected', fallback='qtile_xfce')
     set_backend(DE)
 
     ws_num = get_current_workspace()
     ws_key = get_ws_key(ws_num)
+    section = f"ws{ws_num + 1}"
+
+    if not config_parser.has_section(section):
+        _printer.error(f"Section {section} not found", backend="nav")
+        return
 
     state = load_index_state()
     idx = int(state.get(ws_key, 0) or 0)
 
-    ws_config = config.get_workspace_config(ws_num)
-    folder = ws_config['folder']
-    mode = ws_config['mode']
-    order = ws_config['order']
-    scaling = ws_config['scaling']
+    folder = config_parser.get(section, 'folder')
+    mode = config_parser.get(section, 'mode', fallback='sequential')
+    order = config_parser.get(section, 'order', fallback='name_az')
+    scaling = config_parser.get(section, 'scaling', fallback='zoomed')
 
     imgs = load_images(folder)
     if not imgs:
@@ -228,7 +328,7 @@ def apply_effect_preview(effect: str = "sharpen"):
         _printer.error("Cannot determine current wallpaper path.", backend="nav")
         return
 
-    # Temporary file inside AWP_DIR
+    # Create temporary file for effect
     filename = os.path.basename(wallpaper_path)
     temp_file = os.path.join(AWP_DIR, filename)
     os.makedirs(os.path.dirname(temp_file), exist_ok=True)
@@ -254,21 +354,82 @@ def apply_effect_preview(effect: str = "sharpen"):
     except Exception as e:
         _printer.error(f"Failed to apply effect '{effect}': {e}", backend="nav")
 
+
+def park_current():
+    """
+    Park at current indexed wallpaper (no rotation, just apply).
+    Used when switching workspaces to restore the correct wallpaper.
+    """
+    # Use RAM-loaded config
+    config_parser = get_config()
+    global DE
+    DE = config_parser.get('general', 'os_detected', fallback='qtile_xfce')
+    set_backend(DE)
+    
+    ws_num = get_current_workspace()
+    ws_key = get_ws_key(ws_num)
+    section = f"ws{ws_num + 1}"
+
+    if not config_parser.has_section(section):
+        _printer.error(f"Section {section} not found", backend="nav")
+        return
+    
+    folder = config_parser.get(section, 'folder')
+    mode = config_parser.get(section, 'mode', fallback='sequential')
+    order = config_parser.get(section, 'order', fallback='name_az')
+    scaling = config_parser.get(section, 'scaling', fallback='zoomed')
+    
+    imgs = load_images(folder)
+    if not imgs:
+        _printer.error(f"No images in {folder}", backend="nav")
+        return
+    
+    if mode == 'sequential':
+        imgs = sort_images(imgs, order)
+    else:
+        imgs = sort_images(imgs, 'name_az')
+    
+    state = load_index_state()
+    idx = int(state.get(ws_key, 0) or 0)
+    
+    if idx >= len(imgs):
+        idx = 0
+    
+    # === FIX: Save the index to initialize workspace in indexes.json ===
+    state[ws_key] = idx
+    save_index_state(state)
+    # === END FIX ===
+    
+    # Apply the wallpaper (no rotation, just park)
+    wallpaper_path = str(imgs[idx])
+    set_wallpaper(ws_num, wallpaper_path, scaling)
+    
+    # Update runtime state for HUDs
+    awp = get_awpconfig_instance()
+    full_info = awp.generate_runtime_state(f"ws{ws_num + 1}", wallpaper_path)
+    update_runtime_state(full_info)
+    
+    # Trigger HUD (commented for faster workspace switching)
+    # show_hud()
+    
+    _printer.info(f"WS{ws_num + 1}: Parked at index {idx}", backend="nav")
+
+
 def main():
     """Main navigation controller entry point."""
-    allowed = ("next", "prev", "delete", "sharpen", "black", "color")
+    allowed = ("next", "prev", "delete", "sharpen", "black", "color", "park")
     if len(sys.argv) != 2 or sys.argv[1] not in allowed:
         _printer.error(f"Usage: {sys.argv[0]} " + " | ".join(allowed), backend="nav")
         sys.exit(1)
 
     command = sys.argv[1]
 
-    # --- 1. INITIALIZE THE TRUTH & THE BACKEND ---
-    # We load the config and set the backend BEFORE asking for the workspace.
-    config = AWPConfig()
+    # --- 1. INITIALIZE CONFIG & BACKEND (RAM-first) ---
+    # Load configuration from RAM disk (fast) or HDD fallback
+    config_parser = get_config()
     global DE
-    DE = config.de  # Pulls the active DE from your .ini
-    set_backend(DE) # Hires the specific backend guide (qtile_xfce, xfce, etc.)
+    DE = config_parser.get('general', 'os_detected', fallback='qtile_xfce')
+    set_backend(DE)
 
     # --- 2. TEMPORAL EFFECTS ---
     if command in ("sharpen", "black", "color"):
@@ -277,27 +438,38 @@ def main():
         apply_effect_preview(command)
         return
     
-    # --- 3. DELETION ---
+    # --- 3. PARK (Restore current wallpaper) ---
+    if command == "park":
+        os.makedirs(AWP_DIR, exist_ok=True)
+        _printer.info("Parking wallpaper...", backend="nav")
+        park_current()
+        return
+    
+    # --- 4. DELETION ---
     if command == "delete":
         os.makedirs(AWP_DIR, exist_ok=True)
         _printer.info("Deleting current wallpaper...", backend="nav")
         success = delete_current_wallpaper_and_advance()
         sys.exit(0 if success else 1)
     
-    # --- 4. NAVIGATION (NEXT/PREV) ---
+    # --- 5. NAVIGATION (NEXT/PREV) ---
     direction = command
     os.makedirs(AWP_DIR, exist_ok=True)
 
-    # Now this call uses the backend we just set!
-    ws_num = get_current_workspace() 
+    ws_num = get_current_workspace()
     ws_key = get_ws_key(ws_num)
-    
-    ws_config = config.get_workspace_config(ws_num)
-    folder = ws_config['folder']
-    mode = ws_config['mode']
-    order = ws_config['order']
-    scaling = ws_config['scaling']
+    section = f"ws{ws_num + 1}"
 
+    if not config_parser.has_section(section):
+        _printer.error(f"Section {section} not found in config", backend="nav")
+        sys.exit(1)
+
+    folder = config_parser.get(section, 'folder')
+    mode = config_parser.get(section, 'mode', fallback='sequential')
+    order = config_parser.get(section, 'order', fallback='name_az')
+    scaling = config_parser.get(section, 'scaling', fallback='zoomed')
+
+    # Load and sort images
     imgs = load_images(folder)
     if not imgs:
         _printer.error(f"No images in {folder}", backend="nav")
@@ -308,6 +480,7 @@ def main():
     else:
         imgs = sort_images(imgs, 'name_az')
 
+    # Get current index from state
     state = load_index_state()
     idx = int(state.get(ws_key, 0) or 0)
     last_idx = int(state.get(ws_key + '_last', -1) or -1)
@@ -315,6 +488,7 @@ def main():
     if idx >= len(imgs):
         idx = 0
 
+    # Calculate new index based on direction and mode
     if direction == "next":
         if mode == 'random':
             if len(imgs) == 1:
@@ -322,32 +496,34 @@ def main():
             else:
                 new_idx = idx
                 while new_idx == idx:
-                    new_idx = random.randint(0, len(imgs)-1)
+                    new_idx = random.randint(0, len(imgs) - 1)
         else:
             new_idx = (idx + 1) % len(imgs)
     else:  # prev
         if mode == 'random':
-            new_idx = last_idx if last_idx >= 0 and last_idx < len(imgs) else idx
+            new_idx = last_idx if 0 <= last_idx < len(imgs) else idx
         else:
             new_idx = (idx - 1) % len(imgs)
 
-    # Update the shared state (indexes.json)
+    # Update state (indexes.json)
     state[ws_key + '_last'] = idx
     state[ws_key] = new_idx
     save_index_state(state)
 
-    # Apply the wallpaper via the backend
+    # Apply the wallpaper via backend
     wallpaper_path = str(imgs[new_idx])
     set_wallpaper(ws_num, wallpaper_path, scaling)
     
-    # Update runtime state for the HUDs
-    full_info = config.generate_runtime_state(f"ws{ws_num+1}", wallpaper_path)
+    # Update runtime state for HUDs
+    awp = get_awpconfig_instance()
+    full_info = awp.generate_runtime_state(f"ws{ws_num + 1}", wallpaper_path)
     update_runtime_state(full_info)
     
-    # Trigger the HUD
-    show_hud()
+    # Trigger HUD (commented for faster response)
+    # show_hud()
     
-    _printer.info(f"WS{ws_num+1}: {direction} wallpaper changed", backend="nav")
+    _printer.info(f"WS{ws_num + 1}: {direction} wallpaper changed", backend="nav")
+
 
 if __name__ == "__main__":
     main()

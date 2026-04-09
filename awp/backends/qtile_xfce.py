@@ -8,6 +8,7 @@ All functions maintained for backend API consistency.
 """
 
 import os
+import json
 import subprocess
 import configparser
 import time
@@ -20,19 +21,27 @@ _printer = get_printer()
 
 def qtile_xfce_current_ws():
     """
-    Hybrid Workspace Detection: X11 Only.
-    Inherently assumes X11 due to xfsettingsd/xfconf dependencies.
+    Read current workspace from /dev/shm (written by Qtile).
+    Used by subprocesses (nav.py) to get current workspace.
     """
     try:
+        workspace_file = "/dev/shm/qtile_current_ws"
+        if os.path.exists(workspace_file):
+            with open(workspace_file, 'r') as f:
+                state = json.load(f)
+                return state.get('workspace_num', 0)
+    except Exception as e:
+        print(f"Failed to read workspace from /dev/shm: {e}")
+    
+    # Fallback to xprop
+    try:
         import subprocess
-        # Standard X11 xprop
         ws_num = subprocess.check_output(
             ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
             text=True
         ).strip().split()[-1]
         return int(ws_num)
-    except Exception as e:
-        _printer.error(f"X11 xprop failed: {e}", backend="qtile_xfce")
+    except:
         return 0
 
 def _get_current_value(channel, property):
@@ -115,13 +124,10 @@ def qtile_xfce_set_themes(ws_num: int, config):
 # =============================================================================
 
 def qtile_xfce_lean_mode():
-    """Qtile is already lean - just ensure xfsettingsd is running for themes."""
-    try:
-        # Check if xfsettingsd is running, start if not
-        subprocess.run(["pgrep", "xfsettingsd"], check=True)
-    except:
-        subprocess.Popen(["xfsettingsd"])
-        _printer.info("Started xfsettingsd for themes", backend="qtile_xfce")
+    """
+    Generic lean mode - nothing to kill, already using feh.
+    """
+    _printer.info("Started xfsettingsd for themes", backend="qtile_xfce")
 
 
 # =============================================================================

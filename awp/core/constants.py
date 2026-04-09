@@ -59,6 +59,14 @@ THEME_CAPABILITIES = {
         'has_cursor': True,
         'notes': 'Hybrid: Qtile + xfsettingsd'
     },
+    'qtile_x11': {
+        'has_wm_theme': False,      # Qtile is WM, no separate theme
+        'has_desktop_theme': False,
+        'has_gtk': True,             # Uses xsettingsd for GTK
+        'has_icons': True,
+        'has_cursor': True,
+        'notes': 'Pure Qtile'
+    },
     'cinnamon': {
         'has_wm_theme': True,        # Muffin/Marco themes
         'has_desktop_theme': True,   # Cinnamon shell theme!
