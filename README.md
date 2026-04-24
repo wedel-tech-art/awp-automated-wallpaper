@@ -218,6 +218,11 @@ awp-automated-wallpaper/
 └── README.md
 ```
 
+## 💎 V3.7.1 - Architectural Sanitization
+- **Centralized Path Management:** Moved all critical system paths (Qt6ct, RAM-bridges, and configuration locations) to `core/constants.py`, eliminating hardcoded strings across all backends.
+- **Unified Qt6 Accent Bridge:** Standardized the `/dev/shm` zero-disk-write logic for XFCE, Cinnamon, MATE, Gnome, and Generic backends to ensure 100% theme synchronization across environments.
+- **Improved Maintainability:** System-wide path updates (like changing the Qt6 color scheme name) now only require a single change in the constants file.
+
 ## ⚡ V3.7 Architecture Refinement (April 2026)
 
 ### 🧠 Low-Latency State Bridge (RAM-Backed)

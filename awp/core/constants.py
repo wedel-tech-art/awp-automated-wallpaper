@@ -5,16 +5,25 @@ Centralized paths and configuration constants.
 Keep it simple, no fancy stuff.
 """
 
+#!/usr/bin/env python3
 import os
 from pathlib import Path
 
+# Base Paths
 AWP_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = str(AWP_DIR / "awp_config.ini")
 STATE_PATH = str(AWP_DIR / "indexes.json")
 ICON_DIR = str(AWP_DIR / "logos")
+DEFAULT_ICON = str(AWP_DIR / "debian.png")
+
+# RAM-Bridge Paths (Zero-Disk-Write Architecture)
 RUNTIME_STATE_PATH = "/dev/shm/awp_full_state.json"
 AWP_CONFIG_RAM = "/dev/shm/awp_config_ram.json"
-DEFAULT_ICON = str(AWP_DIR / "debian.png")
+QT6_ACCENT_SHM = "/dev/shm/awp-qt-color.conf" # Centralized for all backends
+
+# System Config Paths (for Symlinking)
+QT6CT_COLORS_DIR = os.path.expanduser("~/.config/qt6ct/colors/") # Target for symlink
+QT6CT_CONF_PATH = os.path.expanduser("~/.config/qt6ct/qt6ct.conf") # Master Qt6 config
 
 # ============================================================================
 # ANSI COLOR CODES - for consistent terminal output
@@ -70,7 +79,7 @@ THEME_CAPABILITIES = {
         'has_qt_accent': True,
         'notes': 'Hybrid: Qtile + gnome-settings-daemon'
     },
-        'qtile_wayland': {
+    'qtile_wayland': {
         'has_wm_theme': False,        # Qtile draws its own borders
         'has_desktop_theme': False,   # No desktop shell
         'has_gtk': True,              # Via gsd-xsettings (works in Wayland)
