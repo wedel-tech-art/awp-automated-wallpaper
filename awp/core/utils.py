@@ -62,6 +62,75 @@ def get_icon_color(image_path: str) -> str:
     except Exception as e:
         return ""
 
+def get_dynamic_mount_labels(target_mounts=None):
+    """
+    Dynamically map mount paths to device labels.
+    
+    Args:
+        target_mounts: List of mount paths to map (e.g., ["/", "/mnt/internal1500"])
+                      If None, returns all mounts.
+    
+    Returns:
+        Dictionary: {mount_path: device_label} (e.g., {"/": "SDA2", "/mnt/internal1500": "SDB1"})
+    """
+    import subprocess
+    
+    mount_labels = {}
+    
+    try:
+        # Use -l flag for list format (no tree characters like ├─ └─)
+        # Use -o for specific columns: NAME (device name) and MOUNTPOINT
+        lsblk_output = subprocess.check_output(
+            ["lsblk", "-l", "-o", "NAME,MOUNTPOINT"], 
+            encoding='utf-8'
+        )
+        
+        mount_to_dev = {}
+        for line in lsblk_output.splitlines():
+            # Skip the header line
+            if line.startswith('NAME'):
+                continue
+                
+            parts = line.split(maxsplit=1)
+            if len(parts) == 2:
+                dev_name, mountpoint = parts
+                if mountpoint and mountpoint.strip():
+                    # Clean the device name (remove any remaining special chars just in case)
+                    dev_name = dev_name.strip()
+                    mountpoint = mountpoint.strip()
+                    mount_to_dev[mountpoint] = dev_name
+        
+        # If no specific targets requested, return all mounts
+        if target_mounts is None:
+            target_mounts = list(mount_to_dev.keys())
+        
+        # Build labels for requested mount points
+        for mount in target_mounts:
+            if mount in mount_to_dev:
+                dev = mount_to_dev[mount]
+                # Create label like "SDA2" (strip any numbers to keep just base name if preferred)
+                # Remove partition numbers if you want just sda/sdb/sdc:
+                # import re
+                # dev = re.sub(r'\d+$', '', dev)
+                label = dev.upper()
+                mount_labels[mount] = label
+            else:
+                # Provide fallback label if mount point not found
+                mount_labels[mount] = "???"
+                
+    except Exception as e:
+        # Fallback to generic labels if detection fails
+        print(f"Warning: Could not detect mount labels dynamically: {e}")
+        if target_mounts:
+            for mount in target_mounts:
+                if mount == "/":
+                    mount_labels[mount] = "ROOT"
+                else:
+                    import os
+                    mount_labels[mount] = os.path.basename(mount).upper()[:8]
+    
+    return mount_labels
+
 def get_ram_info():
     """
     Returns RAM information in unified format: 'used|free|totalG'

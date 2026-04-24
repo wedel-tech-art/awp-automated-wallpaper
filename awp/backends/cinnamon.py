@@ -2,11 +2,13 @@
 """
 Cinnamon Desktop Backend for AWP
 Contains all Cinnamon-specific wallpaper and theme management functions.
+Now includes Qt6 accent color support via /dev/shm (RAM)
 """
 
 import os
 import subprocess
 import json
+import configparser
 
 from core.constants import SCALING_FEH
 from core.printer import get_printer
@@ -16,6 +18,74 @@ _printer = get_printer()
 
 # Cinnamon-specific scaling mapping
 SCALING_CINNAMON = {'centered': 'centered', 'scaled': 'scaled', 'zoomed': 'zoom'}
+
+
+# =============================================================================
+# QT6 COLOR SCHEME SETUP (RAM-based, zero disk writes)
+# =============================================================================
+
+def _ensure_qt6_symlink():
+    """
+    Ensure qt6ct points to /dev/shm for zero-disk-write theming.
+    Creates symlink: ~/.config/qt6ct/colors/awp.conf -> /dev/shm/awp-qt-color.conf
+    """
+    target_link = os.path.expanduser("~/.config/qt6ct/colors/awp.conf")
+    shm_file = "/dev/shm/awp-qt-color.conf"
+    
+    # Create directory if needed
+    os.makedirs(os.path.dirname(target_link), exist_ok=True)
+    
+    # Check if symlink already exists and points to the right place
+    if os.path.islink(target_link):
+        current_target = os.readlink(target_link)
+        if current_target == shm_file:
+            return
+    
+    # Remove existing file/symlink if it exists
+    if os.path.exists(target_link) or os.path.islink(target_link):
+        os.remove(target_link)
+    
+    # Create the symlink
+    os.symlink(shm_file, target_link)
+    
+    # Also ensure qt6ct.conf uses this symlink
+    qt6ct_conf = os.path.expanduser("~/.config/qt6ct/qt6ct.conf")
+    if os.path.exists(qt6ct_conf):
+        cfg = configparser.ConfigParser()
+        cfg.read(qt6ct_conf)
+        if cfg.has_section('Appearance'):
+            current_path = cfg.get('Appearance', 'color_scheme_path', fallback='')
+            if current_path != target_link:
+                cfg.set('Appearance', 'color_scheme_path', target_link)
+                with open(qt6ct_conf, 'w') as f:
+                    cfg.write(f)
+                _printer.info("Updated qt6ct.conf to use symlink", backend="cinnamon")
+    
+    _printer.info(f"Qt6 symlink created: {target_link} -> {shm_file}", backend="cinnamon")
+
+
+def _write_qt6_accent(accent_color: str) -> None:
+    """
+    Write Qt6 color scheme with accent color directly to /dev/shm (RAM).
+    No disk writes - everything stays in memory.
+    """
+    accent = accent_color.lstrip('#').lower()
+    shm_file = "/dev/shm/awp-qt-color.conf"
+    
+    scheme_content = f'''[ColorScheme]
+active_colors=#ffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{accent}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
+inactive_colors=#ffffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{accent}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
+disabled_colors=#ff808080, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ff808080, #ffffffff, #ff808080, #ff242424, #ff2e2e2e, #ffffffff, #{accent}, #ff808080, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a'''
+    
+    with open(shm_file, 'w') as f:
+        f.write(scheme_content)
+    
+    _printer.info(f"Qt6 accent written to RAM: {accent_color}", backend="cinnamon")
+
+
+# Run symlink setup when module loads
+_ensure_qt6_symlink()
+
 
 def cinnamon_current_ws():
     """
@@ -48,6 +118,7 @@ def cinnamon_current_ws():
             _printer.error(f"Cinnamon detection failed: {e}", backend="cinnamon")
             return 0
 
+
 def _get_current_gsetting(schema, key):
     """Get current gsettings value."""
     try:
@@ -60,16 +131,18 @@ def _get_current_gsetting(schema, key):
     except:
         return None
 
+
 def cinnamon_set_themes(ws_num: int, config):
     """
     Simple orchestrator - applies theme components only if they differ from current.
-    Handles: gtk_theme, icon_theme, cursor_theme, desktop_theme, wm_theme
+    Handles: gtk_theme, icon_theme, cursor_theme, desktop_theme, wm_theme, qt6_accent
     """
     section = f"ws{ws_num + 1}"
     if not config.has_section(section):
         return
     
     changes = []
+    cursor_changed = False
     
     # Get what SHOULD be from config
     should_gtk = config.get(section, 'gtk_theme', fallback=None)
@@ -77,6 +150,7 @@ def cinnamon_set_themes(ws_num: int, config):
     should_cursor = config.get(section, 'cursor_theme', fallback=None)
     should_desktop = config.get(section, 'desktop_theme', fallback=None)
     should_wm = config.get(section, 'wm_theme', fallback=None)
+    should_accent = config.get(section, 'icon_color', fallback=None)
     
     # Check GTK theme
     if should_gtk:
@@ -107,6 +181,17 @@ def cinnamon_set_themes(ws_num: int, config):
                 "cursor-theme", should_cursor
             ], check=False)
             changes.append("cursor")
+            cursor_changed = True
+    
+    # Force cursor refresh if it changed (fixes stubborn apps)
+    if cursor_changed:
+        time.sleep(0.5)
+        subprocess.run(["xsetroot", "-cursor_name", "left_ptr"], check=False)
+        subprocess.run([
+            "xprop", "-root", "-f", "_XSETTINGS_SETTINGS", "8s",
+            "-set", "_XSETTINGS_SETTINGS", ""
+        ], check=False)
+        _printer.info("Cursor refresh triggered", backend="cinnamon")
     
     # Check Desktop theme (Cinnamon shell theme)
     if should_desktop:
@@ -128,8 +213,16 @@ def cinnamon_set_themes(ws_num: int, config):
             ], check=False)
             changes.append("wm")
     
+    # ========================================================================
+    # Qt6 Accent Color (via /dev/shm - RAM, no disk writes!)
+    # ========================================================================
+    if should_accent:
+        _write_qt6_accent(should_accent)
+        changes.append(f"qt6:{should_accent}")
+    
     # Use printer with explicit backend
     _printer.themes(ws_num, changes, backend="cinnamon")
+
 
 def cinnamon_lean_mode():
     """
@@ -138,11 +231,13 @@ def cinnamon_lean_mode():
     """
     _printer.info("Cinnamon uses native wallpaper methods", backend="cinnamon")
 
+
 def cinnamon_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """
     Alias for cinnamon_set_wallpaper since Cinnamon is already native.
     """
     return cinnamon_set_wallpaper(ws_num, image_path, scaling)
+
 
 def cinnamon_set_wallpaper(ws_num: int, image_path: str, scaling: str):
     """Set wallpaper for Cinnamon with specified scaling."""
@@ -168,6 +263,7 @@ def cinnamon_set_wallpaper(ws_num: int, image_path: str, scaling: str):
         _printer.error(f"Failed to set wallpaper via gsettings: {e}", backend="cinnamon")
     except Exception as e:
         _printer.error(f"Unexpected error: {e}", backend="cinnamon")
+
 
 def cinnamon_set_icon(icon_path: str):
     """
@@ -201,6 +297,7 @@ def cinnamon_set_icon(icon_path: str):
     except Exception as e:
         _printer.error(f"Error setting Cinnamon menu icon: {e}", backend="cinnamon")
         return False
+
 
 # Optional: Add helper function to get monitors if needed for multi-monitor setups
 def cinnamon_get_monitors_for_workspace(ws_num: int):

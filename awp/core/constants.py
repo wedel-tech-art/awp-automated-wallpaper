@@ -44,59 +44,75 @@ SCALING_FEH = {
 # Defines what theme controls are available for each desktop environment
 THEME_CAPABILITIES = {
     'xfce': {
-        'has_wm_theme': True,      # XFWM themes
-        'has_desktop_theme': False, # No separate desktop theme
+        'has_wm_theme': True,
+        'has_desktop_theme': False,
         'has_gtk': True,
         'has_icons': True,
         'has_cursor': True,
+        'has_qt_accent': True,
         'notes': 'Window manager: XFWM'
     },
     'qtile_xfce': {
-        'has_wm_theme': False,      # Qtile is WM, no separate theme
+        'has_wm_theme': False,
         'has_desktop_theme': False,
-        'has_gtk': True,             # Uses xfsettingsd for GTK
-        'has_icons': True,
-        'has_cursor': True,
-        'notes': 'Hybrid: Qtile + xfsettingsd'
-    },
-    'qtile_x11': {
-        'has_wm_theme': False,      # Qtile is WM, no separate theme
-        'has_desktop_theme': False,
-        'has_gtk': True,             # Uses xsettingsd for GTK
-        'has_icons': True,
-        'has_cursor': True,
-        'notes': 'Pure Qtile'
-    },
-    'cinnamon': {
-        'has_wm_theme': True,        # Muffin/Marco themes
-        'has_desktop_theme': True,   # Cinnamon shell theme!
         'has_gtk': True,
         'has_icons': True,
         'has_cursor': True,
+        'has_qt_accent': True,
+        'notes': 'Hybrid: Qtile + xfsettingsd'
+    },
+    'qtile_gnome': {
+        'has_wm_theme': False,
+        'has_desktop_theme': False,
+        'has_gtk': True,
+        'has_icons': True,
+        'has_cursor': True,
+        'has_qt_accent': True,
+        'notes': 'Hybrid: Qtile + gnome-settings-daemon'
+    },
+        'qtile_wayland': {
+        'has_wm_theme': False,        # Qtile draws its own borders
+        'has_desktop_theme': False,   # No desktop shell
+        'has_gtk': True,              # Via gsd-xsettings (works in Wayland)
+        'has_icons': True,
+        'has_cursor': True,           # Wayland handles cursors differently but still works
+        'has_qt_accent': True,        # Same Qt6 accent file works
+        'notes': 'Qtile Wayland + gnome-settings-daemon (no systray, no picom)'
+    },
+    'cinnamon': {
+        'has_wm_theme': True,
+        'has_desktop_theme': True,
+        'has_gtk': True,
+        'has_icons': True,
+        'has_cursor': True,
+        'has_qt_accent': True,
         'notes': 'Has separate desktop theme'
     },
     'gnome': {
-        'has_wm_theme': False,       # Mutter integrated with GTK
-        'has_desktop_theme': False,  # GNOME Shell theme (complex)
+        'has_wm_theme': False,
+        'has_desktop_theme': False,
         'has_gtk': True,
         'has_icons': True,
         'has_cursor': True,
+        'has_qt_accent': True,
         'notes': 'WM theme follows GTK'
     },
     'mate': {
-        'has_wm_theme': True,        # Marco themes
+        'has_wm_theme': True,
         'has_desktop_theme': False,
         'has_gtk': True,
         'has_icons': True,
         'has_cursor': True,
+        'has_qt_accent': True,
         'notes': 'Window manager: Marco'
     },
     'generic': {
-        'has_wm_theme': False,       # Depends on WM
+        'has_wm_theme': False,
         'has_desktop_theme': False,
-        'has_gtk': True,             # Maybe, if gsettings works
+        'has_gtk': True,
         'has_icons': True,
         'has_cursor': True,
+        'has_qt_accent': True,
         'notes': 'Basic theme support via gsettings'
     }
 }

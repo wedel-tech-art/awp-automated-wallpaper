@@ -395,10 +395,8 @@ def park_current():
     if idx >= len(imgs):
         idx = 0
     
-    # === FIX: Save the index to initialize workspace in indexes.json ===
     state[ws_key] = idx
     save_index_state(state)
-    # === END FIX ===
     
     # Apply the wallpaper (no rotation, just park)
     wallpaper_path = str(imgs[idx])

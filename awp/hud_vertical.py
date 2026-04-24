@@ -5,18 +5,8 @@ from datetime import datetime
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor, QPainter, QBrush, QPixmap
-
-from core.utils import get_ram_info, get_swap_info, get_mounts_info
-
-# ================================
-# USER MOUNT MAP (EDITABLE)
-# label -> mount path
-# ================================
-MOUNTS_MAP = {
-    "SDA1": "/mnt/internal2000",
-    "SDB2": "/",
-    "SDC1": "/mnt/internal1500",
-}
+from core.constants import RUNTIME_STATE_PATH
+from core.utils import get_ram_info, get_swap_info, get_mounts_info, get_dynamic_mount_labels
 
 class StudioHUD(QWidget):
     def __init__(self):
@@ -38,9 +28,8 @@ class StudioHUD(QWidget):
         self.layout.setContentsMargins(25, 20, 20, 20)
 
         self.label = QLabel()
-        self.label.setFont(QFont("Source Code Pro", 11, QFont.Weight.Bold))
+        self.label.setFont(QFont("Source Code Pro", 11, QFont.Weight.Bold))  # This is the font I use, you can use the one you prefer
         self.label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-
 
         self.icon_label = QLabel(self)
         self.icon_label.setFixedSize(64, 64)
@@ -50,6 +39,8 @@ class StudioHUD(QWidget):
         self.layout.addWidget(self.label)
         self.setLayout(self.layout)
 
+        # Define target mount points once (this are the mounts I use, change them for the mounts you have or want to use)
+        self.target_mounts = ["/", "/mnt/internal1500", "/mnt/internal2000"]
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_ui)
@@ -66,7 +57,7 @@ class StudioHUD(QWidget):
         now_time = datetime.now().strftime("%H:%M:%S")
         now_date = datetime.now().strftime("%Y-%m-%d")
 
-        state_file = "/dev/shm/awp_full_state.json"
+        state_file = RUNTIME_STATE_PATH
         if not os.path.exists(state_file):
             self.label.setText("NO STATE FILE")
             return
@@ -82,7 +73,9 @@ class StudioHUD(QWidget):
             ram_val = get_ram_info()
             swap_val = get_swap_info()
 
-            drives_info = get_mounts_info(list(MOUNTS_MAP.values()))
+            # Get dynamic mount labels
+            mount_labels = get_dynamic_mount_labels(self.target_mounts)
+            drives_info = get_mounts_info(self.target_mounts)
 
             logo_path = data.get('logo_path')
             if logo_path and os.path.exists(logo_path):
@@ -117,7 +110,8 @@ class StudioHUD(QWidget):
             first_line_style = f"margin-left: {offset_px}px; padding-left: {offset_px}px;"
             
             mount_rows = ""
-            for label, path in MOUNTS_MAP.items():
+            for path in self.target_mounts:
+                label = mount_labels.get(path, "???")
                 mount_rows += drive_row(label, path)
             
             report = (

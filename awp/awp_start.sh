@@ -42,7 +42,7 @@ if [ -n "$PRESET_NAME" ]; then
 
         if [ "$PRESET_NAME" == "TEMPLATE" ]; then
             echo -e "${CLR_YELLOW}[ACTION] Localizing TEMPLATE paths...${CLR_RESET}"
-            sed -i "s|/home/[^/]*|/home/$USER|g" "$TARGET_INI"
+            sed -i "s|/home/[^/]*|$HOME|g" "$TARGET_INI"
         fi
 
         ln -sfn "$TARGET_INI" "$CONFIG_FILE"
@@ -60,6 +60,67 @@ mkdir -p "$HOME/.icons" "$HOME/.themes"
 MASTER_LIB="$AWP_BASE/awp-icon-mom/Mint-Y"
 if [ -d "$MASTER_LIB" ]; then
     ln -sfn "$MASTER_LIB" "$HOME/.icons/Mint-Y"
+fi
+
+# --- 3.5 QT6 THEMING INFRASTRUCTURE (AWP Feature) ---
+echo -e "${CLR_CYAN}[QT6] Setting up Qt6 theming infrastructure...${CLR_RESET}"
+
+# Check if qt6ct is installed
+if ! command -v qt6ct &> /dev/null; then
+    echo -e "${CLR_YELLOW}[WARN] qt6ct not installed. Qt6 theming will not work.${CLR_RESET}"
+    echo -e "${CLR_YELLOW}[WARN] Install with: sudo apt install qt6ct${CLR_RESET}"
+else
+    # Create qt6ct config directory if it doesn't exist
+    QT6CT_DIR="$HOME/.config/qt6ct"
+    QT6CT_COLORS="$QT6CT_DIR/colors"
+    QT6CT_CONF="$QT6CT_DIR/qt6ct.conf"
+    AWP_SYMLINK="$QT6CT_COLORS/awp.conf"
+    SHM_FILE="/dev/shm/awp-qt-color.conf"
+    
+    mkdir -p "$QT6CT_COLORS"
+    
+    # Check if qt6ct.conf exists, if not create minimal version
+    if [ ! -f "$QT6CT_CONF" ]; then
+        echo -e "${CLR_CYAN}[QT6] Creating minimal qt6ct.conf...${CLR_RESET}"
+        cat > "$QT6CT_CONF" << EOF
+[Appearance]
+color_scheme_path=$HOME/.config/qt6ct/colors/awp.conf
+custom_palette=true
+
+[Fonts]
+fixed="Source Code Pro,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
+general="Source Code Pro,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
+EOF
+        echo -e "${CLR_GREEN}[QT6] Created $QT6CT_CONF${CLR_RESET}"
+    fi
+    
+    # Ensure the symlink exists
+    if [ ! -L "$AWP_SYMLINK" ] || [ "$(readlink "$AWP_SYMLINK")" != "$SHM_FILE" ]; then
+        echo -e "${CLR_CYAN}[QT6] Creating symlink: $AWP_SYMLINK -> $SHM_FILE${CLR_RESET}"
+        rm -f "$AWP_SYMLINK"
+        ln -sf "$SHM_FILE" "$AWP_SYMLINK"
+        echo -e "${CLR_GREEN}[QT6] Symlink created.${CLR_RESET}"
+    fi
+    
+    # Check if QT_QPA_PLATFORMTHEME is set in .profile
+    if ! grep -q "QT_QPA_PLATFORMTHEME=qt6ct" "$HOME/.profile" 2>/dev/null; then
+        echo -e "${CLR_YELLOW}[WARN] QT_QPA_PLATFORMTHEME not set in ~/.profile${CLR_RESET}"
+        echo -e "${CLR_YELLOW}[WARN] Add this line: export QT_QPA_PLATFORMTHEME=qt6ct${CLR_RESET}"
+    else
+        echo -e "${CLR_GREEN}[QT6] Environment variable configured.${CLR_RESET}"
+    fi
+    
+    # Create a default color scheme file if it doesn't exist
+    if [ ! -f "$SHM_FILE" ]; then
+        echo -e "${CLR_CYAN}[QT6] Creating initial color scheme in RAM...${CLR_RESET}"
+        cat > "$SHM_FILE" << 'EOF'
+[ColorScheme]
+active_colors=#ffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #00f076, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
+inactive_colors=#ffffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #00f076, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
+disabled_colors=#ff808080, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ff808080, #ffffffff, #ff808080, #ff242424, #ff2e2e2e, #ffffffff, #00f076, #ff808080, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
+EOF
+        echo -e "${CLR_GREEN}[QT6] Initial color scheme created.${CLR_RESET}"
+    fi
 fi
 
 # --- 4. Logic: Bypass Check & Daemon Lifecycle ---

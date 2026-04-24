@@ -2,6 +2,7 @@
 """
 XFCE Desktop Backend for AWP
 Simple orchestrator - applies theme components only if they differ from config
+Now includes Qt6 accent color support via /dev/shm (RAM)
 """
 
 import os
@@ -13,7 +14,78 @@ from core.printer import get_printer
 
 # Get printer instance
 _printer = get_printer()
-# No set_backend here - we'll pass it explicitly in each function
+
+
+# =============================================================================
+# QT6 COLOR SCHEME SETUP (RAM-based, zero disk writes)
+# =============================================================================
+
+def _ensure_qt6_symlink():
+    """
+    Ensure qt6ct points to /dev/shm for zero-disk-write theming.
+    Creates symlink: ~/.config/qt6ct/colors/awp.conf -> /dev/shm/awp-qt-color.conf
+    """
+    target_link = os.path.expanduser("~/.config/qt6ct/colors/awp.conf")
+    shm_file = "/dev/shm/awp-qt-color.conf"
+    
+    # Create directory if needed
+    os.makedirs(os.path.dirname(target_link), exist_ok=True)
+    
+    # Check if symlink already exists and points to the right place
+    if os.path.islink(target_link):
+        current_target = os.readlink(target_link)
+        if current_target == shm_file:
+            return
+    
+    # Remove existing file/symlink if it exists
+    if os.path.exists(target_link) or os.path.islink(target_link):
+        os.remove(target_link)
+    
+    # Create the symlink
+    os.symlink(shm_file, target_link)
+    
+    # Also ensure qt6ct.conf uses this symlink
+    qt6ct_conf = os.path.expanduser("~/.config/qt6ct/qt6ct.conf")
+    if os.path.exists(qt6ct_conf):
+        cfg = configparser.ConfigParser()
+        cfg.read(qt6ct_conf)
+        if cfg.has_section('Appearance'):
+            current_path = cfg.get('Appearance', 'color_scheme_path', fallback='')
+            if current_path != target_link:
+                cfg.set('Appearance', 'color_scheme_path', target_link)
+                with open(qt6ct_conf, 'w') as f:
+                    cfg.write(f)
+                _printer.info("Updated qt6ct.conf to use symlink", backend="xfce")
+    
+    _printer.info(f"Qt6 symlink created: {target_link} -> {shm_file}", backend="xfce")
+
+
+def _write_qt6_accent(accent_color: str) -> None:
+    """
+    Write Qt6 color scheme with accent color directly to /dev/shm (RAM).
+    No disk writes - everything stays in memory.
+    """
+    accent = accent_color.lstrip('#').lower()
+    shm_file = "/dev/shm/awp-qt-color.conf"
+    
+    scheme_content = f'''[ColorScheme]
+active_colors=#ffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{accent}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
+inactive_colors=#ffffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{accent}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
+disabled_colors=#ff808080, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ff808080, #ffffffff, #ff808080, #ff242424, #ff2e2e2e, #ffffffff, #{accent}, #ff808080, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a'''
+    
+    with open(shm_file, 'w') as f:
+        f.write(scheme_content)
+    
+    _printer.info(f"Qt6 accent written to RAM: {accent_color}", backend="xfce")
+
+
+# Run symlink setup when module loads
+_ensure_qt6_symlink()
+
+
+# =============================================================================
+# WORKSPACE DETECTION
+# =============================================================================
 
 def xfce_current_ws():
     """
@@ -30,9 +102,13 @@ def xfce_current_ws():
         
         return int(ws_num)
     except Exception as e:
-        # Using your existing printer logic
         _printer.error(f"X11 xprop failed: {e}", backend="xfce")
         return 0
+
+
+# =============================================================================
+# XFCE SETTINGS HELPERS
+# =============================================================================
 
 def _get_current_value(channel, property):
     """Get current XFCE setting value."""
@@ -45,26 +121,33 @@ def _get_current_value(channel, property):
     except:
         return None
 
+
+# =============================================================================
+# THEME ORCHESTRATOR (GTK, Icons, Cursor, WM, Qt6)
+# =============================================================================
+
 def xfce_set_themes(ws_num: int, config):
     """
     Simple orchestrator - applies theme components only if they differ from current.
-    Handles: gtk_theme, icon_theme, cursor_theme, wm_theme
-    Panel icon is handled separately by xfce_set_icon()
+    Handles: gtk_theme, icon_theme, cursor_theme, wm_theme, qt6_accent
     """
     section = f"ws{ws_num + 1}"
     if not config.has_section(section):
         return
     
     changes = []
-    cursor_changed = False  # Track if cursor was updated
+    cursor_changed = False
     
     # Get what SHOULD be from config
     should_gtk = config.get(section, 'gtk_theme', fallback=None)
     should_icon = config.get(section, 'icon_theme', fallback=None)
     should_cursor = config.get(section, 'cursor_theme', fallback=None)
     should_wm = config.get(section, 'wm_theme', fallback=None)
+    should_accent = config.get(section, 'icon_color', fallback=None)
     
-    # Check GTK theme
+    # ========================================================================
+    # GTK Theme
+    # ========================================================================
     if should_gtk:
         current = _get_current_value("xsettings", "/Net/ThemeName")
         if current != should_gtk:
@@ -74,7 +157,9 @@ def xfce_set_themes(ws_num: int, config):
             ], check=False)
             changes.append("gtk")
     
-    # Check Icon theme
+    # ========================================================================
+    # Icon Theme
+    # ========================================================================
     if should_icon:
         current = _get_current_value("xsettings", "/Net/IconThemeName")
         if current != should_icon:
@@ -84,7 +169,9 @@ def xfce_set_themes(ws_num: int, config):
             ], check=False)
             changes.append("icons")
     
-    # Check Cursor theme
+    # ========================================================================
+    # Cursor Theme
+    # ========================================================================
     if should_cursor:
         current = _get_current_value("xsettings", "/Gtk/CursorThemeName")
         if current != should_cursor:
@@ -93,9 +180,11 @@ def xfce_set_themes(ws_num: int, config):
                 "-s", should_cursor, "--create"
             ], check=False)
             changes.append("cursor")
-            cursor_changed = True  # Mark that cursor was updated
+            cursor_changed = True
     
-    # Check Window Manager theme
+    # ========================================================================
+    # Window Manager Theme (XFWM)
+    # ========================================================================
     if should_wm:
         current = _get_current_value("xfwm4", "/general/theme")
         if current != should_wm:
@@ -105,7 +194,9 @@ def xfce_set_themes(ws_num: int, config):
             ], check=False)
             changes.append("wm")
     
+    # ========================================================================
     # Force cursor refresh if it changed (fixes stubborn apps)
+    # ========================================================================
     if cursor_changed:
         # Small delay to let the setting propagate
         time.sleep(0.5)
@@ -121,8 +212,22 @@ def xfce_set_themes(ws_num: int, config):
         
         _printer.info("Cursor refresh triggered", backend="xfce")
     
-    # Use printer with explicit backend
+    # ========================================================================
+    # Qt6 Accent Color (via /dev/shm - RAM, no disk writes!)
+    # ========================================================================
+    if should_accent:
+        _write_qt6_accent(should_accent)
+        changes.append(f"qt6:{should_accent}")
+    
+    # ========================================================================
+    # Report changes
+    # ========================================================================
     _printer.themes(ws_num, changes, backend="xfce")
+
+
+# =============================================================================
+# LEAN MODE
+# =============================================================================
 
 def xfce_lean_mode():
     """Kills xfdesktop and prevents XFCE from restarting it."""
@@ -137,13 +242,10 @@ def xfce_lean_mode():
     except Exception as e:
         _printer.error(str(e), backend="xfce")
 
-#def xfce_force_single_workspace_off():
-#    """Disable single workspace mode in XFCE."""
-#    subprocess.run([
-#        "xfconf-query", "-c", "xfce4-desktop",
-#        "-p", "/backdrop/single-workspace-mode",
-#        "--set", "false", "--create"
-#    ])
+
+# =============================================================================
+# MONITOR FUNCTIONS
+# =============================================================================
 
 def xfce_get_monitors_for_workspace(ws_num: int):
     """Get list of monitors for specified XFCE workspace."""
@@ -157,6 +259,11 @@ def xfce_get_monitors_for_workspace(ws_num: int):
             if len(parts) >= 6 and parts[3].startswith("monitor"):
                 monitors.append(parts[3])
     return sorted(set(monitors))
+
+
+# =============================================================================
+# WALLPAPER FUNCTIONS
+# =============================================================================
 
 def xfce_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """LEGACY: Set wallpaper using XFCE's native desktop manager."""
@@ -176,6 +283,7 @@ def xfce_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
         ])
     subprocess.run(["xfdesktop", "--reload"])
 
+
 def xfce_set_wallpaper(ws_num: int, image_path: str, scaling: str):
     """Set wallpaper using feh (Lean Mode compatible)."""
     style_flag = SCALING_FEH.get(scaling, '--bg-fill')
@@ -187,6 +295,11 @@ def xfce_set_wallpaper(ws_num: int, image_path: str, scaling: str):
     except Exception as e:
         _printer.warning(f"feh failed, falling back to native: {e}", backend="xfce")
         xfce_set_wallpaper_native(ws_num, image_path, scaling)
+
+
+# =============================================================================
+# ICON FUNCTIONS
+# =============================================================================
 
 def xfce_set_icon(icon_path: str):
     """Set panel/whiskermenu icon."""

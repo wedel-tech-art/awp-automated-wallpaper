@@ -671,8 +671,12 @@ class AWPDashboard(QWidget):
             width=80,
             items=[str(i) for i in range(1, 9)]
         )
-        self.ws_count_combo.setToolTip("Total number of workspaces to configure (1-8)")
-        self.ws_count_combo.currentTextChanged.connect(self.on_workspace_count_changed)
+        self.ws_count_combo.setEnabled(False)
+        self.ws_count_combo.setToolTip(
+            "Workspace count is determined by your Desktop Environment.\n"
+            "To change: Configure workspaces in your DE settings,\n"
+            "then manually edit the 'workspaces' value in the INI file."
+        )
         ws_row.addWidget(self.ws_count_combo)
         ws_row.addStretch()
         layout.addLayout(ws_row)
@@ -720,31 +724,6 @@ class AWPDashboard(QWidget):
         else:
             # Set to a reasonable default when unpausing
             self.blanking_combo.setCurrentText("20 minutes")
-
-    def on_workspace_count_changed(self, new_count):
-        """
-        Update workspace tabs when count changes.
-        
-        Args:
-            new_count (str): New workspace count
-        """
-        if not new_count:
-            return
-            
-        new_count = int(new_count)
-        current_count = len(self.workspace_tabs)
-        
-        if new_count > current_count:
-            # Add new tabs
-            for i in range(current_count + 1, new_count + 1):
-                tab = WorkspaceTab(i, self)
-                self.workspace_tabs.append(tab)
-                self.tab_widget.addTab(tab, f"Workspace {i}")
-        elif new_count < current_count:
-            # Remove extra tabs
-            for i in range(current_count, new_count, -1):
-                self.tab_widget.removeTab(i)
-                self.workspace_tabs.pop()
 
     def load_config(self):
         """Load all settings from AWPConfig."""

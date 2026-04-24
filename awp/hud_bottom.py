@@ -3,15 +3,8 @@ from datetime import datetime
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor, QPainter, QBrush
-
-from core.utils import get_ram_info, get_swap_info, get_mounts_info
-
-# === MOUNT CONFIG (easy to edit) ===
-MOUNT_LABELS = {
-    "/mnt/internal2000": "SDA1",
-    "/": "SDB2",
-    "/mnt/internal1500": "SDC1",
-}
+from core.constants import RUNTIME_STATE_PATH
+from core.utils import get_ram_info, get_swap_info, get_mounts_info, get_dynamic_mount_labels
 
 class StudioBar(QWidget):
     def __init__(self):
@@ -35,11 +28,14 @@ class StudioBar(QWidget):
         self.layout.setSpacing(2)
        
         self.label = QLabel("INITIALIZING...")
-        self.label.setFont(QFont("Source Code Pro", 9, QFont.Weight.Bold))
+        self.label.setFont(QFont("Source Code Pro", 9, QFont.Weight.Bold)) # This is the font I use, you can use the one you prefer
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
        
         self.layout.addWidget(self.label)
         self.setLayout(self.layout)
+        
+        # Define target mount points once (this are the mounts I use, change them for the mounts you have or want to use)
+        self.target_mounts = ["/", "/mnt/internal1500", "/mnt/internal2000"]
         
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_ui)
@@ -59,9 +55,9 @@ class StudioBar(QWidget):
         ram_str = get_ram_info()
         swap_str = get_swap_info()
 
-        if os.path.exists("/dev/shm/awp_full_state.json"):
+        if os.path.exists(RUNTIME_STATE_PATH):
             try:
-                with open("/dev/shm/awp_full_state.json", "r") as f:
+                with open(RUNTIME_STATE_PATH, "r") as f:
                     data = json.load(f)
                
                 color = data.get('icon_color', '#ffffff')
@@ -75,10 +71,13 @@ class StudioBar(QWidget):
                 wall_name = os.path.basename(data.get("wallpaper_path", "None"))
                 wall_short = wall_name[:60] + ".." if len(wall_name) > 60 else wall_name
                 
-                drives_info = get_mounts_info(list(MOUNT_LABELS.keys()))
+                # Get dynamic mount labels
+                mount_labels = get_dynamic_mount_labels(self.target_mounts)
+                drives_info = get_mounts_info(self.target_mounts)
                 
                 mount_parts = []
-                for path, label in MOUNT_LABELS.items():
+                for path in self.target_mounts:
+                    label = mount_labels.get(path, "???")
                     mount_parts.append(
                         fmt(label, drives_info.get(path, "N/A|N/A|N/A"), color)
                     )
