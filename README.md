@@ -225,6 +225,43 @@ awp-automated-wallpaper/
 
 ## ⚡ V3.7 Architecture Refinement (April 2026)
 
+### 🎨 Unified Qt6/KDE Accent Bridge (V3.7.2 - April 2026)
+
+**Problem:** Qt6 and KDE apps (dab, Kate) didn't follow per-workspace accent colors. Each backend had duplicate theming code.
+
+**Solution:** Centralized Qt6/KDE theming into `backends/__init__.py` with RAM-based color schemes.
+
+#### RAM Storage (Zero Disk Writes)
+
+| Scheme | Location |
+|--------|----------|
+| Qt6 | `/dev/shm/awp-qt-color.conf` |
+| KDE | `/dev/shm/awp-kde-color.colors` |
+
+#### Symlink Bridge
+
+```
+~/.config/qt6ct/colors/awp.conf → /dev/shm/awp-qt-color.conf
+~/.local/share/color-schemes/AWP_Dynamic.colors → /dev/shm/awp-kde-color.colors
+```
+
+#### Single Source of Truth
+
+All backends now import from `__init__.py`:
+
+```
+def backend_set_themes(ws_num, config):
+    if should_accent:
+        write_qt6_kde_accent(should_accent)
+```
+
+#### Results
+
+- ✅ Zero duplication across all backends
+- ✅ Zero disk writes (RAM only)
+- ✅ Works on XFCE, GNOME, Cinnamon, MATE, Qtile
+- ✅ KDE apps run without KDE desktop
+
 ### 🧠 Low-Latency State Bridge (RAM-Backed)
 
 - **The Data:** The `qtile_xfce` backend now reads workspace indices directly from `/dev/shm/qtile_current_ws`.
@@ -329,7 +366,6 @@ The system now creates a complete visual identity by "baking" both GTK themes an
 |---------|------|-------------|
 | **V3.7** | Mar 2026 | ⚡ Backend Logic Delegation + State Consolidation |
 | **V3.6** | Feb 2026 | 🖨️ Unified Printer System + 🖱️ Cursor Refresh + 🧠 Capability Matrix |
-| **V3.6** | Feb 2026 | 🖨️ Unified Printer System + Capability Matrix |
 | **V3.5** | Feb 2026 | 🧬 Dual-Genetic Baking (Themes + Icons) |
 | **V3.4** | Feb 2026 | 🏗️ Core Consolidation (Zero Duplication) |
 | **V3.3** | Feb 2026 | 🛰️ Runtime State Engine + Native HUDs |

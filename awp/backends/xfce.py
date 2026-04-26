@@ -10,77 +10,14 @@ import subprocess
 import configparser
 import time
 
-from core.constants import SCALING_FEH, QT6_ACCENT_SHM, QT6CT_CONF_PATH, QT6CT_COLORS_DIR
+from core.constants import SCALING_FEH
 from core.printer import get_printer
+from backends import ensure_qt6_kde_symlinks, write_qt6_kde_accent
+
+ensure_qt6_kde_symlinks()
 
 # Get printer instance
 _printer = get_printer()
-
-
-# =============================================================================
-# QT6 COLOR SCHEME SETUP (RAM-based, zero disk writes)
-# =============================================================================
-
-def _ensure_qt6_symlink():
-    """
-    Ensure qt6ct points to /dev/shm for zero-disk-write theming.
-    Creates symlink: ~/.config/qt6ct/colors/awp.conf -> /dev/shm/awp-qt-color.conf
-    """
-    # Use centralized constants instead of hardcoded strings
-    target_link = os.path.join(QT6CT_COLORS_DIR, "awp.conf")
-    shm_file = QT6_ACCENT_SHM
-    
-    # Create directory if needed
-    os.makedirs(QT6CT_COLORS_DIR, exist_ok=True)
-    
-    # Check if symlink already exists and points to the right place
-    if os.path.islink(target_link):
-        if os.readlink(target_link) == shm_file:
-            return
-    
-    # Remove existing file/symlink if it exists
-    if os.path.exists(target_link) or os.path.islink(target_link):
-        os.remove(target_link)
-    
-    # Create the symlink
-    os.symlink(shm_file, target_link)
-    
-    # Also ensure qt6ct.conf uses this symlink
-    if os.path.exists(QT6CT_CONF_PATH):
-        cfg = configparser.ConfigParser()
-        cfg.read(QT6CT_CONF_PATH)
-        if cfg.has_section('Appearance'):
-            current_path = cfg.get('Appearance', 'color_scheme_path', fallback='')
-            if current_path != target_link:
-                cfg.set('Appearance', 'color_scheme_path', target_link)
-                with open(QT6CT_CONF_PATH, 'w') as f:
-                    cfg.write(f)
-                _printer.info("Updated qt6ct.conf to use symlink", backend="xfce")
-    
-    _printer.info(f"Qt6 symlink created: {target_link} -> {shm_file}", backend="xfce")
-
-
-def _write_qt6_accent(accent_color: str) -> None:
-    """
-    Write Qt6 color scheme with accent color directly to /dev/shm (RAM).
-    No disk writes - everything stays in memory.
-    """
-    accent = accent_color.lstrip('#').lower()
-    shm_file = QT6_ACCENT_SHM # Constant used here for zero-latency sync
-    
-    # Your scheme_content logic remains the same...
-    scheme_content = f'''[ColorScheme]
-active_colors=#ffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{accent}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
-inactive_colors=#ffffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{accent}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
-disabled_colors=#ff808080, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ff808080, #ffffffff, #ff808080, #ff242424, #ff2e2e2e, #ffffffff, #{accent}, #ff808080, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a'''
-    
-    with open(shm_file, 'w') as f:
-        f.write(scheme_content)
-    
-    _printer.info(f"Qt6 accent written to RAM: {accent_color}", backend="xfce")
-
-# Run symlink setup when module loads
-_ensure_qt6_symlink()
 
 
 # =============================================================================
@@ -213,10 +150,10 @@ def xfce_set_themes(ws_num: int, config):
         _printer.info("Cursor refresh triggered", backend="xfce")
     
     # ========================================================================
-    # Qt6 Accent Color (via /dev/shm - RAM, no disk writes!)
+    # Qt6 Accent Color (via shared function from __init__.py)
     # ========================================================================
     if should_accent:
-        _write_qt6_accent(should_accent)
+        write_qt6_kde_accent(should_accent)
         changes.append(f"qt6:{should_accent}")
     
     # ========================================================================

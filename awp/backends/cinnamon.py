@@ -9,9 +9,11 @@ import os
 import subprocess
 import json
 import configparser
-
-from core.constants import SCALING_FEH, QT6_ACCENT_SHM, QT6CT_CONF_PATH, QT6CT_COLORS_DIR
+from core.constants import SCALING_FEH
+from backends import ensure_qt6_kde_symlinks, write_qt6_kde_accent
 from core.printer import get_printer
+
+ensure_qt6_kde_symlinks()
 
 # Get printer instance
 _printer = get_printer()
@@ -216,7 +218,7 @@ def cinnamon_set_themes(ws_num: int, config):
     # Qt6 Accent Color (via /dev/shm - RAM, no disk writes!)
     # ========================================================================
     if should_accent:
-        _write_qt6_accent(should_accent)
+        write_qt6_kde_accent(should_accent)
         changes.append(f"qt6:{should_accent}")
     
     # Use printer with explicit backend

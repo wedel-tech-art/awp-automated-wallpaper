@@ -19,11 +19,13 @@ DEFAULT_ICON = str(AWP_DIR / "debian.png")
 # RAM-Bridge Paths (Zero-Disk-Write Architecture)
 RUNTIME_STATE_PATH = "/dev/shm/awp_full_state.json"
 AWP_CONFIG_RAM = "/dev/shm/awp_config_ram.json"
-QT6_ACCENT_SHM = "/dev/shm/awp-qt-color.conf" # Centralized for all backends
+QT6_ACCENT_SHM = "/dev/shm/awp-qt-color.conf"
+KDE_ACCENT_SHM = "/dev/shm/awp-kde-color.colors"
 
 # System Config Paths (for Symlinking)
-QT6CT_COLORS_DIR = os.path.expanduser("~/.config/qt6ct/colors/") # Target for symlink
-QT6CT_CONF_PATH = os.path.expanduser("~/.config/qt6ct/qt6ct.conf") # Master Qt6 config
+QT6CT_COLORS_DIR = os.path.expanduser("~/.config/qt6ct/colors/")
+QT6CT_CONF_PATH = os.path.expanduser("~/.config/qt6ct/qt6ct.conf")
+KDE_COLORS_DIR = os.path.expanduser("~/.local/share/color-schemes")
 
 # ============================================================================
 # ANSI COLOR CODES - for consistent terminal output
