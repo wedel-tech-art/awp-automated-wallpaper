@@ -50,6 +50,90 @@ SCALING_FEH = {
 }
 
 # ============================================================================
+# ICON TEMPLATE PRESETS
+# ============================================================================
+# Maps preset names to their template folder
+# Used by bake_awp_icon() and dashboard preset selection
+
+# The master list of assets to be re-hued during the bake process
+TARGET_ASSETS = [
+    "arrow-down-active.png", "arrow-down-hover.png",
+    "arrow-left-active.png", "arrow-left-hover.png",
+    "arrow-right-active.png", "arrow-right-hover.png",
+    "arrow-small-down-active.png", "arrow-small-down-hover.png",
+    "arrow-small-left-active.png", "arrow-small-left-hover.png",
+    "arrow-small-right-active.png", "arrow-small-right-hover.png",
+    "arrow-small-up-active.png", "arrow-small-up-hover.png",
+    "arrow-up-active.png", "arrow-up-hover.png",
+    "button-active.png", "button-hover.png",
+    "check-checked-active@2.png", "check-checked-active.png",
+    "check-checked-hover@2.png", "check-checked-hover.png",
+    "check-mixed-active@2.png", "check-mixed-active.png",
+    "check-mixed-hover@2.png", "check-mixed-hover.png",
+    "check-selectionmode-checked-active@2.png", "check-selectionmode-checked-active.png",
+    "check-selectionmode-checked-hover@2.png", "check-selectionmode-checked-hover.png",
+    "check-selectionmode-unchecked-active@2.png", "check-selectionmode-unchecked-active.png",
+    "check-selectionmode-unchecked-hover@2.png", "check-selectionmode-unchecked-hover.png",
+    "check-unchecked-active@2.png", "check-unchecked-active.png",
+    "check-unchecked-hover@2.png", "check-unchecked-hover.png",
+    "combo-entry-active.png", "combo-entry-button-active.png",
+    "entry-active.png", "menubar-button.png", "progressbar-bar.png",
+    "radio-checked-active@2.png", "radio-checked-active.png",
+    "radio-checked-hover@2.png", "radio-checked-hover.png",
+    "radio-mixed-active@2.png", "radio-mixed-active.png",
+    "radio-mixed-hover@2.png", "radio-mixed-hover.png",
+    "radio-unchecked-active@2.png", "radio-unchecked-active.png",
+    "radio-unchecked-hover@2.png", "radio-unchecked-hover.png",
+    "scale-slider-active.png", "scale-slider-hover.png",
+    "scrollbar-slider-horizontal-active@2.png", "scrollbar-slider-horizontal-active.png",
+    "scrollbar-slider-horizontal-hover@2.png", "scrollbar-slider-horizontal-hover.png",
+    "scrollbar-slider-vertical-active@2.png", "scrollbar-slider-vertical-active.png",
+    "scrollbar-slider-vertical-hover@2.png", "scrollbar-slider-vertical-hover.png",
+    "togglebutton-active.png", "togglebutton-hover.png",
+    "toolbutton-active.png", "toolbutton-hover.png"
+]
+
+ICON_PRESETS = {
+    'mint': 'template-icon-presets/mint',
+    'yaru': 'template-icon-presets/yaru',
+    'souza': 'template-icon-presets/souza',
+    'jojo': 'template-icon-presets/jojo',
+    'paomedia': 'template-icon-presets/paomedia'
+}
+
+THEME_PRESETS = {
+    'breeze': {
+        'path':    'template-theme-presets/breeze',
+        'rebrand': ['Breeze-Dark', 'Breeze'],
+        'colors':  [
+            ('3daee9', 'hex'),
+            ('61, 174, 233', 'rgb'),
+            ('37, 164, 230', 'rgb'),
+        ],
+        'family_ratios': None,
+        'assets':  TARGET_ASSETS,
+    },
+    'colloid': {
+        'path':    'template-theme-presets/colloid',
+        'rebrand': ['Colloid-Orange-Dark-Gruvbox'],
+        'colors':  [
+            ('fe8019', 'hex'),
+            ('253, 128, 25', 'rgb'),
+            ('fe9137', 'shade'),
+            ('253, 145, 55', 'shade_rgb'),
+            ('fda24d', 'lighter'),
+            ('253, 162, 77', 'lighter_rgb'),
+        ],
+        'family_ratios': {
+            'shade':   (0.869, 1.000),
+            'lighter': (0.772, 0.996),
+        },
+        'assets': [],
+    },
+}
+
+
+# ============================================================================
 # THEME CAPABILITY MATRIX - for UI enabling/disabling
 # ============================================================================
 # Defines what theme controls are available for each desktop environment

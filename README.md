@@ -14,6 +14,22 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 ## 🚀 Key Features
 
+## 🎨 GTK & Icon Preset System (V3.8)
+
+- **Multi-Preset Architecture:** Replaces the old single-template model with selectable presets for both GTK themes and icon sets.
+
+- **Icon Reconstruction Engine:** Icon presets now store only **18 canonical PNG files + `index.theme`**. The full icon theme tree (sizes, symlinks, directories) is rebuilt programmatically during baking.
+
+- **GTK Preset Variants:**
+  - `breeze` (default): PNG modulation + CSS/SVG replacement
+  - `colloid`: CSS/SVG-only recoloring (no PNG processing)
+
+- **Preset-Based Theme Baking:** `bake_awp_theme()` now supports presets (`awp-gtk-{preset}-{hex}` naming).
+
+- **Dashboard Integration:** GTK and Icon presets can be selected per workspace in `dab.py`.
+
+- **Lean & Maintainable:** Presets are lightweight and act as the single source of truth.
+
 ## ⚡ Low-Latency State Bridge & Logic (V3.7)
 
 - **RAM-Backed Sync:** The system now utilizes `/dev/shm/qtile_current_ws` as a high-speed "Single Source of Truth," allowing the Window Manager to push workspace states directly to AWP.
@@ -199,8 +215,8 @@ awp-automated-wallpaper/
 │   │   ├── TEMPLATE/               # Generic self-healing baseline
 │   │   └── [preset_name]/          # Custom user-defined identities
 │   ├── presets-backup/             # Pre-flight safety mirror 🛡️
-│   ├── template-themes/            # Theme DNA (Breeze Dark base)
-│   ├── template-icons/             # Icon DNA (Mint-Y base)
+│   ├── template-theme-presets/     # GTK preset templates (breeze, colloid)
+│   ├── template-icon-presets/      # Icon presets (18 canonical files each)
 │   ├── awp-icon-mom/               # The "Mother" icon template
 │   ├── branding-assets/            # 180 procedural color tones
 │   ├── logos/                      # Active workspace icons (symlinks)
@@ -217,153 +233,11 @@ awp-automated-wallpaper/
 ├── LICENSE
 └── README.md
 ```
-
-## 💎 V3.7.1 - Architectural Sanitization
-- **Centralized Path Management:** Moved all critical system paths (Qt6ct, RAM-bridges, and configuration locations) to `core/constants.py`, eliminating hardcoded strings across all backends.
-- **Unified Qt6 Accent Bridge:** Standardized the `/dev/shm` zero-disk-write logic for XFCE, Cinnamon, MATE, Gnome, and Generic backends to ensure 100% theme synchronization across environments.
-- **Improved Maintainability:** System-wide path updates (like changing the Qt6 color scheme name) now only require a single change in the constants file.
-
-## ⚡ V3.7 Architecture Refinement (April 2026)
-
-### 🎨 Unified Qt6/KDE Accent Bridge (V3.7.2 - April 2026)
-
-**Problem:** Qt6 and KDE apps (dab, Kate) didn't follow per-workspace accent colors. Each backend had duplicate theming code.
-
-**Solution:** Centralized Qt6/KDE theming into `backends/__init__.py` with RAM-based color schemes.
-
-#### RAM Storage (Zero Disk Writes)
-
-| Scheme | Location |
-|--------|----------|
-| Qt6 | `/dev/shm/awp-qt-color.conf` |
-| KDE | `/dev/shm/awp-kde-color.colors` |
-
-#### Symlink Bridge
-
-```
-~/.config/qt6ct/colors/awp.conf → /dev/shm/awp-qt-color.conf
-~/.local/share/color-schemes/AWP_Dynamic.colors → /dev/shm/awp-kde-color.colors
-```
-
-#### Single Source of Truth
-
-All backends now import from `__init__.py`:
-
-```
-def backend_set_themes(ws_num, config):
-    if should_accent:
-        write_qt6_kde_accent(should_accent)
-```
-
-#### Results
-
-- ✅ Zero duplication across all backends
-- ✅ Zero disk writes (RAM only)
-- ✅ Works on XFCE, GNOME, Cinnamon, MATE, Qtile
-- ✅ KDE apps run without KDE desktop
-
-### 🧠 Low-Latency State Bridge (RAM-Backed)
-
-- **The Data:** The `qtile_xfce` backend now reads workspace indices directly from `/dev/shm/qtile_current_ws`.
-- **The Purpose:** This file acts as a high-speed Single Source of Truth, allowing the Window Manager (Qtile) to push its state to RAM once per transition.
-- **The Benefit:** This eliminates lag between workspace switching and theme updates while reducing disk I/O and CPU overhead.
-
-### 🆕 New "Park" Action (`nav.py`)
-
-- Introduced a 7th navigation command to manually trigger a wallpaper set based on the current index without cycling.
-
-### 🔌 Daemon-Less Operation
-
-- Upgraded `awp_start.sh` with a conditional variable to skip starting the main background daemon.
-- **Optimization:** Specifically designed for backends like Qtile that handle their own theming logic.
-
-### ⚡ Backend-Driven Logic
-
-- Refactored `core/actions.py` to delegate workspace calculations directly to backends (e.g., `xfce.py`), ensuring perfect synchronization.
-
-### ♻️ Cache & State Unification
-
-- Consolidated state-handling into `core/runtime.py` and optimized internal caching for faster asset retrieval.
-
-### 🎭 The "Identity Robbery" System (V3.6 - March 2026)
-
-- **Zero-Manual Setup:** Replaces the tedious awp_setup.py with a self-healing template system.
-- **Path Localization:** Automatically detects and injects the current $USER home path into the .ini configuration using sed.
-- **Pre-Flight Safety Mirror:** Every startup triggers a recursive rsync backup of your presets/ folder to presets-backup/ to prevent data loss.
-- **Dynamic Asset Swapping:** Instantly swaps workspace icons (logos) and configuration files via symlinks based on the selected identity.
-
-### 🖱️ Cursor Refresh Enhancement (V3.6)
-
-Stubborn applications that don't update their cursor immediately after a theme change are now handled with a gentle 0.5-second delay followed by a forced refresh. This ensures that **every application** - from Thunar to Geany - respects your per-workspace cursor theme without requiring restarts.
-
-Affected backends:
-- **XFCE** - Full cursor refresh on theme change
-- **Qtile/XFCE** - Same robust cursor handling
-
-### 🖨️ Unified Printer System (V3.6 - February 2026)
-
-* **Version 3.6 – The "Clear Voice" Update**
-
-Every component now speaks with consistent, color-coded prefixes:
-
-| Prefix | Color | Source |
-|--------|-------|--------|
-| `[AWP-backends]` | 🟡 Yellow | Backend loader (`__init__.py`) |
-| `[AWP-daemon]` | 🔵 Cyan | Main daemon |
-| `[AWP-xfce]` | 🔵 Cyan | XFCE backend |
-| `[AWP-qtile_xfce]` | 🔵 Cyan | Qtile/XFCE hybrid |
-| `[AWP-cinnamon]` | 🔵 Cyan | Cinnamon backend |
-| `[AWP-gnome]` | 🔵 Cyan | GNOME backend |
-| `[AWP-mate]` | 🔵 Cyan | MATE backend |
-| `[AWP-generic]` | 🔵 Cyan | Generic WM fallback |
-| `[AWP-dab]` | 🔵 Cyan | Qt6 Dashboard |
-| `[AWP-nav]` | 🔵 Cyan | Navigation tool |
-| `[AWP-utils]` | 🔵 Cyan | Utilities |
-| `[AWP-themes]` | 🔵 Cyan | Theme baking engine |
-
-* **Benefits:**
-- **Instant context** - Know exactly which module is speaking
-- **Beautiful output** - Consistent colors and formatting
-- **Easy debugging** - Trace messages to their source
-- **Single source of truth** - All formatting in `core/printer.py`
-- **Future-proof** - Add new modules with zero formatting code
-
-### 🧠 Smart UI Capability Matrix (V3.6)
-
-The dashboard now dynamically enables/disables theme options based on what your desktop environment actually supports:
-
-THEME_CAPABILITIES = {
-    'xfce': {'has_wm_theme': True, 'has_desktop_theme': False},
-    'qtile_xfce': {'has_wm_theme': False, 'has_desktop_theme': False},
-    'cinnamon': {'has_wm_theme': True, 'has_desktop_theme': True},
-    'gnome': {'has_wm_theme': False, 'has_desktop_theme': False},
-    'mate': {'has_wm_theme': True, 'has_desktop_theme': False},
-    'generic': {'has_wm_theme': False, 'has_desktop_theme': False},
-}
-
-- **Window Theme enabled** only for DEs with separate window managers (XFCE, MATE, Cinnamon)
-- **Desktop Theme enabled** only for Cinnamon (its unique shell theme)
-- **Icons/GTK/Cursors** always available across all backends
-- **The UI self-adjusts** when you change your desktop environment selection - no more trying to set themes that don't exist!
-
-### 🧬 Dual-Genetic Baking & Efficiency Engine (V3.5 - February 2026)
-
-**Version 3.5 – The "Spectrum" Update**
-
-The system now creates a complete visual identity by "baking" both GTK themes and Icon themes simultaneously.
-
-- **Dual-Baking Engine**: 
-    * `template-themes`: Generates custom GTK 2/3/4 and Xfwm4 styles.
-    * `template-icons`: Generates custom Icon sets based on the "Mother" (`awp-icon-mom`) assets.
-- **Intelligent Sync**: The `set_themes` function is now "Diff-Aware." It compares the new workspace requirements against the current state. If the Icon theme is already correct, it skips the reload to save CPU and prevent flickering.
-- **Transient Workspace HUD (`hud-ws-info.py`)**: A new, lightweight horizontal HUD that "flashes" workspace and wallpaper metadata for a few seconds during transitions, integrated directly into the `daemon` and `dab`.
-- **New Hybrid Backend**: Added `qtile_xfce.py` for users running the Qtile Tiling Window Manager within an XFCE session.
-- **Branding Assets**: Integration of the `branding-assets` library, offering 180 different color tones for procedural UI elements.
-
 ### 📅 Version Timeline
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
+| **V3.8** | May 2026 | 🎨 GTK & Icon Preset System (Modular presets + icon reconstruction engine) |
 | **V3.7** | Mar 2026 | ⚡ Backend Logic Delegation + State Consolidation |
 | **V3.6** | Feb 2026 | 🖨️ Unified Printer System + 🖱️ Cursor Refresh + 🧠 Capability Matrix |
 | **V3.5** | Feb 2026 | 🧬 Dual-Genetic Baking (Themes + Icons) |
@@ -374,123 +248,6 @@ The system now creates a complete visual identity by "baking" both GTK themes an
 | **V3.0** | Jan 2026 | 🧠 Genetic Intelligence + Qt6 |
 | **V2.2** | Jan 2026 | ⚡ Lean Mode + Hybrid Backends |
 | **V2.1** | Jan 2025 | 🧰 Centralized Utilities |
-
-### 🧬 Core Consolidation & Zero-Duplication Architecture (V3.4 - Current)
-
-**Version 3.4 – Unified Logic Core (February 2026)**
-
-AWP has undergone a major architectural refactoring to centralize all business logic in `core/actions.py`, eliminating code duplication across the entire suite.
-
-#### 🎯 Single Source of Truth
-
-- **`core/actions.py`** now contains ALL wallpaper operations:
-  - `next_wallpaper()`, `prev_wallpaper()`, `delete_wallpaper()`
-  - `apply_effect()`, `clear_effect()` for temporary effects
-  - `refresh_current_workspace()` for instant theme application
-  - Shared helpers: `get_workspace_images()`, `get_workspace_index()`
-  - Backend wrappers: `set_themes()`, `set_panel_icon()`
-
-#### 🔄 Unified Components
-
-All three major components now use the **exact same core functions**:
-
-| Component | Before | After |
-|-----------|--------|-------|
-| **Daemon** (`daemon.py`) | Duplicate logic | Calls `next_wallpaper()` from core |
-| **Nav** (`nav.py`) | Duplicate logic | Calls `next_wallpaper()` from core |
-| **Dashboard** (`dab.py`) | Had to restart | Calls `refresh_current_workspace()` from core |
-
-#### ✨ Instant Feedback Dashboard
-```
-**Theme changes apply immediately** when saving in the dashboard. No more switching workspaces twice to see your new theme!
-```
-# One line in dab.py after saving:
-```
-from core.actions import refresh_current_workspace
-refresh_current_workspace()  # Applies themes NOW
-```
-### 🛰️ Runtime State Engine & Native HUD (V3.3)
-
-**Version 3.3 – Native Runtime Monitoring (February 2026)**
-
- - AWP now includes a lightweight, backend-agnostic Runtime State engine with fully native Qt Heads-Up Displays (HUDs). This replaces the previous external monitoring bridge used in earlier versions.
-
-### 🧠 Runtime State Engine
-
-- **Shared Memory JSON State**:  
-  Uses `/dev/shm/awp_full_state.json` for ultra-fast in-memory state updates.
-- **Backend Decoupling**:  
-  Removed legacy `bar()` hooks from `backends/` for cleaner separation of concerns.
-- **Modular State Updates**:  
-  The daemon writes structured runtime data (workspace, wallpaper, system stats) that any UI component can consume.
-- **Low-Latency Refresh Model**:
-  Uses shared memory to minimize disk I/O and eliminate filesystem wear.
-
-### 🖥️ Native Qt HUD System
-
-Two fully independent monitoring overlays:
-
-| HUD | Layout | Purpose |
-|-----|--------|----------|
-| `hud_vertical.py` | Vertical Panel | Sidebar-style system monitor |
-| `hud_bottom.py`   | Horizontal Bar | Minimal bottom dock monitor |
-
-### 📊 Real-Time System Metrics
-
-HUDs now use centralized utility functions from `core/utils.py`:
-
-- `get_ram_info()`  
-- `get_swap_info()`  
-- `get_mounts_info()`  
-
-These utilities are reusable across dashboards, widgets, or future monitoring modules.
-
-### 🧹 Architecture Cleanup
-
-- Removed legacy external monitoring bridge logic
-- Removed deprecated `get_fs_info()` utility
-- Simplified backend factory (no more optional `bar` injection)
-- Introduced `RUNTIME_STATE_PATH` in `core/constants.py`
-
-### ⚡ Design Philosophy
-
-The new HUD system aligns with AWP’s modular vision:
-
-- Runtime data is **written once**
-- UI components **read independently**
-- Backends remain strictly responsible for **theme & wallpaper application only**
-
-This prepares AWP for future:
-- Wayland-native overlays
-- Multi-monitor HUDs
-- Expanded workspace telemetry
-
-**Version 3.2 - Surgical Precision & Metadata (February 2026)**
-- **Swift Graphics Engine**: Optimized `bake_awp_theme` to use a hardcoded `TARGET_ASSETS` list. This removes the need for reference folders and speeds up theme generation significantly.
-- **Hover-to-Hex Preview**: Added a "Human-Readable" feature to the Dashboard. Hovering over a workspace icon now performs a real-time first-pixel analysis to display the exact Hex color code.
-- **Fluent Backend Linkage**: Refactored the `backends/` core with an `__init__.py` factory for seamless environment detection (Mint vs. Debian).
-- **UI Gatekeeper**: Implemented dynamic UI controls that enable/disable features based on backend capabilities, plus alphabetical sorting for all dropdown menus.
-
-**Version 3.1 - Universal Logic & Core Sanitization (February 2026)**
-- **Dynamic Discovery**: Removed hardcoded backend lists (`VALID_DES`). The core now performs filesystem-based validation, allowing AWP to support any new DE/WM by simply adding a `.py` file to the `backends/` directory.
-- **Config Safety (Zero-Flicker)**: Sanitized all backends to remove `sed`-based path manipulation. This eliminates `tint2` panel flickering and prevents potential configuration file corruption.
-- **Log Professionalism**: Refactored terminal output to be "Logic-First," providing clean, honest feedback about applied themes and wallpapers without redundant debug noise.
-
-**Version 3.0 - Genetic Intelligence (January 2026)**
-- **Standardized Qt6**: Officially deprecated `awp_dab.py` (PyQt5) in favor of the modern `awp_dab_qt6.py`. Added a dedicated **Sync Themes** button to trigger the baking engine and real-time UI refresh.
-- **Genetic Theme Baking**: Integrated `bake_awp_theme` in `core/utils.py`. AWP now physically generates theme directories with accent colors based on the workspace icon, including automated `folder.png` thumbnails.
-- **Smart Setup**: The `awp_setup.py` wizard now triggers the baking engine during initial configuration for "Day One" readiness.
-- **Refresh Logic**: Created a standalone `refresh_theme_lists()` function to allow real-time UI updates after a theme sync without program restarts.
-- **X11 Utility**: Centralized display blanking/timeout logic in `core/utils.py`, allowing for standalone display management without DE-specific power daemons.
-
-**Version 2.2 - Lean Mode & Hybrid Backends (January 2026)**
-- **Lean Mode**: Universal function in `daemon` to toggle between native XFCE wallpaper handling and `feh` for legacy hardware (Optiplex 755).
-- **Hybrid Support**: Refactored `generic.py` to support mixed environments like Openbox running inside XFCE.
-
-**Version 2.1 - Centralized Utilities (January 2025)**
-- Created `core/utils.py` module to eliminate code duplication.
-- Consolidated `get_icon_color()` and `get_available_themes()` functions.
-- All dashboard components now share common utilities for a cleaner codebase.
 
 ## 🔧 Troubleshooting
 
@@ -520,7 +277,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
-- Built with Python 3 and PyQt6
-- Tested on Linux Mint XFCE, Debian, and other major distributions
-- Theme templates based on **Breeze Dark** (KDE) and **Mint-Y** (Linux Mint)
-- Special thanks to the open-source community and all AWP users
+- Built with Python 3 and PyQt6.
+- Tested on Linux Mint XFCE, Debian, and other major distributions.
+- Theme presets based on **Breeze Dark** (KDE), **Mint-Y** (Linux Mint), **Yaru** (Ubuntu), and custom styles.
+- Special thanks to the open-source community and all AWP users.

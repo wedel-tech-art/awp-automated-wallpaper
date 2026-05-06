@@ -10,10 +10,6 @@ import os
 import sys
 import shutil
 
-if not os.environ.get('AWP_DEBUG'):
-    fd = os.open(os.devnull, os.O_WRONLY)
-    os.dup2(fd, 2)
-
 # QT6 IMPORTS
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
@@ -192,7 +188,53 @@ class WorkspaceTab(QWidget):
         theme_label.setToolTip("Per-workspace desktop theme customization")
         layout.addWidget(theme_label)
 
+        # --- Icon Bake Style (NON-PERSISTENT) ---
+        from core.constants import ICON_PRESETS
+
+        row = QHBoxLayout()
+        row.setSpacing(5)
+
+        lbl = QLabel("Icon Style:")
+        lbl.setFixedWidth(120)
+        lbl.setToolTip("Choose template style for icon baking (not saved)")
+        row.addWidget(lbl)
+
+        # ✅ use your standardized combo factory
+        items = [(name.capitalize(), name) for name in ICON_PRESETS.keys()]
+        self.icon_preset_combo = create_theme_like_combo(items)
+
+        # set default
+        index = self.icon_preset_combo.findData("mint")
+        if index != -1:
+            self.icon_preset_combo.setCurrentIndex(index)
+
+        self.icon_preset_combo.setToolTip("Temporary style used when baking icons")
+
+        row.addWidget(self.icon_preset_combo)
+        row.addStretch(1)
+
+        layout.addLayout(row)
+        
+        # --- GTK Bake Style (NON-PERSISTENT) ---
+        from core.constants import THEME_PRESETS
+        row = QHBoxLayout()
+        row.setSpacing(5)
+        lbl = QLabel("GTK Style:")
+        lbl.setFixedWidth(120)
+        lbl.setToolTip("Choose template style for GTK theme baking (not saved)")
+        row.addWidget(lbl)
+        items = [(name.capitalize(), name) for name in THEME_PRESETS.keys()]
+        self.gtk_preset_combo = create_theme_like_combo(items)
+        index = self.gtk_preset_combo.findData("breeze")
+        if index != -1:
+            self.gtk_preset_combo.setCurrentIndex(index)
+        self.gtk_preset_combo.setToolTip("Temporary style used when baking GTK themes")
+        row.addWidget(self.gtk_preset_combo)
+        row.addStretch(1)
+        layout.addLayout(row)
+        
         self.theme_controls = {}
+        
         theme_settings = [
             ("Icon Theme", "icon_theme", "icon_themes", "Desktop and application icons"),
             ("GTK Theme", "gtk_theme", "gtk_themes", "Application window appearance"),
@@ -486,7 +528,7 @@ class AWPDashboard(QWidget):
         _printer.info("Starting AWP Dashboard...", backend="dab")
         #self.setStyleSheet("QWidget { background-color: #2e2e2e; } QWidget:enabled { color: white; }")
         self.setWindowTitle("AWP Dashboard - Configuration Editor (Qt6)")
-        self.setFixedSize(550, 670)
+        self.setFixedSize(550, 700)
 
         self.config = AWPConfig()
 
@@ -753,6 +795,7 @@ class AWPDashboard(QWidget):
         """
         Genetic Synchronization: Physically creates ~/.themes and ~/.icons folders
         based on the 'icon_color' key in the .ini.
+        Now supports per-workspace icon and gtk presets (non-persistent, UI-based).
         """
         baked_themes_count = 0
         baked_icons_count = 0
@@ -764,16 +807,31 @@ class AWPDashboard(QWidget):
             section = f'ws{i}' 
             
             hex_color = self.config.get(section, 'icon_color')
-            icon = self.config.get(section, 'icon') 
+            icon = self.config.get(section, 'icon')
             
             if not hex_color:
                 continue
                 
             clean_hex = hex_color.lstrip('#').lower()
             
+            # --- GET PRESETS FROM UI TAB ---
+            tab = self.tab_widget.widget(i)
+
+            preset = "mint"  # icon preset default
+            if hasattr(tab, "icon_preset_combo"):
+                combo = tab.icon_preset_combo
+                preset = combo.currentData() or combo.currentText() or "mint"
+
+            gtk_preset = "breeze"  # gtk preset default
+            if hasattr(tab, "gtk_preset_combo"):
+                combo = tab.gtk_preset_combo
+                gtk_preset = combo.currentData() or combo.currentText() or "breeze"
+
+            _printer.info(f"WS{i}: preset={preset}, color={hex_color}", backend="dab")
+            
             # Define expected paths
-            theme_name = f"awp-{clean_hex}"
-            icon_name = f"awp-icons-{clean_hex}"
+            theme_name = f"awp-gtk-{gtk_preset}-{clean_hex}"
+            icon_name = f"awp-icons-{preset}-{clean_hex}"
             
             theme_path = os.path.expanduser(f"~/.themes/{theme_name}")
             icon_path = os.path.expanduser(f"~/.icons/{icon_name}")
@@ -781,20 +839,19 @@ class AWPDashboard(QWidget):
             # --- Check & Bake GTK Theme ---
             if not os.path.exists(theme_path):
                 _printer.info(f"Syncing: Theme {theme_name} missing. Initiating bake...", backend="dab")
-                bake_awp_theme(hex_color, icon)
+                bake_awp_theme(hex_color, icon, gtk_preset)
                 baked_themes_count += 1
 
             # --- Check & Bake Icons ---
             if not os.path.exists(icon_path):
                 _printer.info(f"Syncing: Icons {icon_name} missing. Initiating bake...", backend="dab")
-                # Add 'icon' here!
-                bake_awp_icon(hex_color, icon) 
+                bake_awp_icon(hex_color, icon, preset)
                 baked_icons_count += 1
         
         # Refresh the UI dropdowns/lists
         self.refresh_theme_lists()
         
-        # Comprehensive feedback
+        # Feedback
         total_new = baked_themes_count + baked_icons_count
         if total_new > 0:
             msg = f"Baked {baked_themes_count} themes and {baked_icons_count} icon sets."
