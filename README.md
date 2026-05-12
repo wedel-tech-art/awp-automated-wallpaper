@@ -18,7 +18,13 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 - **Multi-Preset Architecture:** Replaces the old single-template model with selectable presets for both GTK themes and icon sets.
 
-- **Icon Reconstruction Engine:** Icon presets now store only **18 canonical PNG files + `index.theme`**. The full icon theme tree (sizes, symlinks, directories) is rebuilt programmatically during baking.
+- **Dynamic Icon Reconstruction Engine:** Icon presets now store only 18 canonical source files.
+
+- **On-the-Fly Manifests:** The engine now programmatically generates the index.theme and full directory structure** during the bake process.
+
+- **Expanded Coverage:** Beyond "Places," presets now include comprehensive support for Devices, Legacy, and Mimetypes.
+
+- **Manifest-Driven Expansion:** Adding new icons or categories is now handled entirely via centralized dictionaries in core/constants.py, eliminating the need to modify the file-tree manually.
 
 - **GTK Preset Variants:**
   - `breeze` (default): PNG modulation + CSS/SVG replacement

@@ -50,12 +50,83 @@ SCALING_FEH = {
 }
 
 # ============================================================================
-# ICON TEMPLATE PRESETS
+# ICON AND GTK THEME TEMPLATE PRESETS AND DICTIONARIES
 # ============================================================================
-# Maps preset names to their template folder
-# Used by bake_awp_icon() and dashboard preset selection
 
-# The master list of assets to be re-hued during the bake process
+ICON_SIZES = ["16", "22", "24", "32", "48", "64", "96"]
+
+SYMLINK_MAP = {
+    "folder.png": [
+        "athena.png", "file-manager.png", "gtk-directory.png", "inode-directory.png",
+        "kfm.png", "nautilus-actions-config-tool.png", "nautilus.png", "nemo.png",
+        "org.xfce.filemanager.png", "org.xfce.panel.directorymenu.png", 
+        "org.xfce.thunar.png", "redhat-filemanager.png", "stock_folder.png",
+        "system-file-manager.png", "thunar.png", "Thunar.png", "xfce-filemanager.png"
+    ],
+    "user-desktop.png": ["desktop.png", "gnome-fs-desktop.png", "org.xfce.panel.showdesktop.png", "org.xfce.xfdesktop.png"],
+    "user-home.png": ["folder_home.png", "gnome-fs-home.png"],
+    "folder-drag-accept.png": ["folder-open.png"],
+    "gtk-network.png": ["folder-remote.png", "org.xfce.gigolo.png"],
+    "folder-music.png": ["library-music.png"],
+    "network-workgroup.png": ["network-server.png"],
+    "user-bookmarks.png": ["xapp-user-favorites.png"],
+    "text-x-python.png": [
+        "application-x-python.png",
+        "application-x-python-bytecode.png",
+        "text-x-python3.png",
+        "text-x-script.python.png",
+        "application-x-executable-python.png"
+    ],
+    "text-x-script.png": [
+        "application-x-shellscript.png",
+        "application-x-sh.png",
+        "text-x-sh.png",
+        "shellscript.png"
+    ],
+    "text-x-generic.png": [
+        "text-plain.png",       # The most common name for .txt files
+        "text-log.png",         # For .log files
+        "txt.png",              # Legacy/Alternative naming
+        "text-x-preview.png"    # Used by some file managers for text previews
+    ],
+    "audio-mpeg.png": ["audio-mp3.png", "mpeg.png"],
+    "audio-flac.png": ["flac.png", "audio-x-flac.png"],
+    "audio-x-wav.png": ["audio-wav.png",
+        "audio-vnd.wave.png",
+        "x-wav.png",
+        "wav.png"
+    ],
+    "audio-midi.png": [
+        "audio-mid.png",
+        "audio-x-midi.png",
+        "audio-sp-midi.png",
+        "audio-smf.png",
+        "midi.png",
+        "mid.png"
+    ]
+}
+
+ICON_MANIFEST = {
+    "modulate": {
+        "places": [
+            "folder.png", "folder-documents.png", "folder-download.png", 
+            "folder-drag-accept.png", "folder-music.png", "folder-pictures.png", 
+            "folder-publicshare.png", "folder-recent.png", "folder-saved-search.png", 
+            "folder-templates.png", "folder-videos.png", "gtk-network.png", 
+            "network-workgroup.png", "user-bookmarks.png", "user-desktop.png", "user-home.png"
+        ],
+        "devices": ["computer.png", "drive-harddisk.png"],
+        "legacy": ["go-home.png"],
+        "mimetypes": ["text-x-python.png", "text-x-script.png", "text-x-generic.png"]
+    },
+    "original": {
+        "places": ["user-trash.png", "user-trash-full.png"],
+        "legacy": ["emblem-symbolic-link.png"],
+        "mimetypes": ["audio-mpeg.png", "audio-flac.png", "audio-x-wav.png", "audio-midi.png"]
+    }
+}
+
+# The master list of assets to be re-hued during the bake GTK THEME process
 TARGET_ASSETS = [
     "arrow-down-active.png", "arrow-down-hover.png",
     "arrow-left-active.png", "arrow-left-hover.png",
@@ -98,7 +169,8 @@ ICON_PRESETS = {
     'yaru': 'template-icon-presets/yaru',
     'souza': 'template-icon-presets/souza',
     'jojo': 'template-icon-presets/jojo',
-    'paomedia': 'template-icon-presets/paomedia'
+    'paomedia': 'template-icon-presets/paomedia',
+    'sweet': 'template-icon-presets/sweet'
 }
 
 THEME_PRESETS = {

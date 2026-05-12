@@ -6,7 +6,7 @@
 # --- 0. BYPASS CONFIGURATION ---
 # Add any preset names here that should NOT start the daemon.
 # Example: BYPASS_LIST=("QTILE_DEFAULT" "MUSIC_STUDIO" "MINIMAL")
-BYPASS_LIST=("qtile_xfce-debian")
+BYPASS_LIST=("qtile_xfce-debian" "qtile_gnome-debian" "qtile_wayland-debian")
 
 # --- ANSI Colors for Bash ---
 CLR_GREEN="\033[92m"
