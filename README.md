@@ -18,13 +18,15 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 - **Multi-Preset Architecture:** Replaces the old single-template model with selectable presets for both GTK themes and icon sets.
 
-- **Dynamic Icon Reconstruction Engine:** Icon presets now store only 18 canonical source files.
+- **Dynamic Icon Reconstruction Engine:** Icon presets now store 29 canonical source files (upgraded for better coverage).
+
+- **Expanded Preset Library:** Includes mint, yaru, souza, jojo, paomedia, and the brand new favourite sweet preset, each with 29 files and no index needed.
 
 - **On-the-Fly Manifests:** The engine now programmatically generates the index.theme and full directory structure** during the bake process.
 
 - **Expanded Coverage:** Beyond "Places," presets now include comprehensive support for Devices, Legacy, and Mimetypes.
 
-- **Manifest-Driven Expansion:** Adding new icons or categories is now handled entirely via centralized dictionaries in core/constants.py, eliminating the need to modify the file-tree manually.
+- **Manifest-Driven Expansion:** Adding new icons or categories is now handled entirely via centralized dictionaries in core/constants.py.
 
 - **GTK Preset Variants:**
   - `breeze` (default): PNG modulation + CSS/SVG replacement
@@ -222,9 +224,9 @@ awp-automated-wallpaper/
 │   │   └── [preset_name]/          # Custom user-defined identities
 │   ├── presets-backup/             # Pre-flight safety mirror 🛡️
 │   ├── template-theme-presets/     # GTK preset templates (breeze, colloid)
-│   ├── template-icon-presets/      # Icon presets (18 canonical files each)
+│   ├── template-icon-presets/      # Icon presets (29 canonical files each)
 │   ├── awp-icon-mom/               # The "Mother" icon template
-│   ├── branding-assets/            # 180 procedural color tones
+│   ├── branding-assets/            # 200 procedural color tones
 │   ├── logos/                      # Active workspace icons (symlinks)
 │   ├── daemon.py                   # Background service
 │   ├── dab.py                      # Qt6 Dashboard
@@ -243,7 +245,7 @@ awp-automated-wallpaper/
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
-| **V3.8** | May 2026 | 🎨 GTK & Icon Preset System (Modular presets + icon reconstruction engine) |
+| **V3.8** | May 2026 | 🎨 GTK & Icon Preset System (Modular presets + icon and index.theme reconstruction engine) |
 | **V3.7** | Mar 2026 | ⚡ Backend Logic Delegation + State Consolidation |
 | **V3.6** | Feb 2026 | 🖨️ Unified Printer System + 🖱️ Cursor Refresh + 🧠 Capability Matrix |
 | **V3.5** | Feb 2026 | 🧬 Dual-Genetic Baking (Themes + Icons) |
