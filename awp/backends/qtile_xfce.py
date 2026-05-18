@@ -93,28 +93,35 @@ def qtile_xfce_set_themes(ws_num: int, config):
                 "-s", should_icon, "--create"
             ], check=False)
             changes.append("icons")
-    
-    # Check Cursor theme
+ 
+     # Check Cursor theme
     if should_cursor:
         current = _get_current_value("xsettings", "/Gtk/CursorThemeName")
         if current != should_cursor:
+            # Apply XFCE cursor theme
             subprocess.run([
-                "xfconf-query", "-c", "xsettings", "-p", "/Gtk/CursorThemeName", 
+                "xfconf-query", "-c", "xsettings", "-p", "/Gtk/CursorThemeName",
                 "-s", should_cursor, "--create"
-            ], check=False)
+                ], check=False)
             changes.append("cursor")
             cursor_changed = True
-    
-    # Force cursor refresh if it changed (fixes stubborn apps)
+
+    # Force cursor refresh if it changed
+    # xfsettingsd propagates cursor theme updates asynchronously.
+    # A short delay is required before refreshing the root cursor,
+    # otherwise some applications or the X root window may retain
+    # stale/default cursor state.
     if cursor_changed:
+        # Allow XSETTINGS propagation to settle
         time.sleep(0.5)
+        # Refresh root cursor
         subprocess.run(["xsetroot", "-cursor_name", "left_ptr"], check=False)
-        subprocess.run([
-            "xprop", "-root", "-f", "_XSETTINGS_SETTINGS", "8s",
-            "-set", "_XSETTINGS_SETTINGS", ""
-        ], check=False)
+        #subprocess.run([
+        #   "xprop", "-root", "-f", "_XSETTINGS_SETTINGS", "8s",
+        #   "-set", "_XSETTINGS_SETTINGS", ""
+        #   ], check=False)
         _printer.info("Cursor refresh triggered", backend="qtile_xfce")
-    
+ 
     # Use printer with explicit backend
     _printer.themes(ws_num, changes, backend="qtile_xfce")
 

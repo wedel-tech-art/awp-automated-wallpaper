@@ -164,6 +164,131 @@ TARGET_ASSETS = [
     "toolbutton-active.png", "toolbutton-hover.png"
 ]
 
+# ==============================================================================
+# TARGET ASSETS FOR FLAT REMIX THEME
+# ==============================================================================
+FLAT_REMIX_ASSETS = [
+    # --- GTK 2.0 (Legacy Interface Controls) ---
+    'checkbox-checked.png',
+    'checkbox-checked-hover.png',
+    'checkbox-mixed.png',
+    'checkbox-mixed-hover.png',
+    'combo-entry-ltr-entry-active.png',
+    'combo-entry-rtl-entry-active.png',
+    'entry-active.png',
+    'menubar-item-active.png',
+    'notebook-combo-entry-ltr-entry-active.png',
+    'notebook-combo-entry-rtl-entry-active.png',
+    'notebook-entry-active.png',
+    'progressbar-horz.png',
+    'progressbar-vert.png',
+    'radio-checked.png',
+    'radio-checked-hover.png',
+    'radio-mixed.png',
+    'radio-mixed-hover.png',
+    'scale-horz-trough-active.png',
+    'scale-slider-active.png',
+    'scale-slider-hover.png',
+    'scale-vert-trough-active.png',
+    'scrollbar-horz-slider-active.png',
+    'scrollbar-vert-slider-active.png',
+    'scrollbar-vert-slider-active-rtl.png',
+
+    # --- GTK 3.0 (Scale Sliders with Marks & Text Selection Anchors) ---
+    'slider-horz-scale-has-marks-above-active.png',
+    'slider-horz-scale-has-marks-above-active@2.png',
+    'slider-horz-scale-has-marks-above-active-dark.png',
+    'slider-horz-scale-has-marks-above-active-dark@2.png',
+    'slider-horz-scale-has-marks-above-active-darkest.png',
+    'slider-horz-scale-has-marks-above-active-darkest@2.png',
+    'slider-horz-scale-has-marks-above-hover.png',
+    'slider-horz-scale-has-marks-above-hover@2.png',
+    'slider-horz-scale-has-marks-above-hover-dark.png',
+    'slider-horz-scale-has-marks-above-hover-dark@2.png',
+    'slider-horz-scale-has-marks-above-hover-darkest.png',
+    'slider-horz-scale-has-marks-above-hover-darkest@2.png',
+    
+    'slider-horz-scale-has-marks-below-active.png',
+    'slider-horz-scale-has-marks-below-active@2.png',
+    'slider-horz-scale-has-marks-below-active-dark.png',
+    'slider-horz-scale-has-marks-below-active-dark@2.png',
+    'slider-horz-scale-has-marks-below-active-darkest.png',
+    'slider-horz-scale-has-marks-below-active-darkest@2.png',
+    'slider-horz-scale-has-marks-below-hover.png',
+    'slider-horz-scale-has-marks-below-hover@2.png',
+    'slider-horz-scale-has-marks-below-hover-dark.png',
+    'slider-horz-scale-has-marks-below-hover-dark@2.png',
+    'slider-horz-scale-has-marks-below-hover-darkest.png',
+    'slider-horz-scale-has-marks-below-hover-darkest@2.png',
+    
+    'slider-vert-scale-has-marks-above-active.png',
+    'slider-vert-scale-has-marks-above-active@2.png',
+    'slider-vert-scale-has-marks-above-active-dark.png',
+    'slider-vert-scale-has-marks-above-active-dark@2.png',
+    'slider-vert-scale-has-marks-above-active-darkest.png',
+    'slider-vert-scale-has-marks-above-active-darkest@2.png',
+    'slider-vert-scale-has-marks-above-hover.png',
+    'slider-vert-scale-has-marks-above-hover@2.png',
+    'slider-vert-scale-has-marks-above-hover-dark.png',
+    'slider-vert-scale-has-marks-above-hover-dark@2.png',
+    'slider-vert-scale-has-marks-above-hover-darkest.png',
+    'slider-vert-scale-has-marks-above-hover-darkest@2.png',
+    
+    'slider-vert-scale-has-marks-below-active.png',
+    'slider-vert-scale-has-marks-below-active@2.png',
+    'slider-vert-scale-has-marks-below-active-dark.png',
+    'slider-vert-scale-has-marks-below-active-dark@2.png',
+    'slider-vert-scale-has-marks-below-active-darkest.png',
+    'slider-vert-scale-has-marks-below-active-darkest@2.png',
+    'slider-vert-scale-has-marks-below-hover.png',
+    'slider-vert-scale-has-marks-below-hover@2.png',
+    'slider-vert-scale-has-marks-below-hover-dark.png',
+    'slider-vert-scale-has-marks-below-hover-dark@2.png',
+    'slider-vert-scale-has-marks-below-hover-darkest.png',
+    'slider-vert-scale-has-marks-below-hover-darkest@2.png',
+    
+    'text-select-end-active.png',
+    'text-select-end-active@2.png',
+    'text-select-end-active-dark.png',
+    'text-select-end-active-dark@2.png',
+    'text-select-end-active-darkest.png',
+    'text-select-end-active-darkest@2.png',
+    'text-select-end-hover.png',
+    'text-select-end-hover@2.png',
+    'text-select-end-hover-dark.png',
+    'text-select-end-hover-dark@2.png',
+    'text-select-end-hover-darkest.png',
+    'text-select-end-hover-darkest@2.png',
+    
+    'text-select-start-active.png',
+    'text-select-start-active@2.png',
+    'text-select-start-active-dark.png',
+    'text-select-start-active-dark@2.png',
+    'text-select-start-active-darkest.png',
+    'text-select-start-active-darkest@2.png',
+    'text-select-start-hover.png',
+    'text-select-start-hover@2.png',
+    'text-select-start-hover-dark.png',
+    'text-select-start-hover-dark@2.png',
+    'text-select-start-hover-darkest.png',
+    'text-select-start-hover-darkest@2.png'
+]
+
+GTK2_ASSETS = [
+    "checkbox-checked.png", "checkbox-checked-active.png", "checkbox-checked-disabled.png",
+    "checkbox-checked-hover.png", "checkbox-mixed.png", "checkbox-mixed-active.png", "checkbox-mixed-disabled.png",
+    "checkbox-mixed-hover.png", "combo-left-entry-active.png", "combo-right-entry-active.png",
+    "entry-active.png", "menu-checkbox-checked.png", "menu-checkbox-checked-disabled.png",
+    "menu-checkbox-mixed.png", "menu-checkbox-mixed-disabled.png", "menu-radio-checked.png", "menu-radio-checked-disabled.png",
+    "menu-radio-mixed.png", "menu-radio-mixed-disabled.png", "progressbar-progress.png",
+    "radio-checked.png", "radio-checked-active.png", "radio-checked-disabled.png",
+    "radio-checked-hover.png", "radio-mixed.png", "radio-mixed-active.png",
+    "radio-mixed-disabled.png", "radio-mixed-hover.png", "scale-horz-trough-active.png",
+    "scale-slider.png", "scale-slider-active.png", "scale-slider-hover.png",
+    "scale-vert-trough-active.png", "spin-ltr-down-active.png", "spin-ltr-up-active.png",
+    "spin-rtl-down-active.png", "spin-rtl-up-active.png", "tab.png", "treeview-ltr-button-active.png", "treeview-rtl-button-active.png"
+]
+
 ICON_PRESETS = {
     'mint': 'template-icon-presets/mint',
     'yaru': 'template-icon-presets/yaru',
@@ -190,17 +315,75 @@ THEME_PRESETS = {
         'rebrand': ['Colloid-Orange-Dark-Gruvbox'],
         'colors':  [
             ('fe8019', 'hex'),
-            ('253, 128, 25', 'rgb'),
+            ('254, 128, 25', 'rgb'),
+            
+            ('d65d0e', 'dark_shade'),
+            ('214, 93, 14', 'dark_shade_rgb'),
+            
             ('fe9137', 'shade'),
-            ('253, 145, 55', 'shade_rgb'),
+            ('254, 145, 55', 'shade_rgb'),
             ('fda24d', 'lighter'),
             ('253, 162, 77', 'lighter_rgb'),
         ],
         'family_ratios': {
-            'shade':   (0.869, 1.000),
-            'lighter': (0.772, 0.996),
+            'dark_shade':     (1.0, 0.78),
+            'dark_shade_rgb': (1.0, 0.78),
+            'shade':          (1.0, 0.93),
+            'shade_rgb':      (1.0, 0.93),
+            'lighter':        (0.85, 1.10),
+            'lighter_rgb':    (0.85, 1.10),
         },
-        'assets': [],
+        'assets': GTK2_ASSETS,
+    },
+    'graphite': {
+        'path':    'template-theme-presets/graphite',
+        'rebrand': ['Graphite-blue-Dark', 'Graphite-blue'],
+        'colors':  [
+            ('fe8019', 'hex'),
+            ('254, 128, 25', 'rgb'),
+            
+            ('d65d0e', 'dark_shade'),
+            ('214, 93, 14', 'dark_shade_rgb'),
+            
+            ('fe9137', 'shade'),
+            ('254, 145, 55', 'shade_rgb'),
+            ('fda24d', 'lighter'),
+            ('253, 162, 77', 'lighter_rgb'),
+        ],
+        'family_ratios': {
+            'dark_shade':     (1.0, 0.78),
+            'dark_shade_rgb': (1.0, 0.78),
+            'shade':          (1.0, 0.93),
+            'shade_rgb':      (1.0, 0.93),
+            'lighter':        (0.85, 1.10),
+            'lighter_rgb':    (0.85, 1.10),
+        },
+        'assets': GTK2_ASSETS,
+    },
+    'flat-remix': {
+        'path':    'template-theme-presets/flat-remix',
+        'rebrand': ['Flat-Remix-GTK-Blue-Darkest-Solid'],
+        'colors':  [
+            # === MAIN ACCENT ===
+            ('2777ff', 'hex'), ('3b84ff', 'hex'), ('317dff', 'hex'), ('1d71ff', 'hex'),
+            ('2165d9', 'hex'), ('2262cf', 'hex'), ('377cf1', 'hex'), ('3b83fd', 'hex'),
+            ('468aff', 'hex'),
+
+            # === DARK BORDERS ===
+            ('00348d', 'dark_border'), ('00215a', 'dark_border'), ('0047c0', 'dark_border'),
+            ('0052df', 'dark_border'), ('0056e9', 'dark_border'), ('004fd4', 'dark_border'),
+            ('1d59be', 'dark_border'),
+
+            # === BRIGT LIGHTS / HOVERS ===
+            ('6ea4ff', 'hover_light'), ('74a7ff', 'hover_light'), ('8db7ff', 'hover_light'),
+            ('5a97ff', 'hover_light'), ('4187ff', 'hover_light'), ('5594ff', 'hover_light'),
+            ('4b8dff', 'hover_light'), ('83b6ec', 'hover_light'), ('337fdc', 'hover_light'),
+        ],
+        'family_ratios': {
+            'dark_border': (1.00, 0.45),
+            'hover_light': (0.50, 1.00),
+        },
+        'assets': FLAT_REMIX_ASSETS,
     },
 }
 

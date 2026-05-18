@@ -18,19 +18,26 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 - **Multi-Preset Architecture:** Replaces the old single-template model with selectable presets for both GTK themes and icon sets.
 
-- **Dynamic Icon Reconstruction Engine:** Icon presets now store 29 canonical source files (upgraded for better coverage).
+- **Dual-Phase Core Modulation (Enhanced Color Fidelity):** Upgraded the theme engine to run a precise double-phase calculation. It dynamically extracts color ratios to modulate assets (PNG/SVG) while cross-referencing and auto-diagnosing the target style, ensuring maximum color fidelity relative to the wallpaper without breaking native theme gradients.
+
+- **Dynamic Icon Reconstruction Engine:** Icon presets now store 29 canonical source files, utilizing a high-speed RAM-Disk workspace (`/dev/shm`) to completely eliminate disk wear.
 
 - **Expanded Preset Library:** Includes mint, yaru, souza, jojo, paomedia, and the brand new favourite sweet preset, each with 29 files and no index needed.
 
-- **On-the-Fly Manifests:** The engine now programmatically generates the index.theme and full directory structure** during the bake process.
+- **On-the-Fly Manifests:** The engine now programmatically generates the clean `index.theme` and full standard XDG directory structure for icon themes during the bake process.
 
-- **Expanded Coverage:** Beyond "Places," presets now include comprehensive support for Devices, Legacy, and Mimetypes.
+- **Expanded Coverage:** Beyond "Places," presets now include comprehensive support for Devices, Legacy, and Mimetypes and more could be added if needed.
 
-- **Manifest-Driven Expansion:** Adding new icons or categories is now handled entirely via centralized dictionaries in core/constants.py.
+- **Manifest-Driven Expansion:** Adding new icons or categories is now handled entirely via centralized dictionaries in `core/constants.py`.
+
+- **Unified Text-Substitution (`gtkrc` & XFWM4 SVGs):** The theme engine now scans and normalizes raw GTK2 `gtkrc` configurations and XFWM4 window manager vector graphics (`*.svg`), binding them to a single source-of-truth color anchor to completely eliminate mismatched factory accent flashes.
+
+- **Automated Artifact Cleanup:** Automatically strips legacy, non-functional visual clutter like `thumbnail.png` or `preview.png` files from baked assets to keep the system lightweight.
 
 - **GTK Preset Variants:**
-  - `breeze` (default): PNG modulation + CSS/SVG replacement
-  - `colloid`: CSS/SVG-only recoloring (no PNG processing)
+  - `breeze` (default): PNG modulation + CSS/SVG replacement.
+  - `flat-remix`: High-density layout supporting normalized asset scales and 203° standard corrections.
+  - `colloid` & `graphite`: Pure CSS/SVG-only recoloring for GTK3/4 and just some GTK2 PNG's.
 
 - **Preset-Based Theme Baking:** `bake_awp_theme()` now supports presets (`awp-gtk-{preset}-{hex}` naming).
 
@@ -223,8 +230,8 @@ awp-automated-wallpaper/
 │   │   ├── TEMPLATE/               # Generic self-healing baseline
 │   │   └── [preset_name]/          # Custom user-defined identities
 │   ├── presets-backup/             # Pre-flight safety mirror 🛡️
-│   ├── template-theme-presets/     # GTK preset templates (breeze, colloid)
-│   ├── template-icon-presets/      # Icon presets (29 canonical files each)
+│   ├── template-theme-presets/     # GTK preset templates (breeze, colloid, flat-remix, graphite)
+│   ├── template-icon-presets/      # Icon presets (jojo, mint, paomedia, souza, sweet, yaru)
 │   ├── awp-icon-mom/               # The "Mother" icon template
 │   ├── branding-assets/            # 200 procedural color tones
 │   ├── logos/                      # Active workspace icons (symlinks)
@@ -245,7 +252,7 @@ awp-automated-wallpaper/
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
-| **V3.8** | May 2026 | 🎨 GTK & Icon Preset System (Modular presets + icon and index.theme reconstruction engine) |
+| **V3.8** | May 2026 | 🎨 GTK & Icon Preset System and new! 2 phases GTK theme auto diagnosis for more faithful colors (Modular presets + icon and index.theme reconstruction engine) |
 | **V3.7** | Mar 2026 | ⚡ Backend Logic Delegation + State Consolidation |
 | **V3.6** | Feb 2026 | 🖨️ Unified Printer System + 🖱️ Cursor Refresh + 🧠 Capability Matrix |
 | **V3.5** | Feb 2026 | 🧬 Dual-Genetic Baking (Themes + Icons) |
@@ -287,5 +294,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Built with Python 3 and PyQt6.
 - Tested on Linux Mint XFCE, Debian, and other major distributions.
-- Theme presets based on **Breeze Dark** (KDE), **Mint-Y** (Linux Mint), **Yaru** (Ubuntu), and custom styles.
+- Theme presets based on **Breeze Dark** (KDE), **Mint-Y** (Linux Mint), **Yaru** (Ubuntu), and many custom styles.
 - Special thanks to the open-source community and all AWP users.

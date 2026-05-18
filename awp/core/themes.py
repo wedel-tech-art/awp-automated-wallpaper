@@ -15,82 +15,156 @@ _printer = get_printer()
 
 
 def _build_color_replacements(config, clean_hex, new_rgb):
-    """Build the color replacements list, deriving family shades if needed."""
-    
+    """
+    Build the color replacements list, deriving family shades if needed.
+    All dynamic hue shifts are calculated using the active Mint background hex.
+    """
     replacements = []
-    
-    # Derive family shades if template needs them
     family = {}
+    
+    # Check if the preset defines a family scaling ratio matrix
     if config.get('family_ratios'):
-        r,g,b = int(clean_hex[0:2],16)/255, int(clean_hex[2:4],16)/255, int(clean_hex[4:6],16)/255
+        # Convert hex to normalized RGB values
+        r, g, b = int(clean_hex[0:2], 16)/255.0, int(clean_hex[2:4], 16)/255.0, int(clean_hex[4:6], 16)/255.0
+        # Convert to HSV to scale saturation and value dynamically
         h, s, v = colorsys.rgb_to_hsv(r, g, b)
         
+        # Populate the derived family dictionary with custom shades
         for name, (sat_ratio, val_ratio) in config['family_ratios'].items():
-            nr,ng,nb = colorsys.hsv_to_rgb(h, min(1.0, s*sat_ratio), min(1.0, v*val_ratio))
-            family[name]         = f"{int(nr*255):02x}{int(ng*255):02x}{int(nb*255):02x}"
+            nr, ng, nb = colorsys.hsv_to_rgb(h, min(1.0, s * sat_ratio), min(1.0, v * val_ratio))
+            family[name] = f"{int(nr*255):02x}{int(ng*255):02x}{int(nb*255):02x}"
             family[f"{name}_rgb"] = f"{int(nr*255)}, {int(ng*255)}, {int(nb*255)}"
 
-    # Build replacements list
+    # Map preset targets to their calculated replacement values
     for old, kind in config['colors']:
         if kind == 'hex':
             replacements.append((old, clean_hex))
         elif kind == 'rgb':
             replacements.append((old, new_rgb))
         else:
-            # it's a family member — 'shade', 'shade_rgb', 'lighter', 'lighter_rgb'
-            replacements.append((old, family[kind]))
-
+            # Safe check to prevent KeyErrors if a ratio is missing
+            if kind in family:
+                replacements.append((old, family[kind]))
+            else:
+                _printer.warning(f"Color kind '{kind}' not found in derived family ratios.", backend="themes")
+                
     return replacements
 
 
 def _modulate_assets(config, target_path, clean_hex):
-    """Studio-Mastered PNG modulation — only runs if preset has assets."""
-    if not config['assets']:
+    """
+    Studio-Mastered PNG modulation engine.
+    Phase-2 Closed Loop Feedback Control Edition (Universal Sobriety).
+    Bakes a 1x1 test pixel in memory to measure and counteract non-linear color drift,
+    ensuring consistent, matte, and premium GTK2 widgets across all presets.
+    """
+    if not config.get('assets'):
         return
 
-    r_int = int(clean_hex[0:2], 16)
-    g_int = int(clean_hex[2:4], 16)
-    b_int = int(clean_hex[4:6], 16)
-    rgb_norm = (r_int/255.0, g_int/255.0, b_int/255.0)
+    # --- FASE 0: PARSE ABSOLUTE TARGET VALUES ---
+    r_int, g_int, b_int = int(clean_hex[0:2], 16), int(clean_hex[2:4], 16), int(clean_hex[4:6], 16)
+    target_hls = colorsys.rgb_to_hls(r_int/255.0, g_int/255.0, b_int/255.0)
+    target_hue_deg = target_hls[0] * 360
 
-    hls = colorsys.rgb_to_hls(*rgb_norm)
-    target_hue_deg = hls[0] * 360
+    source_hue = 203  # Fixed baseline for Breeze-mapped templates
 
-    # 1. THE ROTATION
-    hue_diff = target_hue_deg - 203
-    if hue_diff < 0: hue_diff += 360
-    im_hue = round(100 + (hue_diff / 1.7))
-    if im_hue > 200: im_hue -= 200
+    # First-pass mathematical prediction
+    hue_diff = target_hue_deg - source_hue
+    if hue_diff < 0: 
+        hue_diff += 360
+    base_im_hue = round(100 + (hue_diff / 1.7))
+    if base_im_hue > 200: 
+        base_im_hue -= 200
 
-    # 2. ADAPTIVE MIXING
-    brightness = 85
-    saturation = 140
+    # Base factor calculated from distance on the color wheel
+    hue_dist = min(abs(target_hue_deg - source_hue), 360 - abs(target_hue_deg - source_hue))
+    factor = min(hue_dist / 140.0, 1.0)
+    
+    base_brightness = round(100 - (20 * factor))
+    base_saturation = round(100 + (30 * factor))
 
-    if target_hue_deg < 30 or target_hue_deg > 330:
-        brightness = 95
-        saturation = 160
-    elif 45 <= target_hue_deg <= 70:
-        brightness = 75
-        saturation = 150
-    elif 240 <= target_hue_deg <= 300:
-        im_hue += 5
-        brightness = 90
-        saturation = 150
-    elif 75 < target_hue_deg < 160:
-        brightness = 65
-        saturation = 160
+    # --- FASE 1: THE FEEDBACK LOOP (Virtual Pixel Probe) ---
+    probe_source_hex = "#3daee9"  # Master Breeze Blue
+    probe_file = os.path.join("/dev/shm", f"awp_probe_{clean_hex}.png")
+    
+    try:
+        # Create the test pixel in RAM
+        subprocess.run(["convert", "-size", "1x1", f"xc:{probe_source_hex}", probe_file], check=True)
+        # Apply the theoretical modulation to the test pixel
+        subprocess.run(["mogrify", "-modulate", f"{base_brightness},{base_saturation},{base_im_hue}", probe_file], check=True)
+        
+        # Read back the EXACT Hex code that ImageMagick generated
+        result_hex = subprocess.check_output([
+            "convert", probe_file, "-format", "%[hex:p{0,0}]", "info:"
+        ]).decode("utf-8").strip().lower()
+        
+        # Clean up the virtual pixel immediately
+        if os.path.exists(probe_file): 
+            os.remove(probe_file)
+        
+        # Convert the measured result to HLS to analyze drift
+        pr, pg, pb = int(result_hex[0:2], 16)/255.0, int(result_hex[2:4], 16)/255.0, int(result_hex[4:6], 16)/255.0
+        measured_hls = colorsys.rgb_to_hls(pr, pg, pb)
+        measured_hue_deg = measured_hls[0] * 360
 
-    _printer.info(f"Theme Processing: Hue:{target_hue_deg:.1f}° B:{brightness} S:{saturation}", backend="themes")
+        # --- FASE 2: REALITY-BASED CALIBRATION ("Sobriedad Universal") ---
+        hue_drift = target_hue_deg - measured_hue_deg
+        corrected_hue_diff = hue_diff + hue_drift
+        final_im_hue = round(100 + (corrected_hue_diff / 1.7))
+        if final_im_hue > 200: final_im_hue -= 200
+        if final_im_hue < 0: final_im_hue = 0
 
-    assets_dir = os.path.join(target_path, "assets")
+        # Universal Elastic Compactor
+        final_brightness = base_brightness
+
+        if 30 <= measured_hue_deg <= 165:
+            # Zone Yellows / Greens
+            final_brightness = min(base_brightness, 80)
+            final_saturation = round(100 + (5 * factor))
+        elif 300 <= measured_hue_deg <= 350:
+            # Zone Fucsias / Magentas
+            final_brightness = min(base_brightness, 85)
+            final_saturation = round(100 + (15 * factor))
+        elif measured_hue_deg < 20 or measured_hue_deg > 355:
+            # --- SURGICAL RED ZONE TRIGGER ---
+            # Shifting to -10 to completely kill the remaining orange bleeding 
+            # specially in reds.
+            final_im_hue = max(0, final_im_hue - 8)
+            final_brightness = min(base_brightness, 85)
+            final_saturation = min(base_saturation, 110)
+        else:
+            # Rest (blues, purples)
+            final_saturation = round(100 + (25 * factor))
+
+    except Exception as e:
+        _printer.warning(f"Feedback probe failed ({e}). Falling back to linear equations.", backend="themes")
+        final_im_hue = base_im_hue
+        final_brightness = base_brightness
+        final_saturation = base_saturation
+        measured_hue_deg = target_hue_deg
+
+    _printer.info(
+        f"Theme Feedback Loop: Target:{target_hue_deg:.1f}° -> Measured:{measured_hue_deg:.1f}° | "
+        f"Calibrated Params -> H:{final_im_hue} B:{final_brightness}% S:{final_saturation}%", 
+        backend="themes"
+    )
+
+    # --- FASE 3: RECURSIVE FILE SYSTEM EXECUTION ---
+    # Index the target paths dynamically using the elastic folder mapping matrix
+    filename_to_paths = {}
+    for root, dirs, files in os.walk(target_path):
+        for f in files:
+            filename_to_paths.setdefault(f, []).append(os.path.join(root, f))
+
+    # Apply the audited, ultra-calibrated values exclusively over target targets
     for filename in config['assets']:
-        asset_file = os.path.join(assets_dir, filename)
-        if os.path.exists(asset_file):
-            subprocess.run([
-                "mogrify", "-modulate",
-                f"{brightness},{saturation},{im_hue}",
-                asset_file
-            ], check=True)
+        if filename in filename_to_paths:
+            for asset_file in filename_to_paths[filename]:
+                subprocess.run([
+                    "mogrify", "-modulate",
+                    f"{final_brightness},{final_saturation},{final_im_hue}",
+                    asset_file
+                ], check=True)
 
 
 def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze'):
@@ -132,8 +206,11 @@ def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze'):
 
             for old, new in color_replacements:
                 subprocess.run(["find", target_path, "-type", "f", "(",
-                                "-name", "*.css", "-o", "-name", "*.svg", "-o",
-                                "-name", "*.rc", "-o", "-name", "index.theme", ")",
+                                "-name", "*.css", "-o", 
+                                "-name", "*.svg", "-o", 
+                                "-name", "*.rc", "-o", 
+                                "-name", "gtkrc", "-o",
+                                "-name", "index.theme", ")",
                                 "-exec", "sed", "-i", f"s/{old}/{new}/gI", "{}", "+"], check=True)
 
             # --- 4. Rebranding ---
@@ -160,7 +237,6 @@ def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze'):
 
     return theme_name
 
-import os, shutil, subprocess, colorsys
 
 def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
     """

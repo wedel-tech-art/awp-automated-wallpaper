@@ -1,0 +1,21 @@
+# ==============================================================================
+# AWP HYBRID ARCHITECTURE MANIFEST
+# ==============================================================================
+# BASE FRAMEWORK: Graphite Dark
+# GTK+ 3.0 / 4.0: Tweaked SVG Layouts (Dynamic Color Modulation Support)
+# GTK+ 2.0 (LEGACY): Integrated Breeze-Style Control Assets (PNG Matrix)
+# TARGET COMPATIBILITY: XFCE 4.18+ / ProDesk Centralization Suite
+# ==============================================================================
+
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Graphite-blue-Dark
+Comment=AWP Hybrid Engine • Graphite Transformed SVG (GTK3/4) x Breeze Controls (GTK2)
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=Graphite-blue-Dark
+MetacityTheme=Graphite-blue-Dark
+IconTheme=Tela-circle-dark
+CursorTheme=Graphite-cursors
+ButtonLayout=close,minimize,maximize:menu

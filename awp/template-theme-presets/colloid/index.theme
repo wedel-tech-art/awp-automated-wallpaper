@@ -1,7 +1,16 @@
+# ==============================================================================
+# AWP HYBRID ARCHITECTURE MANIFEST
+# ==============================================================================
+# BASE FRAMEWORK: Colloid Dark (Gruvbox Variation Layout)
+# GTK+ 3.0 / 4.0: Pure Vectorial SVG Engine
+# GTK+ 2.0 (LEGACY): Integrated Breeze-Dark Asset Layer (PNG Matrix)
+# TARGET COMPATIBILITY: XFCE 4.18+ / Desktop Framework Unification
+# ==============================================================================
+
 [Desktop Entry]
 Type=X-GNOME-Metatheme
 Name=Colloid-Orange-Dark-Gruvbox
-Comment=An Flat Gtk+ theme based on Elegant Design
+Comment=AWP Hybrid Engine • Colloid SVG Vectorial (GTK3/4) x Breeze Asset Layer (GTK2)
 Encoding=UTF-8
 
 [X-GNOME-Metatheme]

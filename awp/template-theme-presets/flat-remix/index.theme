@@ -1,0 +1,21 @@
+# ==============================================================================
+# AWP UNIFIED ARCHITECTURE MANIFEST
+# ==============================================================================
+# BASE FRAMEWORK: Flat Remix (Darkest Solid Edition by Dani Ruiz)
+# GTK+ 3.0: High-Density Assets with Scale Tweaks (@2x Support)
+# GTK+ 2.0 (LEGACY): Native Interface Clones (Breezified to 203° Standard)
+# PIPELINE STATUS: 100% Modulated via ImageMagick RAM-Disk Workflow
+# ==============================================================================
+
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Flat-Remix-GTK-Blue-Darkest
+Comment=AWP Unified Engine • Flat Remix Darkest Solid (GTK3) x Normalised 203° Assets (GTK2)
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=Flat-Remix-GTK-Blue-Darkest
+MetacityTheme=Flat-Remix-Darkest-Metacity
+IconTheme=Flat-Remix-Blue-Darkest
+CursorTheme=Adwaita
+ButtonLayout=:minimize,maximize,close
