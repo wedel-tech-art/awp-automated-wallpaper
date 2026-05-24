@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<!-- Main Document Body: 70% Darker Purple with Rounded Corners -->
+<path d="M 14 3 C 11.784 3 10 4.784 10 7 L 10 57 C 10 59.216 11.784 61 14 61 L 50 61 C 52.216 61 54 59.216 54 57 L 54 17 L 40 3 L 14 3 z" fill="#7155a0"/>
+
+<!-- Top and Bottom Edge Highlights adapted to curves -->
+<g transform="scale(1 -1)">
+<path d="M 14 -3 C 11.784 -3 10 -4.784 10 -7 L 10 -8 C 10 -5.784 11.784 -4 14 -4 L 40 -4 L 40 -3 L 14 -3 z" fill="#ffffff" fill-opacity="0.4"/>
+<path d="M 10 -61 L 54 -61 L 54 -60 L 10 -60 L 10 -61 z" fill="#000000" fill-opacity="0.3"/>
+</g>
+
+<!-- Folded Corner: Vibrant Purple -->
+<g fill-rule="evenodd">
+<path d="m54 17l-14-14v14z" fill="#a27ae4"/>
+<path opacity=".2" d="m40 17l14 14v-14z" fill="#000000"/>
+</g>
+
+<!-- Shell Prompt Symbol (> _): Vibrant Purple -->
+<path d="m23 23l-1.5 1.5 6.5 6.5-6.5 6.5 1.5 1.5 8-8zm9 13v2h11v-2z" fill="#ffffff"/>
+</svg>

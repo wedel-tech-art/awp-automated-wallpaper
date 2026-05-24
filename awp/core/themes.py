@@ -9,7 +9,7 @@ import os
 import shutil
 import subprocess
 import colorsys
-from core.constants import ICON_PRESETS, THEME_PRESETS, TARGET_ASSETS, ICON_MANIFEST, SYMLINK_MAP, ICON_SIZES
+from core.constants import ICON_PRESETS, THEME_PRESETS, TARGET_ASSETS, ICON_MANIFEST, ICON_MANIFEST_SVG, SYMLINK_MAP, ICON_SIZES
 from core.printer import get_printer
 _printer = get_printer()
 
@@ -239,6 +239,241 @@ def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze'):
 
 
 def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
+    """
+    OWStudios Dynamic Icon Engine - MANIFEST EDITION
+    - Generates index.theme dynamically based on ICON_MANIFEST and ICON_SIZES.
+    - Supports SVG-based presets via ICON_MANIFEST_SVG (e.g. sweet-svg).
+    """
+    if not hex_color or hex_color == "":
+        return None
+
+    clean_hex = hex_color.lstrip('#').lower()
+
+    # --- PRESET LOGIC: supports dict (svg-capable) or plain string ---
+    preset_config = ICON_PRESETS.get(preset, "template-icon-presets/mint")
+    if isinstance(preset_config, dict):
+        template_folder = preset_config['path']
+    else:
+        template_folder = preset_config
+
+    theme_name = f"awp-icons-{preset}-{clean_hex}"
+    home = os.path.expanduser("~")
+    template_path = os.path.join(home, "awp", template_folder)
+    target_path = os.path.join(home, ".icons", theme_name)
+
+    if not os.path.exists(target_path):
+        try:
+            _printer.info(f"Baking Icons: {theme_name}", backend="themes")
+
+            # --- STEP 1: RAM-Disk Workshop & Dynamic index.theme ---
+            shm_workspace = os.path.join("/dev/shm", f"awp_masters_{clean_hex}")
+            os.makedirs(shm_workspace, exist_ok=True)
+            os.makedirs(target_path, exist_ok=True)
+
+            has_svg = isinstance(preset_config, dict) and preset_config.get('colors')
+
+            # Collect all contexts from both manifests
+            all_contexts = set()
+            for action in ICON_MANIFEST:
+                for ctx in ICON_MANIFEST[action].keys():
+                    all_contexts.add(ctx)
+            if has_svg:
+                for action in ICON_MANIFEST_SVG:
+                    for ctx in ICON_MANIFEST_SVG[action].keys():
+                        all_contexts.add(ctx)
+            sorted_contexts = sorted(list(all_contexts))
+
+            context_map = {
+                "places": "Places",
+                "mimetypes": "MimeTypes",
+                "devices": "Devices",
+                "apps": "Applications",
+                "legacy": "Actions",
+                "actions": "Actions"
+            }
+
+            index_lines = [
+                "[Icon Theme]",
+                f"Name={theme_name}",
+                "Inherits=Mint-Y,Adwaita,gnome,hicolor",
+                f"Comment=AWP Icon Theme uses {preset} preset and is based on Mint-Y-Purple",
+                ""
+            ]
+
+            png_contexts = set()
+            for action in ICON_MANIFEST:
+                for ctx in ICON_MANIFEST[action].keys():
+                    png_contexts.add(ctx)
+
+            svg_contexts = set()
+            if has_svg:
+                for action in ICON_MANIFEST_SVG:
+                    for ctx in ICON_MANIFEST_SVG[action].keys():
+                        svg_contexts.add(ctx)
+
+            dir_entries = []
+            # PNG sized first
+            for ctx in sorted(png_contexts):
+                for size in ICON_SIZES:
+                    dir_entries.append(f"{ctx}/{size}")
+            # SVG scalable inside context folder
+            if has_svg:
+                for ctx in sorted(svg_contexts):
+                    dir_entries.append(f"{ctx}/scalable")
+
+            index_lines.append(f"Directories={','.join(dir_entries)}")
+            index_lines.append("")
+
+            # PNG sections
+            for ctx in sorted(png_contexts):
+                ctx_display = context_map.get(ctx, ctx.capitalize())
+                index_lines.append(f"# --- {ctx.upper()} FOLDER SECTION ---")
+                for size_str in ICON_SIZES:
+                    index_lines.append(f"[{ctx}/{size_str}]")
+                    base_size = size_str.split('@')[0]
+                    scale = 2 if "@2x" in size_str else 1
+                    index_lines.append(f"Size={base_size}")
+                    if scale > 1:
+                        index_lines.append(f"Scale={scale}")
+                    index_lines.append(f"Context={ctx_display}")
+                    index_lines.append("Type=Fixed")
+                    index_lines.append("")
+
+            # SVG scalable sections
+            if has_svg:
+                for ctx in sorted(svg_contexts):
+                    ctx_display = context_map.get(ctx, ctx.capitalize())
+                    index_lines.append(f"# --- {ctx.upper()} SCALABLE SECTION ---")
+                    index_lines.append(f"[{ctx}/scalable]")
+                    index_lines.append("Size=48")
+                    index_lines.append("MinSize=16")
+                    index_lines.append("MaxSize=512")
+                    index_lines.append(f"Context={ctx_display}")
+                    index_lines.append("Type=Scalable")
+                    index_lines.append("")
+
+            with open(os.path.join(target_path, "index.theme"), "w") as f:
+                f.write("\n".join(index_lines))
+
+            # --- STEP 2: Color Calculation (PNG modulation) ---
+            r_int, g_int, b_int = int(clean_hex[0:2], 16), int(clean_hex[2:4], 16), int(clean_hex[4:6], 16)
+            hls = colorsys.rgb_to_hls(r_int/255.0, g_int/255.0, b_int/255.0)
+            target_hue_deg = hls[0] * 360
+            hue_dist = min(abs(target_hue_deg - 262), 360 - abs(target_hue_deg - 262))
+            factor = min(hue_dist / 140.0, 1.0)
+            brightness, saturation = round(100 - (40 * factor)), round(100 + (60 * factor))
+            im_hue = round(100 + ((target_hue_deg - 262) / 1.8))
+
+            # --- STEP 3: Modulate PNG assets in RAM ---
+            for folder_path, files in ICON_MANIFEST["modulate"].items():
+                for asset in files:
+                    src = os.path.join(template_path, asset)
+                    temp_dest = os.path.join(shm_workspace, asset)
+                    if os.path.exists(src):
+                        subprocess.run([
+                            "convert", src, "-modulate", f"{brightness},{saturation},{im_hue}",
+                            "-strip", temp_dest
+                        ], check=True)
+
+            # --- STEP 3.5: SVG Recolor in RAM (svg-capable presets only) ---
+            if has_svg:
+                _printer.info("Applying SVG color replacements...", backend="themes")
+                new_rgb = f"{r_int}, {g_int}, {b_int}"
+                svg_replacements = _build_color_replacements(preset_config, clean_hex, new_rgb)
+                # Copy only svg_recolor SVGs into workspace
+                for folder_path, files in ICON_MANIFEST_SVG["svg_recolor"].items():
+                    for asset in files:
+                        src = os.path.join(template_path, asset)
+                        temp_dest = os.path.join(shm_workspace, asset)
+                        if os.path.exists(src):
+                            shutil.copy2(src, temp_dest)
+                # Apply color replacements across all SVGs in workspace
+                for old, new in svg_replacements:
+                    subprocess.run([
+                        "find", shm_workspace, "-type", "f", "-name", "*.svg",
+                        "-exec", "sed", "-i", f"s/{old}/{new}/gI", "{}", "+"
+                    ], check=True)
+
+            # --- STEP 4: Tree Surgery ---
+            # PNG assets: resize into sized context folders
+            for size in ICON_SIZES:
+                dim = int(size.split('@')[0])
+                if "@2x" in size: dim *= 2
+
+                for action, paths in ICON_MANIFEST.items():
+                    is_modulating = (action == "modulate")
+                    for folder_path, files in paths.items():
+                        dest_dir = os.path.join(target_path, folder_path, size)
+                        os.makedirs(dest_dir, exist_ok=True)
+                        for asset in files:
+                            base_path = shm_workspace if is_modulating else template_path
+                            src = os.path.join(base_path, asset)
+                            dest = os.path.join(dest_dir, asset)
+                            if os.path.exists(src):
+                                subprocess.run([
+                                    "convert", src, "-background", "none",
+                                    "-thumbnail", f"{dim}x{dim}", "-strip", dest
+                                ], check=True)
+
+                # --- STEP 4.1: Universal Symlinks ---
+                for context in sorted_contexts:
+                    current_dir = os.path.join(target_path, context, size)
+                    if os.path.exists(current_dir):
+                        for master, links in SYMLINK_MAP.items():
+                            master_file = os.path.join(current_dir, master)
+                            if os.path.exists(master_file):
+                                for link_name in links:
+                                    link_path = os.path.join(current_dir, link_name)
+                                    if os.path.lexists(link_path): os.remove(link_path)
+                                    os.symlink(master, link_path)
+
+            # SVG assets: copy into {ctx}/scalable folders
+            if has_svg:
+                for action, paths in ICON_MANIFEST_SVG.items():
+                    for folder_path, files in paths.items():
+                        dest_dir = os.path.join(target_path, folder_path, "scalable")
+                        os.makedirs(dest_dir, exist_ok=True)
+                        for asset in files:
+                            base_path = shm_workspace if action == "svg_recolor" else template_path
+                            src = os.path.join(base_path, asset)
+                            dest = os.path.join(dest_dir, asset)
+                            if os.path.exists(src):
+                                shutil.copy2(src, dest)
+                                
+            # --- STEP 4.2: SVG Symlinks in scalable folders ---
+            if has_svg:
+                for context in sorted_contexts:
+                    current_dir = os.path.join(target_path, context, "scalable")
+                    if os.path.exists(current_dir):
+                        for master, links in SYMLINK_MAP.items():
+                            master_file = os.path.join(current_dir, master)
+                            if os.path.exists(master_file):
+                                for link_name in links:
+                                    link_path = os.path.join(current_dir, link_name)
+                                    if os.path.lexists(link_path): os.remove(link_path)
+                                    os.symlink(master, link_path)
+
+            # --- STEP 5: Top-Level Preview ---
+            if icon and os.path.exists(icon):
+                preview_dest = os.path.join(target_path, "folder.png")
+                subprocess.run(["convert", icon, "-strip", preview_dest], check=True)
+
+            # --- STEP 6: Finalize ---
+            shutil.rmtree(shm_workspace)
+            subprocess.run(["gtk-update-icon-cache", "-f", "-t", target_path], check=False)
+            _printer.success(f"Icon theme {theme_name} ready", backend="themes")
+
+        except Exception as e:
+            _printer.error(f"Bake failed: {e}", backend="themes")
+            if os.path.exists(target_path):
+                shutil.rmtree(target_path)
+            return None
+
+    return theme_name
+
+
+
+def bake_awp_icon_original(hex_color: str, icon: str = None, preset: str = "mint"):
     """
     OWStudios Dynamic Icon Engine - MANIFEST EDITION
     - Generates index.theme dynamically based on ICON_MANIFEST and ICON_SIZES.

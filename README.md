@@ -18,13 +18,15 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 - **Multi-Preset Architecture:** Replaces the old single-template model with selectable presets for both GTK themes and icon sets.
 
-- **Dual-Phase Core Modulation (Enhanced Color Fidelity):** Upgraded the theme engine to run a precise double-phase calculation. It dynamically extracts color ratios to modulate assets (PNG/SVG) while cross-referencing and auto-diagnosing the target style, ensuring maximum color fidelity relative to the wallpaper without breaking native theme gradients.
+- **Dual-Phase Core Modulation (Enhanced Color Fidelity):** Upgraded the theme engine to run a precise double-phase calculation. It dynamically extracts color ratios to modulate assets (PNG/SVG) while cross-referencing and auto-diagnosing the target style, ensuring maximum color fidelity relative to the active workspace identity color without breaking native theme gradients.
 
-- **Dynamic Icon Reconstruction Engine:** Icon presets now store 29 canonical source files, utilizing a high-speed RAM-Disk workspace (`/dev/shm`) to completely eliminate disk wear.
+- **Dynamic Icon Reconstruction Engine:** Icon presets now store canonical PNG/SVG source assets, utilizing a high-speed RAM-Disk workspace (`/dev/shm`) to completely eliminate disk wear.
 
-- **Expanded Preset Library:** Includes mint, yaru, souza, jojo, paomedia, and the brand new favourite sweet preset, each with 29 files and no index needed.
+- **Expanded Preset Library:** Includes mint, yaru, jojo, paomedia, and the new scalable `breeze-svg` and `sweet-svg` presets supporting hybrid PNG/SVG baking pipelines.
 
 - **On-the-Fly Manifests:** The engine now programmatically generates the clean `index.theme` and full standard XDG directory structure for icon themes during the bake process.
+
+- **Scalable SVG Support:** SVG-capable presets now generate proper `scalable/` XDG icon directories alongside traditional PNG sizes.
 
 - **Expanded Coverage:** Beyond "Places," presets now include comprehensive support for Devices, Legacy, and Mimetypes and more could be added if needed.
 
@@ -231,7 +233,7 @@ awp-automated-wallpaper/
 │   │   └── [preset_name]/          # Custom user-defined identities
 │   ├── presets-backup/             # Pre-flight safety mirror 🛡️
 │   ├── template-theme-presets/     # GTK preset templates (breeze, colloid, flat-remix, graphite)
-│   ├── template-icon-presets/      # Icon presets (jojo, mint, paomedia, souza, sweet, yaru)
+│   ├── template-icon-presets/      # PNG + scalable SVG icon presets (mint, yaru, jojo, paomedia, breeze-svg, sweet-svg)
 │   ├── awp-icon-mom/               # The "Mother" icon template
 │   ├── branding-assets/            # 200 procedural color tones
 │   ├── logos/                      # Active workspace icons (symlinks)
