@@ -54,123 +54,228 @@ SCALING_FEH = {
 # ============================================================================
 ICON_SIZES = ["16", "22", "24", "32", "48", "64", "96"]
 
-SYMLINK_MAP = {
-    "folder.png": [
-        "athena.png", "file-manager.png", "gtk-directory.png", "inode-directory.png",
-        "kfm.png", "nautilus-actions-config-tool.png", "nautilus.png", "nemo.png",
-        "org.xfce.filemanager.png", "org.xfce.panel.directorymenu.png",
-        "org.xfce.thunar.png", "redhat-filemanager.png", "stock_folder.png",
-        "system-file-manager.png", "thunar.png", "Thunar.png", "xfce-filemanager.png"
-    ],
-    "user-desktop.png": ["desktop.png", "gnome-fs-desktop.png", "org.xfce.panel.showdesktop.png", "org.xfce.xfdesktop.png"],
-    "user-home.png": ["folder_home.png", "gnome-fs-home.png"],
-    "folder-drag-accept.png": ["folder-open.png"],
-    "gtk-network.png": ["folder-remote.png", "org.xfce.gigolo.png"],
-    "folder-music.png": ["library-music.png"],
-    "network-workgroup.png": ["network-server.png"],
-    "user-bookmarks.png": ["xapp-user-favorites.png"],
-    "text-x-python.png": [
-        "application-x-python.png",
-        "application-x-python-bytecode.png",
-        "text-x-python3.png",
-        "text-x-script.python.png",
-        "application-x-executable-python.png"
-    ],
-    "text-x-script.png": [
-        "application-x-shellscript.png",
-        "application-x-sh.png",
-        "text-x-sh.png",
-        "shellscript.png"
-    ],
-    "text-x-generic.png": [
-        "text-plain.png",
-        "text-log.png",
-        "txt.png",
-        "text-x-preview.png"
-    ],
-    "audio-mpeg.png": ["audio-mp3.png", "mpeg.png"],
-    "audio-flac.png": ["flac.png", "audio-x-flac.png"],
-    "audio-x-wav.png": ["audio-wav.png", "audio-vnd.wave.png", "x-wav.png", "wav.png"],
-    "audio-midi.png": [
-        "audio-mid.png", "audio-x-midi.png", "audio-sp-midi.png",
-        "audio-smf.png", "midi.png", "mid.png"
-    ],
-
-    # --- SVG SYMLINKS ---
-    "folder.svg": [
-        "athena.svg", "file-manager.svg", "gtk-directory.svg", "inode-directory.svg",
-        "kfm.svg", "nautilus-actions-config-tool.svg", "nautilus.svg", "nemo.svg",
-        "org.xfce.filemanager.svg", "org.xfce.panel.directorymenu.svg",
-        "org.xfce.thunar.svg", "redhat-filemanager.svg", "stock_folder.svg",
-        "system-file-manager.svg", "thunar.svg", "Thunar.svg", "xfce-filemanager.svg"
-    ],
-    "user-desktop.svg": ["desktop.svg", "gnome-fs-desktop.svg", "org.xfce.panel.showdesktop.svg", "org.xfce.xfdesktop.svg"],
-    "user-home.svg": ["folder_home.svg", "gnome-fs-home.svg"],
-    "folder-drag-accept.svg": ["folder-open.svg"],
-    "gtk-network.svg": ["folder-remote.svg", "org.xfce.gigolo.svg"],
-    "folder-music.svg": ["library-music.svg"],
-    "network-workgroup.svg": ["network-server.svg"],
-    "user-bookmarks.svg": ["xapp-user-favorites.svg"],
-    "text-x-python.svg": [
-        "application-x-python.svg",
-        "application-x-python-bytecode.svg",
-        "text-x-python3.svg",
-        "text-x-script.python.svg",
-        "application-x-executable-python.svg"
-    ],
-    "text-x-script.svg": [
-        "application-x-shellscript.svg",
-        "application-x-sh.svg",
-        "text-x-sh.svg",
-        "shellscript.svg"
-    ],
-    "text-x-generic.svg": [
-        "text-plain.svg",
-        "text-log.svg",
-        "txt.svg",
-        "text-x-preview.svg"
-    ],
-}
-
-ICON_MANIFEST = {
-    "modulate": {
-        "places": [
-            "folder.png", "folder-documents.png", "folder-download.png", 
-            "folder-drag-accept.png", "folder-music.png", "folder-pictures.png", 
-            "folder-publicshare.png", "folder-recent.png", "folder-saved-search.png", 
-            "folder-templates.png", "folder-videos.png", "gtk-network.png", 
-            "network-workgroup.png", "user-bookmarks.png", "user-desktop.png", "user-home.png"
-        ],
-        "devices": ["computer.png", "drive-harddisk.png"],
-        "legacy": ["go-home.png"],
-        "mimetypes": ["text-x-python.png", "text-x-script.png", "text-x-generic.png"]
+ICON_REGISTRY = {
+    # --- PLACES ---
+    "folder": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": [
+            "athena", "file-manager", "gtk-directory", "inode-directory",
+            "kfm", "nautilus-actions-config-tool", "nautilus", "nemo",
+            "org.xfce.filemanager", "org.xfce.panel.directorymenu",
+            "org.xfce.thunar", "redhat-filemanager", "stock_folder",
+            "system-file-manager", "thunar", "Thunar", "xfce-filemanager"
+        ]
     },
-    "original": {
-        "places": ["user-trash.png", "user-trash-full.png"],
-        "legacy": ["emblem-symbolic-link.png"],
-        "mimetypes": ["audio-mpeg.png", "audio-flac.png", "audio-x-wav.png", "audio-midi.png"]
-    }
+    "folder-documents": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": []
+    },
+    "folder-download": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": []
+    },
+    "folder-drag-accept": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": ["folder-open"]
+    },
+    "folder-music": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": ["library-music"]
+    },
+    "folder-pictures": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": []
+    },
+    "folder-publicshare": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": []
+    },
+    "folder-recent": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": []
+    },
+    "folder-saved-search": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": []
+    },
+    "folder-templates": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": []
+    },
+    "folder-videos": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": []
+    },
+    "gtk-network": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": ["folder-remote", "org.xfce.gigolo"]
+    },
+    "network-workgroup": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": ["network-server"]
+    },
+    "user-bookmarks": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": ["xapp-user-favorites"]
+    },
+    "user-desktop": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": ["desktop", "gnome-fs-desktop", "org.xfce.panel.showdesktop", "org.xfce.xfdesktop"]
+    },
+    "user-home": {
+        "context": "places",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": ["folder_home", "gnome-fs-home"]
+    },
+    "user-trash": {
+        "context": "places",
+        "png_action": "original",
+        "svg_action": "svg_original",
+        "symlinks": []
+    },
+    "user-trash-full": {
+        "context": "places",
+        "png_action": "original",
+        "svg_action": "svg_original",
+        "symlinks": []
+    },
+
+    # --- DEVICES ---
+    "computer": {
+        "context": "devices",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": []
+    },
+    "drive-harddisk": {
+        "context": "devices",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": []
+    },
+
+    # --- LEGACY ---
+    "go-home": {
+        "context": "legacy",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": []
+    },
+    "emblem-symbolic-link": {
+        "context": "legacy",
+        "png_action": "original",
+        "svg_action": "svg_original",
+        "symlinks": []
+    },
+
+    # --- MIMETYPES ---
+    "text-x-python": {
+        "context": "mimetypes",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": [
+            "application-x-python", "application-x-python-bytecode",
+            "text-x-python3", "text-x-script.python",
+            "application-x-executable-python"
+        ]
+    },
+    "text-x-script": {
+        "context": "mimetypes",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": [
+            "application-x-shellscript", "application-x-sh",
+            "text-x-sh", "shellscript"
+        ]
+    },
+    "text-x-generic": {
+        "context": "mimetypes",
+        "png_action": "modulate",
+        "svg_action": "svg_recolor",
+        "symlinks": ["text-plain", "text-log", "txt", "text-x-preview"]
+    },
+    "audio-mpeg": {
+        "context": "mimetypes",
+        "png_action": "original",
+        "svg_action": "svg_original",
+        "symlinks": ["audio-mp3", "mpeg"]
+    },
+    "audio-flac": {
+        "context": "mimetypes",
+        "png_action": "original",
+        "svg_action": "svg_original",
+        "symlinks": ["flac", "audio-x-flac"]
+    },
+    "audio-x-wav": {
+        "context": "mimetypes",
+        "png_action": "original",
+        "svg_action": "svg_original",
+        "symlinks": ["audio-wav", "audio-vnd.wave", "x-wav", "wav"]
+    },
+    "audio-midi": {
+        "context": "mimetypes",
+        "png_action": "original",
+        "svg_action": "svg_original",
+        "symlinks": [
+            "audio-mid", "audio-x-midi", "audio-sp-midi",
+            "audio-smf", "midi", "mid"
+        ]
+    },
 }
 
-ICON_MANIFEST_SVG = {
-    "svg_recolor": {
-        "places": [
-            "folder.svg", "folder-documents.svg", "folder-download.svg",
-            "folder-drag-accept.svg", "folder-music.svg", "folder-pictures.svg",
-            "folder-publicshare.svg", "folder-recent.svg", "folder-saved-search.svg",
-            "folder-templates.svg", "folder-videos.svg", "gtk-network.svg",
-            "network-workgroup.svg", "user-bookmarks.svg", "user-desktop.svg", "user-home.svg"
-        ],
-        "devices": ["computer.svg", "drive-harddisk.svg"],
-        "legacy": ["go-home.svg"],
-        "mimetypes": ["text-x-python.svg", "text-x-script.svg", "text-x-generic.svg"]
-    },
-    "svg_original": {
-        "places": ["user-trash.svg", "user-trash-full.svg"],
-        "legacy": ["emblem-symbolic-link.svg"],
-        "mimetypes": ["audio-mpeg.svg", "audio-flac.svg", "audio-x-wav.svg", "audio-midi.svg"]
-    }
-}
+
+def _build_manifests(registry):
+    png_manifest = {"modulate": {}, "original": {}}
+    svg_manifest = {"svg_recolor": {}, "svg_original": {}}
+    symlink_map = {}
+
+    for name, config in registry.items():
+        ctx = config["context"]
+        pa = config["png_action"]
+        sa = config["svg_action"]
+
+        png_manifest[pa].setdefault(ctx, []).append(f"{name}.png")
+        svg_manifest[sa].setdefault(ctx, []).append(f"{name}.svg")
+
+        if config.get("symlinks"):
+            symlink_map[f"{name}.png"] = [f"{s}.png" for s in config["symlinks"]]
+            symlink_map[f"{name}.svg"] = [f"{s}.svg" for s in config["symlinks"]]
+
+    return png_manifest, svg_manifest, symlink_map
+
+
+ICON_MANIFEST, ICON_MANIFEST_SVG, SYMLINK_MAP = _build_manifests(ICON_REGISTRY)
 
 
 
@@ -338,16 +443,12 @@ GTK2_ASSETS = [
 ]
 
 ICON_PRESETS = {
-    'mint':     'template-icon-presets/mint',
-    'yaru':     'template-icon-presets/yaru',
-    'jojo':     'template-icon-presets/jojo',
-    'paomedia': 'template-icon-presets/paomedia',
     'sweet-svg': {
         'path': 'template-icon-presets/sweet-svg',
         'colors': [
-            ('a27ae4', 'hex'),        # purple base
-            ('7155a0', 'dark_shade'), # same hue, -30% value
-            ('cbb1f0', 'lighter'),    # same hue, -44% sat, +5% value
+            ('a27ae4', 'hex'),
+            ('7155a0', 'dark_shade'),
+            ('cbb1f0', 'lighter'),
         ],
         'family_ratios': {
             'dark_shade': (1.01, 0.70),
@@ -357,15 +458,63 @@ ICON_PRESETS = {
     'breeze-svg': {
         'path': 'template-icon-presets/breeze-svg',
         'colors': [
-            ('a27ae4', 'hex'),        # purple base
-            ('7155a0', 'dark_shade'), # same hue, -30% value
-            ('cbb1f0', 'lighter'),    # same hue, -44% sat, +5% value
+            ('a27ae4', 'hex'),
+            ('7155a0', 'dark_shade'),
+            ('cbb1f0', 'lighter'),
         ],
         'family_ratios': {
             'dark_shade': (1.01, 0.70),
             'lighter':    (0.56, 1.05),
         },
-    }
+    },
+    'mint': {
+        'path': 'template-icon-presets/mint',
+        'colors': [
+            ('a27ae4', 'hex'),
+            ('7155a0', 'dark_shade'),
+            ('cbb1f0', 'lighter'),
+        ],
+        'family_ratios': {
+            'dark_shade': (1.01, 0.70),
+            'lighter':    (0.56, 1.05),
+        },
+    },
+    'yaru': {
+        'path': 'template-icon-presets/yaru',
+        'colors': [
+            ('a27ae4', 'hex'),
+            ('7155a0', 'dark_shade'),
+            ('cbb1f0', 'lighter'),
+        ],
+        'family_ratios': {
+            'dark_shade': (1.01, 0.70),
+            'lighter':    (0.56, 1.05),
+        },
+    },
+    'jojo': {
+        'path': 'template-icon-presets/jojo',
+        'colors': [
+            ('a27ae4', 'hex'),
+            ('7155a0', 'dark_shade'),
+            ('cbb1f0', 'lighter'),
+        ],
+        'family_ratios': {
+            'dark_shade': (1.01, 0.70),
+            'lighter':    (0.56, 1.05),
+        },
+    },
+    'paomedia': {
+        'path': 'template-icon-presets/paomedia',
+        'colors': [
+            ('a27ae4', 'hex'),
+            ('7155a0', 'dark_shade'),
+            ('cbb1f0', 'lighter'),
+        ],
+        'family_ratios': {
+            'dark_shade': (1.01, 0.70),
+            'lighter':    (0.56, 1.05),
+        },
+    },
 }
 
 THEME_PRESETS = {

@@ -32,6 +32,12 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 - **Manifest-Driven Expansion:** Adding new icons or categories is now handled entirely via centralized dictionaries in `core/constants.py`.
 
+- **Unified Icon Registry (`ICON_REGISTRY`):** All icon metadata — context, PNG/SVG actions, and symlink aliases — now lives in a single source-of-truth dictionary in `core/constants.py`. `ICON_MANIFEST`, `ICON_MANIFEST_SVG`, and `SYMLINK_MAP` are programmatically derived from it, eliminating redundancy and making adding or reconfiguring any icon a one-line change.
+
+- **Hybrid PNG/SVG Pipeline:** The baking engine now handles both PNG modulation and SVG direct color replacement in the same pass. SVG-capable presets use `sed`-based hex substitution with mathematically derived family ratios for dark/light variants, producing pixel-perfect colors with zero modulation drift.
+
+- **SVG Encoding Normalization:** Template SVGs are validated for UTF-8 encoding and proper `width`/`height` attributes before baking, preventing silent GTK render failures.
+
 - **Unified Text-Substitution (`gtkrc` & XFWM4 SVGs):** The theme engine now scans and normalizes raw GTK2 `gtkrc` configurations and XFWM4 window manager vector graphics (`*.svg`), binding them to a single source-of-truth color anchor to completely eliminate mismatched factory accent flashes.
 
 - **Automated Artifact Cleanup:** Automatically strips legacy, non-functional visual clutter like `thumbnail.png` or `preview.png` files from baked assets to keep the system lightweight.
@@ -254,7 +260,7 @@ awp-automated-wallpaper/
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
-| **V3.8** | May 2026 | 🎨 GTK & Icon Preset System and new! 2 phases GTK theme auto diagnosis for more faithful colors (Modular presets + icon and index.theme reconstruction engine) |
+| **V3.8** | May 2026 | 🎨 GTK & Icon Preset System — Unified `ICON_REGISTRY`, hybrid PNG/SVG baking pipeline, scalable XDG icon tree with auto-generated symlinks, and mathematically pure SVG color replacement |
 | **V3.7** | Mar 2026 | ⚡ Backend Logic Delegation + State Consolidation |
 | **V3.6** | Feb 2026 | 🖨️ Unified Printer System + 🖱️ Cursor Refresh + 🧠 Capability Matrix |
 | **V3.5** | Feb 2026 | 🧬 Dual-Genetic Baking (Themes + Icons) |
