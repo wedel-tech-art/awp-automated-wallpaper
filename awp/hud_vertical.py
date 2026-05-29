@@ -5,7 +5,7 @@ from datetime import datetime
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor, QPainter, QBrush, QPixmap
-from core.constants import RUNTIME_STATE_PATH
+from core.constants import RUNTIME_STATE_PATH, AWP_CONFIG_RAM, THEME_CAPABILITIES
 from core.utils import get_ram_info, get_swap_info, get_mounts_info, get_dynamic_mount_labels
 
 class StudioHUD(QWidget):
@@ -15,20 +15,21 @@ class StudioHUD(QWidget):
             Qt.WindowType.FramelessWindowHint |
             Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.Tool |
-            Qt.WindowType.X11BypassWindowManagerHint |
-            Qt.WindowType.WindowTransparentForInput
+            Qt.WindowType.WindowTransparentForInput |
+            Qt.WindowType.X11BypassWindowManagerHint
+            
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
 
-        self.resize(560, 550)
-        self.move(950, 40)
+        self.resize(560, 570)
+        self.move(10, 40)
 
-        self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(25, 20, 20, 20)
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setContentsMargins(25, 20, 20, 20)
 
         self.label = QLabel()
-        self.label.setFont(QFont("Source Code Pro", 11, QFont.Weight.Bold))  # This is the font I use, you can use the one you prefer
+        self.label.setFont(QFont("Source Code Pro", 11, QFont.Weight.Bold))
         self.label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
         self.icon_label = QLabel(self)
@@ -36,15 +37,15 @@ class StudioHUD(QWidget):
         self.icon_label.move(16, 8)
         self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.layout.addWidget(self.label)
-        self.setLayout(self.layout)
+        self.main_layout.addWidget(self.label)
+        self.setLayout(self.main_layout)
 
-        # Define target mount points once (this are the mounts I use, change them for the mounts you have or want to use)
         self.target_mounts = ["/", "/mnt/internal1500", "/mnt/internal2000"]
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_ui)
         self.timer.start(3000)
+        self.update_ui()
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -57,13 +58,12 @@ class StudioHUD(QWidget):
         now_time = datetime.now().strftime("%H:%M:%S")
         now_date = datetime.now().strftime("%Y-%m-%d")
 
-        state_file = RUNTIME_STATE_PATH
-        if not os.path.exists(state_file):
+        if not os.path.exists(RUNTIME_STATE_PATH):
             self.label.setText("NO STATE FILE")
             return
 
         try:
-            with open(state_file, "r") as f:
+            with open(RUNTIME_STATE_PATH, "r") as f:
                 data = json.load(f)
 
             color = data.get('icon_color', '#ffffff')
@@ -73,7 +73,6 @@ class StudioHUD(QWidget):
             ram_val = get_ram_info()
             swap_val = get_swap_info()
 
-            # Get dynamic mount labels
             mount_labels = get_dynamic_mount_labels(self.target_mounts)
             drives_info = get_mounts_info(self.target_mounts)
 
@@ -87,6 +86,34 @@ class StudioHUD(QWidget):
             else:
                 self.icon_label.clear()
                 self.icon_label.hide()
+
+            # capability-aware theme fields
+            theme_rows = ""
+            if os.path.exists(AWP_CONFIG_RAM):
+                with open(AWP_CONFIG_RAM, "r") as f:
+                    cfg = json.load(f)
+                general     = cfg.get("general", {})
+                os_detected = general.get("os_detected", "generic")
+                caps        = THEME_CAPABILITIES.get(os_detected, THEME_CAPABILITIES["generic"])
+                ws_cfg      = cfg.get(data.get("workspace_name", ""), {})
+
+                def fmt_theme(label, value):
+                    spaced_label = " ".join(list(label))
+                    return (f'<div style="text-align: left;">'
+                            f'<span style="color:white;">{spaced_label} - </span>'
+                            f'<span style="color:{color};"><b>{value}</b></span>'
+                            f'</div>')
+
+                if caps.get("has_gtk"):
+                    theme_rows += fmt_theme("GTKТ", ws_cfg.get("gtk_theme", "?"))
+                if caps.get("has_icons"):
+                    theme_rows += fmt_theme("ICON", ws_cfg.get("icon_theme", "?"))
+                if caps.get("has_cursor"):
+                    theme_rows += fmt_theme("CURS", ws_cfg.get("cursor_theme", "?"))
+                if caps.get("has_wm_theme"):
+                    theme_rows += fmt_theme("WMTH", ws_cfg.get("wm_theme", "?"))
+                if caps.get("has_desktop_theme"):
+                    theme_rows += fmt_theme("DESK", ws_cfg.get("desktop_theme", "?"))
 
             def fmt(label, value):
                 spaced_label = " ".join(list(label))
@@ -108,12 +135,15 @@ class StudioHUD(QWidget):
 
             offset_px = 55
             first_line_style = f"margin-left: {offset_px}px; padding-left: {offset_px}px;"
-            
+
             mount_rows = ""
             for path in self.target_mounts:
                 label = mount_labels.get(path, "???")
                 mount_rows += drive_row(label, path)
-            
+
+            # only add theme section if there's anything to show
+            theme_section = (f'{divider}{theme_rows}') if theme_rows else ""
+
             report = (
                 f'<div style="text-align: left; line-height: 90%;">'
                 f'<div align="right" style="color:#333; font-size:9px;">AWP - HUD</div>'
@@ -133,6 +163,7 @@ class StudioHUD(QWidget):
                 f'{fmt("SORT", data.get("sort", "??"))}'
                 f'{fmt("COLR", data.get("icon_color", "??"))}'
                 f'{fmt("INTV", data.get("intv", "??"))}'
+                f'{theme_section}'
                 f'</div>'
             )
 

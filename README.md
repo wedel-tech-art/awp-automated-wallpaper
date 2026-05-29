@@ -22,7 +22,7 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 - **Dynamic Icon Reconstruction Engine:** Icon presets now store canonical PNG/SVG source assets, utilizing a high-speed RAM-Disk workspace (`/dev/shm`) to completely eliminate disk wear.
 
-- **Expanded Preset Library:** Includes mint, yaru, jojo, paomedia, and the new scalable `breeze-svg` and `sweet-svg` presets supporting hybrid PNG/SVG baking pipelines.
+- **Expanded Preset Library:** Includes mint, yaru, jojo, `slot-multicolor`, and the scalable `breeze-svg` and `sweet-svg` presets supporting hybrid PNG/SVG baking pipelines.
 
 - **On-the-Fly Manifests:** The engine now programmatically generates the clean `index.theme` and full standard XDG directory structure for icon themes during the bake process.
 
@@ -49,7 +49,7 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 - **Preset-Based Theme Baking:** `bake_awp_theme()` now supports presets (`awp-gtk-{preset}-{hex}` naming).
 
-- **Dashboard Integration:** GTK and Icon presets can be selected per workspace in `dab.py`.
+- **Dashboard Integration:** GTK and Icon presets can be selected per workspace in `dab.py`, with live workspace theming info integrated into the HUD system.
 
 - **Lean & Maintainable:** Presets are lightweight and act as the single source of truth.
 
@@ -239,7 +239,7 @@ awp-automated-wallpaper/
 │   │   └── [preset_name]/          # Custom user-defined identities
 │   ├── presets-backup/             # Pre-flight safety mirror 🛡️
 │   ├── template-theme-presets/     # GTK preset templates (breeze, colloid, flat-remix, graphite)
-│   ├── template-icon-presets/      # PNG + scalable SVG icon presets (mint, yaru, jojo, paomedia, breeze-svg, sweet-svg)
+│   ├── template-icon-presets/      # PNG + scalable SVG icon presets (mint, yaru, jojo, slot-multicolor, breeze-svg, sweet-svg)
 │   ├── awp-icon-mom/               # The "Mother" icon template
 │   ├── branding-assets/            # 200 procedural color tones
 │   ├── logos/                      # Active workspace icons (symlinks)

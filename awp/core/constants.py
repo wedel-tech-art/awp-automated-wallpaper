@@ -442,79 +442,25 @@ GTK2_ASSETS = [
     "spin-rtl-down-active.png", "spin-rtl-up-active.png", "tab.png", "treeview-ltr-button-active.png", "treeview-rtl-button-active.png"
 ]
 
+_PURPLE = {
+    'colors': [
+        ('a27ae4', 'hex'),
+        ('7155a0', 'dark_shade'),
+        ('cbb1f0', 'lighter'),
+    ],
+    'family_ratios': {
+        'dark_shade': (1.01, 0.70),
+        'lighter':    (0.56, 1.05),
+    },
+}
+
 ICON_PRESETS = {
-    'sweet-svg': {
-        'path': 'template-icon-presets/sweet-svg',
-        'colors': [
-            ('a27ae4', 'hex'),
-            ('7155a0', 'dark_shade'),
-            ('cbb1f0', 'lighter'),
-        ],
-        'family_ratios': {
-            'dark_shade': (1.01, 0.70),
-            'lighter':    (0.56, 1.05),
-        },
-    },
-    'breeze-svg': {
-        'path': 'template-icon-presets/breeze-svg',
-        'colors': [
-            ('a27ae4', 'hex'),
-            ('7155a0', 'dark_shade'),
-            ('cbb1f0', 'lighter'),
-        ],
-        'family_ratios': {
-            'dark_shade': (1.01, 0.70),
-            'lighter':    (0.56, 1.05),
-        },
-    },
-    'mint': {
-        'path': 'template-icon-presets/mint',
-        'colors': [
-            ('a27ae4', 'hex'),
-            ('7155a0', 'dark_shade'),
-            ('cbb1f0', 'lighter'),
-        ],
-        'family_ratios': {
-            'dark_shade': (1.01, 0.70),
-            'lighter':    (0.56, 1.05),
-        },
-    },
-    'yaru': {
-        'path': 'template-icon-presets/yaru',
-        'colors': [
-            ('a27ae4', 'hex'),
-            ('7155a0', 'dark_shade'),
-            ('cbb1f0', 'lighter'),
-        ],
-        'family_ratios': {
-            'dark_shade': (1.01, 0.70),
-            'lighter':    (0.56, 1.05),
-        },
-    },
-    'jojo': {
-        'path': 'template-icon-presets/jojo',
-        'colors': [
-            ('a27ae4', 'hex'),
-            ('7155a0', 'dark_shade'),
-            ('cbb1f0', 'lighter'),
-        ],
-        'family_ratios': {
-            'dark_shade': (1.01, 0.70),
-            'lighter':    (0.56, 1.05),
-        },
-    },
-    'paomedia': {
-        'path': 'template-icon-presets/paomedia',
-        'colors': [
-            ('a27ae4', 'hex'),
-            ('7155a0', 'dark_shade'),
-            ('cbb1f0', 'lighter'),
-        ],
-        'family_ratios': {
-            'dark_shade': (1.01, 0.70),
-            'lighter':    (0.56, 1.05),
-        },
-    },
+    'slot-multicolor': {'path': 'template-icon-presets/slot-multicolor', **_PURPLE},
+    'sweet-svg':       {'path': 'template-icon-presets/sweet-svg',       **_PURPLE},
+    'breeze-svg':      {'path': 'template-icon-presets/breeze-svg',      **_PURPLE},
+    'mint':            {'path': 'template-icon-presets/mint',            **_PURPLE},
+    'yaru':            {'path': 'template-icon-presets/yaru',            **_PURPLE},
+    'jojo':            {'path': 'template-icon-presets/jojo',            **_PURPLE},
 }
 
 THEME_PRESETS = {
