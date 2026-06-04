@@ -199,8 +199,7 @@ class WorkspaceTab(QWidget):
         lbl.setToolTip("Choose template style for icon baking (not saved)")
         row.addWidget(lbl)
 
-        # ✅ use your standardized combo factory
-        items = [(name.capitalize(), name) for name in ICON_PRESETS.keys()]
+        items = [(name.capitalize(), name) for name in sorted(ICON_PRESETS.keys())]
         self.icon_preset_combo = create_theme_like_combo(items)
 
         # set default
@@ -223,7 +222,7 @@ class WorkspaceTab(QWidget):
         lbl.setFixedWidth(120)
         lbl.setToolTip("Choose template style for GTK theme baking (not saved)")
         row.addWidget(lbl)
-        items = [(name.capitalize(), name) for name in THEME_PRESETS.keys()]
+        items = [(name.capitalize(), name) for name in sorted(THEME_PRESETS.keys())]
         self.gtk_preset_combo = create_theme_like_combo(items)
         index = self.gtk_preset_combo.findData("breeze")
         if index != -1:

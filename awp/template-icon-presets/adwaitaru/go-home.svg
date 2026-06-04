@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg width="512" height="512" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="sweet-house-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="16" y2="0">
+            <stop offset="0%" stop-color="#a27ae4"/>
+            <stop offset="100%" stop-color="#7155a0"/>
+        </linearGradient>
+    </defs>
+    <path d="M16 8L8 0L0 8L0.707108 8.7029L2 7.41L2 15L14 15L14 7.41L15.295 8.705L16 8L16 8ZM11 14L11 9L8 9L8 14L11 14ZM14 5L14 2L11 2L14 5L14 5Z" fill="url(#sweet-house-grad)" fill-rule="evenodd"/>
+</svg>

@@ -9,7 +9,7 @@ import os
 import shutil
 import subprocess
 import colorsys
-from core.constants import ICON_PRESETS, THEME_PRESETS, TARGET_ASSETS, ICON_MANIFEST, ICON_MANIFEST_SVG, SYMLINK_MAP, ICON_SIZES
+from core.constants import ICON_PRESETS, THEME_PRESETS, TARGET_ASSETS, ICON_SIZES, ICON_REGISTRY
 from core.printer import get_printer
 _printer = get_printer()
 
@@ -238,14 +238,54 @@ def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze'):
     return theme_name
 
 
+def _build_manifests(registry, preset_name=None):
+    """
+    Dynamically generates the PNG and SVG processing manifests along with the
+    symlink map based on the active icon preset and registry rules.
+    """
+    png_manifest = {"modulate": {}, "original": {}}
+    svg_manifest = {"svg_recolor": {}, "svg_original": {}}
+    symlink_map = {}
+
+    for name, config in registry.items():
+        context = config["context"]
+        
+        # Default baseline rules for the system matrix
+        png_action = "modulate"
+        svg_action = "svg_recolor"
+
+        # Evaluate PNG rule exceptions
+        if "png_action" in config:
+            if preset_name in config["png_action"].get("original", []):
+                png_action = "original"
+
+        # Evaluate SVG rule exceptions
+        if "svg_action" in config:
+            if preset_name in config["svg_action"].get("svg_original", []):
+                svg_action = "svg_original"
+
+        # Categorize assets into their respective destination manifests
+        png_manifest[png_action].setdefault(context, []).append(f"{name}.png")
+        svg_manifest[svg_action].setdefault(context, []).append(f"{name}.svg")
+
+        # Map symlinks if present in the configuration schema
+        if config.get("symlinks"):
+            symlink_map[f"{name}.png"] = [f"{s}.png" for s in config["symlinks"]]
+            symlink_map[f"{name}.svg"] = [f"{s}.svg" for s in config["symlinks"]]
+
+    return png_manifest, svg_manifest, symlink_map
+    
+
 def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
     """
-    OWStudios Dynamic Icon Engine - MANIFEST EDITION
-    - Generates index.theme dynamically based on ICON_MANIFEST and ICON_SIZES.
-    - Supports SVG-based presets via ICON_MANIFEST_SVG (e.g. sweet-svg).
+    AWP Dynamic Icon Engine
+    - Generates index.theme dynamically based on ICON_REGISTRY and ICON_SIZES.
+    - Supports SVG-based presets via svg_manifest.
     """
     if not hex_color or hex_color == "":
         return None
+
+    png_manifest, svg_manifest, symlink_map = _build_manifests(ICON_REGISTRY, preset_name=preset)
 
     clean_hex = hex_color.lstrip('#').lower()
 
@@ -274,12 +314,12 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
 
             # Collect all contexts from both manifests
             all_contexts = set()
-            for action in ICON_MANIFEST:
-                for ctx in ICON_MANIFEST[action].keys():
+            for action in png_manifest:
+                for ctx in png_manifest[action].keys():
                     all_contexts.add(ctx)
             if has_svg:
-                for action in ICON_MANIFEST_SVG:
-                    for ctx in ICON_MANIFEST_SVG[action].keys():
+                for action in svg_manifest:
+                    for ctx in svg_manifest[action].keys():
                         all_contexts.add(ctx)
             sorted_contexts = sorted(list(all_contexts))
 
@@ -301,14 +341,14 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
             ]
 
             png_contexts = set()
-            for action in ICON_MANIFEST:
-                for ctx in ICON_MANIFEST[action].keys():
+            for action in png_manifest:
+                for ctx in png_manifest[action].keys():
                     png_contexts.add(ctx)
 
             svg_contexts = set()
             if has_svg:
-                for action in ICON_MANIFEST_SVG:
-                    for ctx in ICON_MANIFEST_SVG[action].keys():
+                for action in svg_manifest:
+                    for ctx in svg_manifest[action].keys():
                         svg_contexts.add(ctx)
 
             dir_entries = []
@@ -365,7 +405,7 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
             im_hue = round(100 + ((target_hue_deg - 262) / 1.8))
 
             # --- STEP 3: Modulate PNG assets in RAM ---
-            for folder_path, files in ICON_MANIFEST["modulate"].items():
+            for folder_path, files in png_manifest["modulate"].items():
                 for asset in files:
                     src = os.path.join(template_path, asset)
                     temp_dest = os.path.join(shm_workspace, asset)
@@ -381,7 +421,7 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
                 new_rgb = f"{r_int}, {g_int}, {b_int}"
                 svg_replacements = _build_color_replacements(preset_config, clean_hex, new_rgb)
                 # Copy only svg_recolor SVGs into workspace
-                for folder_path, files in ICON_MANIFEST_SVG["svg_recolor"].items():
+                for folder_path, files in svg_manifest["svg_recolor"].items():
                     for asset in files:
                         src = os.path.join(template_path, asset)
                         temp_dest = os.path.join(shm_workspace, asset)
@@ -400,7 +440,7 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
                 dim = int(size.split('@')[0])
                 if "@2x" in size: dim *= 2
 
-                for action, paths in ICON_MANIFEST.items():
+                for action, paths in png_manifest.items():
                     is_modulating = (action == "modulate")
                     for folder_path, files in paths.items():
                         dest_dir = os.path.join(target_path, folder_path, size)
@@ -419,7 +459,7 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
                 for context in sorted_contexts:
                     current_dir = os.path.join(target_path, context, size)
                     if os.path.exists(current_dir):
-                        for master, links in SYMLINK_MAP.items():
+                        for master, links in symlink_map.items():
                             master_file = os.path.join(current_dir, master)
                             if os.path.exists(master_file):
                                 for link_name in links:
@@ -429,7 +469,7 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
 
             # SVG assets: copy into {ctx}/scalable folders
             if has_svg:
-                for action, paths in ICON_MANIFEST_SVG.items():
+                for action, paths in svg_manifest.items():
                     for folder_path, files in paths.items():
                         dest_dir = os.path.join(target_path, folder_path, "scalable")
                         os.makedirs(dest_dir, exist_ok=True)
@@ -445,7 +485,7 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
                 for context in sorted_contexts:
                     current_dir = os.path.join(target_path, context, "scalable")
                     if os.path.exists(current_dir):
-                        for master, links in SYMLINK_MAP.items():
+                        for master, links in symlink_map.items():
                             master_file = os.path.join(current_dir, master)
                             if os.path.exists(master_file):
                                 for link_name in links:
