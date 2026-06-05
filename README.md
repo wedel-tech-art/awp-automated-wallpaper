@@ -14,6 +14,30 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 ## 🚀 Key Features
 
+## 🔆 Daemon Modes (V3.9)
+
+AWP offers two daemon operation modes for Desktop Environments:
+
+### Full Daemon (Default)
+- Rotates wallpapers based on timing settings
+- Preloads next wallpaper for smooth transitions  
+- Best for desktops where rotation is desired
+
+### Light Daemon (No Rotation)
+- Sets wallpaper once per workspace
+- No timer overhead, lower CPU usage (ideal for laptops)
+- All theming features work identically
+
+**How to use:** Create a preset with `_light` suffix (e.g., `xfce_light-debian`) and AWP automatically uses the light daemon while keeping all theming features. The same backend is shared - zero code duplication. The _light suffix tells AWP to use daemon-light.py instead of daemon.py. The backend remains unchanged.
+
+```bash
+# Full daemon preset
+./awp_start.sh xfce-debian
+
+# Light daemon preset (no rotation)
+./awp_start.sh xfce_light-debian
+```
+
 ## 🎨 GTK & Icon Preset System (V3.8)
 
 - **Multi-Preset Architecture:** Replaces the old single-template model with selectable presets for both GTK themes and icon sets.
@@ -118,6 +142,8 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 | **MATE** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | **Generic WM** | ✅ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ |
 
+> 💡 **Light Mode:** Presets with `_light` suffix use the same backends but with a lightweight daemon (no wallpaper rotation). All theming features work identically. Add `_light` to any preset name to enable.
+
 > ⚠️ Generic WM support depends on gsettings availability
 
 ## 🚀 Quick Start (Presets and Symlinks Technology)
@@ -146,6 +172,19 @@ cd ~/awp
 Once you have awp as ~/awp then you can open a terminal there and do:
 ./awp_start.sh TEMPLATE (this will start your AWP with default values for a typical 4 workspaces OS)
 The format is ./awp_start.sh [PRESET_NAME] so you can have your own presets all with different values, the possibilities are endless.
+```
+### Creating a Light Preset (No Wallpaper Rotation)
+
+```bash
+# Clone an existing preset
+cp -r ~/awp/presets/xfce-debian ~/awp/presets/xfce_light-debian
+
+# Rename the INI file to match
+mv ~/awp/presets/xfce_light-debian/xfce-debian.ini \
+   ~/awp/presets/xfce_light-debian/xfce_light-debian.ini
+
+# Use it with the light daemon
+./awp_start.sh xfce_light-debian
 ```
 
 ## 🎮 Usage
@@ -243,7 +282,8 @@ awp-automated-wallpaper/
 │   ├── awp-icon-mom/               # The "Mother" icon template
 │   ├── branding-assets/            # 200 procedural color tones
 │   ├── logos/                      # Active workspace icons (symlinks)
-│   ├── daemon.py                   # Background service
+│   ├── daemon.py                   # Full background service (with rotation)
+│   ├── daemon-light.py             # Light background service (no rotation)
 │   ├── dab.py                      # Qt6 Dashboard
 │   ├── nav.py                      # Navigation controller
 │   ├── hud_ws_info.py              # Workspace transition HUD
@@ -260,6 +300,7 @@ awp-automated-wallpaper/
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
+| **V3.9** | Jun 2026 | 🔆 Light Daemon Mode — `_light` preset suffix for no-rotation operation, shared backends, zero duplication |
 | **V3.8** | May 2026 | 🎨 GTK & Icon Preset System — Unified `ICON_REGISTRY`, hybrid PNG/SVG baking pipeline, scalable XDG icon tree with auto-generated symlinks, and mathematically pure SVG color replacement |
 | **V3.7** | Mar 2026 | ⚡ Backend Logic Delegation + State Consolidation |
 | **V3.6** | Feb 2026 | 🖨️ Unified Printer System + 🖱️ Cursor Refresh + 🧠 Capability Matrix |
@@ -273,6 +314,11 @@ awp-automated-wallpaper/
 | **V2.1** | Jan 2025 | 🧰 Centralized Utilities |
 
 ## 🔧 Troubleshooting
+
+### Light daemon not working?
+- Ensure your preset name ends with `_light-debian` (e.g., `xfce_light-debian`)
+- Check that `LIGHT_DAEMON_LIST` in `awp_start.sh` includes your preset
+- The same backend works for both full and light modes - no extra files needed
 
 ### Missing Printer Prefixes?
 If you see `[AWP]` instead of `[AWP-xfce]` or similar, ensure:

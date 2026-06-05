@@ -8,6 +8,9 @@
 # Example: BYPASS_LIST=("QTILE_DEFAULT" "MUSIC_STUDIO" "MINIMAL")
 BYPASS_LIST=("qtile_xfce-debian" "qtile_gnome-debian" "qtile_wayland-debian")
 
+# Add any preset names here that should use daemon-light.py (no rotation)
+LIGHT_DAEMON_LIST=("xfce_light-debian" "cinnamon_light-debian" "gnome_light-debian" "mate_light-debian")
+
 # --- ANSI Colors for Bash ---
 CLR_GREEN="\033[92m"
 CLR_CYAN="\033[96m"
@@ -22,6 +25,7 @@ BACKUP_DIR="$AWP_BASE/presets-backup"
 LOGOS_DIR="$AWP_BASE/logos"
 CONFIG_FILE="$AWP_BASE/awp_config.ini"
 DAEMON_PATH="$AWP_BASE/daemon.py"
+DAEMON_LIGHT_PATH="$AWP_BASE/daemon-light.py"
 
 # --- 1. Pre-Flight Safety Mirror ---
 if [ -d "$PRESETS_DIR" ]; then
@@ -123,12 +127,13 @@ EOF
     fi
 fi
 
-# --- 4. Logic: Bypass Check & Daemon Lifecycle ---
+# --- 4. Logic: Daemon Selection & Lifecycle ---
 echo -e "${CLR_CYAN}[SYSTEM] Resetting AWP Daemon lifecycle...${CLR_RESET}"
 pkill -f "$DAEMON_PATH" 2>/dev/null
+pkill -f "$DAEMON_LIGHT_PATH" 2>/dev/null
 sleep 1
 
-# Check if the current preset is in the bypass list
+# Check if current preset should bypass daemon completely
 SHOULD_BYPASS=false
 for bypassed in "${BYPASS_LIST[@]}"; do
     if [ "$PRESET_NAME" == "$bypassed" ]; then
@@ -137,12 +142,28 @@ for bypassed in "${BYPASS_LIST[@]}"; do
     fi
 done
 
+# Check if current preset should use light daemon
+USE_LIGHT_DAEMON=false
+for light in "${LIGHT_DAEMON_LIST[@]}"; do
+    if [ "$PRESET_NAME" == "$light" ]; then
+        USE_LIGHT_DAEMON=true
+        break
+    fi
+done
+
 if [ "$SHOULD_BYPASS" = true ]; then
     echo -e "${CLR_YELLOW}[SKIP] Preset '$PRESET_NAME' is in Bypass List. Daemon will not start.${CLR_RESET}"
+elif [ "$USE_LIGHT_DAEMON" = true ]; then
+    if [ -f "$DAEMON_LIGHT_PATH" ]; then
+        python3 "$DAEMON_LIGHT_PATH" &
+        echo -e "${CLR_GREEN}[READY] AWP Light Daemon (no rotation) is live.${CLR_RESET}"
+    else
+        echo -e "${CLR_RED}[ERROR] Light daemon not found at $DAEMON_LIGHT_PATH${CLR_RESET}"
+    fi
 else
     if [ -f "$DAEMON_PATH" ]; then
         python3 "$DAEMON_PATH" &
-        echo -e "${CLR_GREEN}[READY] AWP Daemon is live.${CLR_RESET}"
+        echo -e "${CLR_GREEN}[READY] AWP Full Daemon (with rotation) is live.${CLR_RESET}"
     fi
 fi
 
