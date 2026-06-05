@@ -28,7 +28,7 @@ AWP offers two daemon operation modes for Desktop Environments:
 - No timer overhead, lower CPU usage (ideal for laptops)
 - All theming features work identically
 
-**How to use:** Create a preset with `_light` suffix (e.g., `xfce_light-debian`) and AWP automatically uses the light daemon while keeping all theming features. The same backend is shared - zero code duplication. The _light suffix tells AWP to use daemon-light.py instead of daemon.py. The backend remains unchanged.
+**How to use:** Create a preset with `_light` suffix (e.g., `xfce_light-debian`) and AWP automatically uses the light daemon while keeping all theming features. The same backend is shared - zero code duplication. The _light suffix tells AWP to use daemon-light.py instead of daemon.py. The backend remains unchanged. You can run either commad always within ~/awp.
 
 ```bash
 # Full daemon preset
@@ -344,9 +344,27 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+### Icon Preset Credits
+
+AWP includes modified icon presets built upon the work of these open-source projects, all under GPLv3 or compatible licenses:
+
+| Preset | Based On | Author | License | Source |
+|--------|----------|--------|---------|--------|
+| slot-multicolor | Slot-Multicolor-Dark-Icons | L4ki | GPLv3 | [GitHub](https://github.com/L4ki/Slot-Plasma-Themes) |
+| breeze-svg | Breeze Chameleon Dark | L4ki (based on KDE Breeze) | GPLv3 | [GitHub](https://github.com/L4ki/Breeze-Chameleon-Icons) |
+| sweet-svg | Sweet | EliverLara | GPLv3 | [GitHub](https://github.com/EliverLara/Sweet) |
+| yaru | Yaru | Ubuntu Community | GPLv3/CC-BY-SA | [Ubuntu](https://ubuntu.com) |
+| adwaitaru | Adwaitaru | ricardoherreramx | GPLv3 | [GitHub](https://github.com/ricardoherreramx/adwaitaru) |
+| mint | Mint-Y | Linux Mint | GPLv3/CC-BY-SA | [Linux Mint](https://linuxmint.com) |
+| neon | Royal-Z / Neon | SethStormR | GPLv3 | [GitHub](https://github.com/SethStormR/Royal-Z) |
+| rami | Rami (based on Kora) | Rami author | GPLv3 | [gnome-look.org](https://www.gnome-look.org/p/2216265) |
+
+AWP does not claim ownership of these icons. They are redistributed under their respective licenses.
+
 ## 🙏 Acknowledgments
 
 - Built with Python 3 and PyQt6.
 - Tested on Linux Mint XFCE, Debian, and other major distributions.
 - Theme presets based on **Breeze Dark** (KDE), **Mint-Y** (Linux Mint), **Yaru** (Ubuntu), and many custom styles.
+- **Icon Preset Credits:** slot-multicolor (L4ki), breeze-svg (L4ki/KDE), sweet-svg (EliverLara), yaru (Ubuntu), adwaitaru (ricardoherreramx), mint (Linux Mint), neon (SethStormR), rami (Rami author). All under GPLv3.
 - Special thanks to the open-source community and all AWP users.
