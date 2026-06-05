@@ -14,7 +14,7 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 ## 🚀 Key Features
 
-## 🔆 Daemon Modes (V3.9)
+## 🔆 Daemon Modes V3.9
 
 AWP offers two daemon operation modes for Desktop Environments:
 
@@ -38,7 +38,7 @@ AWP offers two daemon operation modes for Desktop Environments:
 ./awp_start.sh xfce_light-debian
 ```
 
-## 🎨 GTK & Icon Preset System (V3.8)
+## 🎨 GTK & Icon Preset System V3.8
 
 - **Multi-Preset Architecture:** Replaces the old single-template model with selectable presets for both GTK themes and icon sets.
 
@@ -77,59 +77,23 @@ AWP offers two daemon operation modes for Desktop Environments:
 
 - **Lean & Maintainable:** Presets are lightweight and act as the single source of truth.
 
-## ⚡ Low-Latency State Bridge & Logic (V3.7)
+## ⚡ Low-Latency State Bridge & Logic V3.7
 
 - **RAM-Backed Sync:** The system now utilizes `/dev/shm/qtile_current_ws` as a high-speed "Single Source of Truth," allowing the Window Manager to push workspace states directly to AWP.
 
 - **Zero-Lag Transmutation:** By reading state from RAM, theme and wallpaper updates are triggered instantaneously upon workspace transition, eliminating polling delays and reducing CPU overhead.
 
-- 🆕 **"Park" Action:** A new 7th navigation command in `nav.py` allows manual wallpaper application based on the current index without cycling through the library.
+- **"Park" Action:** A new 7th navigation command in `nav.py` allows manual wallpaper application based on the current index without cycling through the library.
 
-- 🔌 **Daemon-Less Mode:** Upgraded `awp_start.sh` with a conditional toggle to skip starting the background daemon, optimized for self-theming environments like Qtile.
+- **Daemon-Less Mode:** Upgraded `awp_start.sh` with a conditional toggle to skip starting the background daemon, optimized for self-theming environments like Qtile.
 
 - **Backend-Driven Logic:** Core actions are now delegated to specific backends (like `qtile_xfce.py`), ensuring perfect synchronization between the WM and the AWP dashboard.
 
-- **Unified Qt6/GTK Aesthetics:** All backends now synchronize Qt6 accent colors in real-time via `/dev/shm` symlinks. This ensures Qt6 applications match your workspace’s GTK "signature" with zero disk writes.
+- **Unified Qt6/GTK Aesthetics:** All backends now synchronize Qt6 accent colors in real-time via `/dev/shm` symlinks. This ensures Qt6 applications match your workspace's GTK "signature" with zero disk writes.
 
-* **🖨️ Unified Printer System (V3.6)**:
-    * **Single Source of Truth**: All terminal output now flows through `core/printer.py` – no more scattered color codes.
-    * **Context-Aware Prefixes**: Every module identifies itself clearly:
-        - `[AWP-backends]` (🟡 Yellow) - Backend loader
-        - `[AWP-daemon]` (🔵 Cyan) - Main daemon
-        - `[AWP-xfce]`, `[AWP-qtile_xfce]` (🔵 Cyan) - Runtime backends
-        - `[AWP-dab]` (🔵 Cyan) - Qt6 Dashboard
-        - `[AWP-nav]` (🔵 Cyan) - Navigation tool
-        - `[AWP-utils]` (🔵 Cyan) - Utilities
-        - `[AWP-themes]` (🔵 Cyan) - Theme baking engine
-    * **Zero Duplication**: Change formatting once, affects everywhere.
-    * **Professional Output**: Clean, consistent, color-coded logs across all components.
+- **Unified Printer System:** All terminal output now flows through `core/printer.py` – no more scattered color codes. Context-aware prefixes (`[AWP-backends]`, `[AWP-daemon]`, etc.) provide professional, color-coded logs across all components with zero duplication.
 
-* **🧬 Genetic Theme & Icon Generation (V3.5)**:  
-    * **Full Identity Baking**: Analyzes workspace icons to physically "bake" both custom GTK themes (`~/.themes`) and Icon themes (`~/.icons`) simultaneously.
-    * **The "Mom" Inheritance**: Uses the `awp-icon-mom` directory as a master reference for procedural hue-shifting of icon sets based on the Mint-Y architecture.
-    * **Visual Identity Sync**: Automatically extracts hex accent colors from icons to synchronize the visual "signature" across themes, icons, and Conky scripts.
-    * **🔍 Real-Time Metadata (Hover-to-Hex)**: Hover over any workspace preview icon in the Dashboard to instantly see the extracted Hex color code rendered in real-time.
-    * **Dedicated Theme Engine**: Powered by `core/themes.py`, a specialized module for procedural asset generation and theme list management.    
-
-* **🎮 Interactive Navigation & Aesthetic Effects**:
-    * **Dynamic Library Control**: Rapid **Next** and **Previous** wallpaper cycling via keyboard shortcuts.
-    * **Real-time Image Processing**: Instantly adapt your wallpaper's look with non-destructive effects:
-        * **Sharpen**: Enhance detail and clarity for high-resolution displays.
-        * **Black & White**: Instant minimalist grayscale conversion.
-        * **Saturation**: Boost color vibrance to change the "energy" of your desktop.
-    * **Asset Management**: Integrated **Delete** functionality to curate your wallpaper library on the fly.
-
-* **⚡ Optimized for Low-Resource Hardware**:
-    * **"Lean Mode"**: Specifically tailored for old systems. Kills desktop managers (xfdesktop, caja-desktop) and uses `feh` for ultra-lightweight wallpaper rendering without sacrificing the "Deep Theming" experience.
-
-* **🏗️ Universal Modular Architecture**:
-    * **DE-Centric Design**: Focuses on Desktop Environments (**XFCE, Cinnamon, GNOME, MATE, Qtile/XFCE**) rather than specific distributions.
-    * **Smart Backend Factory**: `backends/__init__.py` dynamically loads only what's available.
-    * **Capability Matrix**: UI knows exactly what each backend supports (window themes, desktop themes, etc.).
-
-* **🖥️ Native X11 Blanking Management**: 
-    * **Independent Power Control**: Integrated direct management of screen timeouts and DPMS via X11 (`xset`).
-    * **Lean System Design**: Specifically designed to provide display control for users who choose to remove `xfce4-power-manager` or `light-locker`.
+- **Genetic Theme & Icon Generation:** Analyzes workspace icons to physically "bake" both custom GTK themes (`~/.themes`) and Icon themes (`~/.icons`) simultaneously. Uses the "Mom" inheritance (`awp-icon-mom`) for procedural hue-shifting based on Mint-Y architecture. Features real-time hover-to-hex color extraction in the dashboard.
 
 ### 🚀 Desktop Environment Support
 
