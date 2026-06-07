@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 412 512" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" style="isolation:isolate">
+      <defs id="defs29">
+            <linearGradient id="debian_luminous_magenta" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+                  <stop offset="0%" style="stop-color:#FF4D8D;stop-opacity:1"/>
+                  <stop offset="100%" style="stop-color:#b3004c;stop-opacity:1"/>
+            </linearGradient>
+      </defs>
+
+      <path id="main_body" fill="url(#debian_luminous_magenta)" d="M95.705.014h199.094L421 136.548v317.555c0 31.54-25.961 57.502-57.502 57.502H95.705c-31.55 0-57.502-25.873-57.502-57.502V57.515C38.203 25.886 64.076.014 95.705.014z"/>
+
+      <path id="fold_shadow" fill="#91003d" d="M341.028 133.408h-.019L421 188.771v-52.066h-54.357c-9.458-.15-17.998-1.274-25.615-3.297z"/>
+
+      <path id="fold_corner" fill="#e03672" d="M294.8 0L421 136.533v.172h-54.357c-45.068-.718-69.33-23.397-71.843-61.384V0z"/>
+
+      <g id="debian_spiral" transform="translate(85, 34) scale(4.2)" fill="#ffffff">
+            <path d="m33.445 38c-3.358-1.208-5.353-2.691-7.541-6.001-.536-.911-1.523-2.946-1.486-5.602-.087-2.648 1.251-5.699 3.748-7.327 2.411-1.719 5.523-1.744 7.375-1.066 1.909.709 2.684 1.89 2.706 1.834-.059.015 1.023.924 1.505 2.904.537 1.904-.009 5.059-2.634 6.35-1.207.648-2.775.765-4.005.302-1.23-.496-2.122-1.585-2.42-2.723-.648-2.512 1.258-3.904 2.099-4.047 3.421-1.14 5.153 4.213 1.152 4.668 1.824.609 3.704-1.263 3.346-3.169-.072-1.906-2.38-3.799-4.926-3.023-.665.183-1.671.65-2.459 1.699-.808 1.044-1.175 2.679-.755 4.268.409 1.598 1.655 3.127 3.389 3.815 1.752.646 3.703.461 5.314-.377 3.439-1.701 4.128-5.847 3.444-8.128-.603-2.451-1.935-3.574-1.866-3.591-.024.067-.982-1.389-3.35-2.274-2.315-.844-5.924-.784-8.814 1.242-2.957 1.897-4.559 5.624-4.443 8.627-.04 3.051 1.097 5.385 1.717 6.423 2.501 3.813 5.366 5.005 8.904 5.196"/>
+      </g>
+
+      <path id="bottom_panel" fill="#91003d" fill-rule="nonzero" d="M0 431.901V253.404l.028-1.261c.668-16.446 14.333-29.706 30.936-29.706h7.238v50.589h342.975c12.862 0 23.373 10.51 23.373 23.371v135.504c0 12.83-10.543 23.373-23.373 23.373H23.373C10.541 455.274 0 444.75 0 431.901z"/>
+
+      <text id="deb_text" x="210" y="392" font-family="Source Code Pro Bold, Arial Black, DejaVu Sans, sans-serif" font-size="90" font-weight="900" letter-spacing="2" text-anchor="middle" fill="#ffffff">DEB</text>
+</svg>

@@ -233,6 +233,53 @@ ICON_REGISTRY = {
             "audio-smf", "midi", "mid"
         ]
     },
+    # --- (DEBIAN SPECIFIC) ---
+    "application-vnd.debian.binary-package": {
+        "context": "mimetypes",
+        "png_action": {"original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "svg_action": {"svg_original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "symlinks": [
+            "gnome-mime-application-x-deb", "application-x-deb"
+        ]
+    },
+
+    # --- (WORD / WRITER) ---
+    "x-office-document": {
+        "context": "mimetypes",
+        "png_action": {"original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "svg_action": {"svg_original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "symlinks": [
+            "application-msword", "application-vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application-vnd.oasis.opendocument.text", "application-vnd.oasis.opendocument.text-rtl",
+            "application-vnd.sun.xml.writer", "application-vnd.sun.xml.writer-rtl",
+            "application-vnd.wordperfect", "application-vnd.wordperfect-rtl",
+            "ms-word", "abiword", "document", "document-rtl", "wordprocessing", "wordprocessing-rtl"
+        ]
+    },
+
+    # --- (EXCEL / CALC) ---
+    "x-office-spreadsheet": {
+        "context": "mimetypes",
+        "png_action": {"original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "svg_action": {"svg_original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "symlinks": [
+            "application-vnd.ms-excel", "application-vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application-vnd.oasis.opendocument.spreadsheet", "application-vnd.sun.xml.calc",
+            "ms-excel", "text-spreadsheet", "office-spreadsheet"
+        ]
+    },
+
+    # --- (POWERPOINT / IMPRESS) ---
+    "x-office-presentation": {
+        "context": "mimetypes",
+        "png_action": {"original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "svg_action": {"svg_original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "symlinks": [
+            "application-vnd.ms-powerpoint", "application-vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application-vnd.openxmlformats-officedocument.presentationml.slideshow", "application-vnd.ms-powerpoint.presentation.macroEnabled.12",
+            "application-vnd.oasis.opendocument.presentation", "ms-powerpoint", "ooo-impress"
+        ]
+    },
 }
 
 

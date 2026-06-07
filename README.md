@@ -52,7 +52,7 @@ AWP offers two daemon operation modes for Desktop Environments:
 
 - **Scalable SVG Support:** SVG-capable presets now generate proper `scalable/` XDG icon directories alongside traditional PNG sizes.
 
-- **Expanded Coverage:** Beyond "Places," presets now include comprehensive support for Devices, Legacy, and Mimetypes and more could be added if needed.
+- **Expanded Coverage:** Beyond "Places," presets now include comprehensive icons support for Devices, Legacy, and Mimetypes (fully tracking Debian `.deb` packages, Word/Writer documents, Excel/Calc spreadsheets, and PowerPoint/Impress presentations across standard Microsoft, OpenXML, and OpenDocument specifications).
 
 - **Manifest-Driven Expansion:** Adding new icons or categories is now handled entirely via centralized dictionaries in `core/constants.py`.
 
