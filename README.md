@@ -46,7 +46,7 @@ AWP offers two daemon operation modes for Desktop Environments:
 
 - **Dynamic Icon Reconstruction Engine:** Icon presets now store canonical PNG/SVG source assets, utilizing a high-speed RAM-Disk workspace (`/dev/shm`) to completely eliminate disk wear.
 
-- **Expanded Preset Library:** Includes mint, yaru, `slot-multicolor`, rami, neon, adwaitaru, and the scalable `breeze-svg` and `sweet-svg` presets supporting hybrid PNG/SVG baking pipelines.
+- **Expanded Preset Library:** Includes mint, `slot-multicolor`, rami, neon, adwaitaru, and the scalable `breeze` and `sweet` presets supporting hybrid PNG/SVG baking pipelines.
 
 - **On-the-Fly Manifests:** The engine now programmatically generates the clean `index.theme` and full standard XDG directory structure for icon themes during the bake process.
 
@@ -241,10 +241,10 @@ awp-automated-wallpaper/
 │   │   ├── TEMPLATE/               # Generic self-healing baseline
 │   │   └── [preset_name]/          # Custom user-defined identities
 │   ├── presets-backup/             # Pre-flight safety mirror 🛡️
-│   ├── template-theme-presets/     # GTK preset templates (breeze, colloid, flat-remix, graphite)
-│   ├── template-icon-presets/      # PNG + scalable SVG icon presets (mint, yaru, slot-multicolor, rami, neon, adwaitaru, breeze-svg, sweet-svg)
+│   ├── template-theme-presets/     # GTK
+│   ├── template-icon-presets/      # PNG's + scalable SVG's
 │   ├── awp-icon-mom/               # The "Mother" icon template
-│   ├── branding-assets/            # 200 procedural color tones
+│   ├── awp-assets.tar.gz           # 200 procedural color tones
 │   ├── logos/                      # Active workspace icons (symlinks)
 │   ├── daemon.py                   # Full background service (with rotation)
 │   ├── daemon-light.py             # Light background service (no rotation)
@@ -313,15 +313,14 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 AWP includes modified icon presets built upon the work of these open-source projects, all under GPLv3 or compatible licenses:
 
 | Preset | Based On | Author | License | Source |
-|--------|----------|--------|---------|--------|
+| :--- | :--- | :--- | :--- | :--- |
 | slot-multicolor | Slot-Multicolor-Dark-Icons | L4ki | GPLv3 | [GitHub](https://github.com/L4ki/Slot-Plasma-Themes) |
-| breeze-svg | Breeze Chameleon Dark | L4ki (based on KDE Breeze) | GPLv3 | [GitHub](https://github.com/L4ki/Breeze-Chameleon-Icons) |
-| sweet-svg | Sweet | EliverLara | GPLv3 | [GitHub](https://github.com/EliverLara/Sweet) |
-| yaru | Yaru | Ubuntu Community | GPLv3/CC-BY-SA | [Ubuntu](https://ubuntu.com) |
+| breeze | Breeze Chameleon Dark (KDE) | L4ki | GPLv3 | [GitHub](https://github.com/L4ki/Breeze-Chameleon-Icons) |
+| sweet | Sweet | EliverLara | GPLv3 | [GitHub](https://github.com/EliverLara/Sweet) |
 | adwaitaru | Adwaitaru | ricardoherreramx | GPLv3 | [GitHub](https://github.com/ricardoherreramx/adwaitaru) |
-| mint | Mint-Y | Linux Mint | GPLv3/CC-BY-SA | [Linux Mint](https://linuxmint.com) |
+| mint | Mint-Y | Linux Mint | GPLv3/CC-BY-SA | [Website](https://linuxmint.com) |
 | neon | Royal-Z / Neon | SethStormR | GPLv3 | [GitHub](https://github.com/SethStormR/Royal-Z) |
-| rami | Rami (based on Kora) | Rami author | GPLv3 | [gnome-look.org](https://www.gnome-look.org/p/2216265) |
+| rami | Rami (based on Kora) | Rami | GPLv3 | [Gnome-Look](https://www.gnome-look.org/p/2216265) |
 
 AWP does not claim ownership of these icons. They are redistributed under their respective licenses.
 
@@ -329,6 +328,6 @@ AWP does not claim ownership of these icons. They are redistributed under their 
 
 - Built with Python 3 and PyQt6.
 - Tested on Linux Mint XFCE, Debian, and other major distributions.
-- Theme presets based on **Breeze Dark** (KDE), **Mint-Y** (Linux Mint), **Yaru** (Ubuntu), and many custom styles.
-- **Icon Preset Credits:** slot-multicolor (L4ki), breeze-svg (L4ki/KDE), sweet-svg (EliverLara), yaru (Ubuntu), adwaitaru (ricardoherreramx), mint (Linux Mint), neon (SethStormR), rami (Rami author). All under GPLv3.
+- Theme presets based on **Breeze Dark** (KDE), **Mint-Y** (Linux Mint), and many custom styles.
+- **Icon Preset Credits:** slot-multicolor (L4ki), breeze (L4ki/KDE), sweet (EliverLara), adwaitaru (ricardoherreramx), mint (Linux Mint), neon (SethStormR), rami (Rami author). All under GPLv3.
 - Special thanks to the open-source community and all AWP users.
