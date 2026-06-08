@@ -128,14 +128,14 @@ ICON_REGISTRY = {
     },
     "user-trash": {
         "context": "places",
-        "png_action": {"original": ["slot-multicolor", "sweet-svg", "mint", "yaru"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet-svg", "mint", "yaru"]},
+        "png_action": {"original": ["slot-multicolor", "sweet", "mint"]},
+        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "mint"]},
         "symlinks": []
     },
     "user-trash-full": {
         "context": "places",
-        "png_action": {"original": ["slot-multicolor", "sweet-svg", "mint", "yaru"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet-svg", "mint", "yaru"]},
+        "png_action": {"original": ["slot-multicolor", "sweet", "mint"]},
+        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "mint"]},
         "symlinks": []
     },
 
@@ -156,8 +156,8 @@ ICON_REGISTRY = {
     },
     "emblem-symbolic-link": {
         "context": "legacy",
-        "png_action": {"original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru"]},
+        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint"]},
+        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint"]},
         "symlinks": []
     },
 
@@ -202,32 +202,32 @@ ICON_REGISTRY = {
     },
     "text-markdown": {
         "context": "mimetypes",
-        "png_action": {"original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru", "adwaitaru", "rami"]},
+        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
+        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
         "symlinks": ["text-x-markdown", "markdown", "text-x-readme", "readme"]
     },
     "audio-mpeg": {
         "context": "mimetypes",
-        "png_action": {"original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru", "adwaitaru", "rami"]},
+        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
+        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
         "symlinks": ["audio-mp3", "mpeg"]
     },
     "audio-flac": {
         "context": "mimetypes",
-        "png_action": {"original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru", "adwaitaru", "rami"]},
+        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
+        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
         "symlinks": ["flac", "audio-x-flac"]
     },
     "audio-x-wav": {
         "context": "mimetypes",
-        "png_action": {"original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru", "adwaitaru", "rami"]},
+        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
+        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
         "symlinks": ["audio-wav", "audio-vnd.wave", "x-wav", "wav"]
     },
     "audio-midi": {
         "context": "mimetypes",
-        "png_action": {"original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet-svg", "breeze-svg", "mint", "yaru", "adwaitaru", "rami"]},
+        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
+        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
         "symlinks": [
             "audio-mid", "audio-x-midi", "audio-sp-midi",
             "audio-smf", "midi", "mid"
@@ -236,8 +236,8 @@ ICON_REGISTRY = {
     # --- (DEBIAN SPECIFIC) ---
     "application-vnd.debian.binary-package": {
         "context": "mimetypes",
-        "png_action": {"original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
-        "svg_action": {"svg_original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "png_action": {"original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
+        "svg_action": {"svg_original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
         "symlinks": [
             "gnome-mime-application-x-deb", "application-x-deb"
         ]
@@ -246,8 +246,8 @@ ICON_REGISTRY = {
     # --- (WORD / WRITER) ---
     "x-office-document": {
         "context": "mimetypes",
-        "png_action": {"original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
-        "svg_action": {"svg_original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "png_action": {"original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
+        "svg_action": {"svg_original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
         "symlinks": [
             "application-msword", "application-vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application-vnd.oasis.opendocument.text", "application-vnd.oasis.opendocument.text-rtl",
@@ -260,8 +260,8 @@ ICON_REGISTRY = {
     # --- (EXCEL / CALC) ---
     "x-office-spreadsheet": {
         "context": "mimetypes",
-        "png_action": {"original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
-        "svg_action": {"svg_original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "png_action": {"original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
+        "svg_action": {"svg_original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
         "symlinks": [
             "application-vnd.ms-excel", "application-vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application-vnd.oasis.opendocument.spreadsheet", "application-vnd.sun.xml.calc",
@@ -272,8 +272,8 @@ ICON_REGISTRY = {
     # --- (POWERPOINT / IMPRESS) ---
     "x-office-presentation": {
         "context": "mimetypes",
-        "png_action": {"original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
-        "svg_action": {"svg_original": ["mint", "yaru", "slot-multicolor", "adwaitaru", "rami", "breeze-svg", "sweet-svg"]},
+        "png_action": {"original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
+        "svg_action": {"svg_original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
         "symlinks": [
             "application-vnd.ms-powerpoint", "application-vnd.openxmlformats-officedocument.presentationml.presentation",
             "application-vnd.openxmlformats-officedocument.presentationml.slideshow", "application-vnd.ms-powerpoint.presentation.macroEnabled.12",
@@ -462,10 +462,9 @@ _PURPLE = {
 
 ICON_PRESETS = {
     'slot-multicolor': {'path': 'template-icon-presets/slot-multicolor', **_PURPLE},
-    'sweet-svg':       {'path': 'template-icon-presets/sweet-svg',       **_PURPLE},
-    'breeze-svg':      {'path': 'template-icon-presets/breeze-svg',      **_PURPLE},
+    'sweet':           {'path': 'template-icon-presets/sweet',           **_PURPLE},
+    'breeze':          {'path': 'template-icon-presets/breeze',          **_PURPLE},
     'mint':            {'path': 'template-icon-presets/mint',            **_PURPLE},
-    'yaru':            {'path': 'template-icon-presets/yaru',            **_PURPLE},
     'adwaitaru':       {'path': 'template-icon-presets/adwaitaru',       **_PURPLE},
     'neon':            {'path': 'template-icon-presets/neon',            **_PURPLE},
     'rami':            {'path': 'template-icon-presets/rami',            **_PURPLE},
