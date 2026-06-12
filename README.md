@@ -340,6 +340,6 @@ AWP does not claim ownership of bundled visual assets. Icon, GTK and cursor pres
 
 - Built with Python 3 and PyQt6.
 - Tested on Linux Mint XFCE, Debian, and other major distributions.
-- Theme presets based on **Breeze Dark** (KDE), **Mint-Y** (Linux Mint), and many custom styles.
-- **Icon Preset Credits:** slot-multicolor (L4ki), breeze (L4ki/KDE), sweet (EliverLara), adwaitaru (ricardoherreramx), mint (Linux Mint), neon (SethStormR), rami (Rami author). All under GPLv3.
+- Theme, cursor and visual preset workflows are inspired by the excellent work of the KDE, Linux Mint, XFCE, GNOME and wider Linux desktop communities.
+- **Visual Preset Credits:** slot-multicolor (L4ki), breeze (L4ki/KDE), sweet (EliverLara), adwaitaru (ricardoherreramx), mint (Linux Mint), neon (SethStormR), rami (Rami author), colloid (vinceliuice), flat-remix (daniruiz), graphite (vinceliuice), and Oxygen Cursors (KDE Community). See the License section for full attribution details.
 - Special thanks to the open-source community and all AWP users.
