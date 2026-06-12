@@ -475,27 +475,41 @@ THEME_PRESETS = {
         'path':    'template-theme-presets/breeze',
         'rebrand': ['Breeze-Dark', 'Breeze'],
         'colors':  [
+            # === ORIGINAL GTK ENGINE MAPPINGS ===
             ('3daee9', 'hex'),
             ('61, 174, 233', 'rgb'),
             ('37, 164, 230', 'rgb'),
+            
+            # === SAFE XFWM4 MAPPINGS (Cloned from Colloid SVG hooks) ===
+            ('cc241d', 'hex'),           # Close button -> Maps directly to Active Workspace Accent
+            ('d79921', 'hide_gold'),     # Hide button -> Calculates your -50° sequential shift
+            ('98971a', 'maximize_blue'), # Maximize button -> Calculates your -25° sequential shift
         ],
-        'family_ratios': None,
+        'family_ratios': {
+            # Sequential window engine parameters (Instantly grabs your intelligent trap-zone fix!)
+            'maximize_blue':  (-25, 1.00, 1.00), # Next to main color (-25° or +25°)
+            'hide_gold':      (-50, 1.00, 1.00), # Further away (-50° or +50°)
+        },
         'assets':  TARGET_ASSETS,
     },
     'colloid': {
         'path':    'template-theme-presets/colloid',
         'rebrand': ['Colloid-Orange-Dark-Gruvbox'],
         'colors':  [
+            # === ORIGINAL GTK ENGINE MAPPINGS (Do Not Touch) ===
             ('fe8019', 'hex'),
             ('254, 128, 25', 'rgb'),
-            
             ('d65d0e', 'dark_shade'),
             ('214, 93, 14', 'dark_shade_rgb'),
-            
             ('fe9137', 'shade'),
             ('254, 145, 55', 'shade_rgb'),
             ('fda24d', 'lighter'),
             ('253, 162, 77', 'lighter_rgb'),
+
+            # === SAFE XFWM4 MAPPINGS (Using original template colors as hooks) ===
+            ('cc241d', 'hex'),           # Close button -> Maps directly to Active Workspace Accent
+            ('d79921', 'hide_gold'),     # Hide button -> Calculates your -50° sequential shift
+            ('98971a', 'maximize_blue'), # Maximize button -> Calculates your -25° sequential shift
         ],
         'family_ratios': {
             'dark_shade':     (1.0, 0.78),
@@ -504,6 +518,10 @@ THEME_PRESETS = {
             'shade_rgb':      (1.0, 0.93),
             'lighter':        (0.85, 1.10),
             'lighter_rgb':    (0.85, 1.10),
+            
+            # Your sequential window engine parameters
+            'maximize_blue':  (-25, 1.00, 1.00), # Next to main color (-25°)
+            'hide_gold':      (-50, 1.00, 1.00), # Further away (-50°)
         },
         'assets': GTK2_ASSETS,
     },
@@ -546,14 +564,23 @@ THEME_PRESETS = {
             ('0052df', 'dark_border'), ('0056e9', 'dark_border'), ('004fd4', 'dark_border'),
             ('1d59be', 'dark_border'),
 
-            # === BRIGT LIGHTS / HOVERS ===
+            # === BRIGHT LIGHTS / HOVERS ===
             ('6ea4ff', 'hover_light'), ('74a7ff', 'hover_light'), ('8db7ff', 'hover_light'),
             ('5a97ff', 'hover_light'), ('4187ff', 'hover_light'), ('5594ff', 'hover_light'),
             ('4b8dff', 'hover_light'), ('83b6ec', 'hover_light'), ('337fdc', 'hover_light'),
+
+            # === COUSIN PALETTE XFWM4 HOOKS ===
+            ('999911', 'hide_gold'),     # Minimizes/Hides: Template placeholder mapped to Left Cousin
+            ('999922', 'maximize_blue'), # Maximizes: Template placeholder mapped to Right Cousin
         ],
         'family_ratios': {
-            'dark_border': (1.00, 0.45),
-            'hover_light': (0.50, 1.00),
+            # Classic 2-value ratios (automatically processed with 0° Hue shift)
+            'dark_border':   (1.00, 0.45),
+            'hover_light':   (0.50, 1.00),
+            
+            # New 3-value ratios: (Hue Shift Degrees, Saturation Multiplier, Value Multiplier)
+            'hide_gold':     (-50, 1.00, 1.00), # Slide Hue back 45°
+            'maximize_blue': (-25,  1.00, 1.00), # Slide Hue forward 45°
         },
         'assets': FLAT_REMIX_ASSETS,
     },

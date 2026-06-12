@@ -21,3 +21,12 @@ title_shadow_active=false
 title_shadow_inactive=false
 title_vertical_offset_active=1
 title_vertical_offset_inactive=1
+
+# --- AWP Faithful Colloid Color Lock ---
+active_color_1=#242220
+active_color_2=#242220
+active_shadow_1=#242220
+
+inactive_color_1=#282524
+inactive_color_2=#282524
+inactive_shadow_1=#282524

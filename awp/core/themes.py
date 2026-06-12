@@ -22,18 +22,51 @@ def _build_color_replacements(config, clean_hex, new_rgb):
     replacements = []
     family = {}
     
-    # Check if the preset defines a family scaling ratio matrix
     if config.get('family_ratios'):
         # Convert hex to normalized RGB values
-        r, g, b = int(clean_hex[0:2], 16)/255.0, int(clean_hex[2:4], 16)/255.0, int(clean_hex[4:6], 16)/255.0
-        # Convert to HSV to scale saturation and value dynamically
+        r = int(clean_hex[0:2], 16) / 255.0
+        g = int(clean_hex[2:4], 16) / 255.0
+        b = int(clean_hex[4:6], 16) / 255.0
+        
+        # Convert to HSV space
         h, s, v = colorsys.rgb_to_hsv(r, g, b)
         
-        # Populate the derived family dictionary with custom shades
-        for name, (sat_ratio, val_ratio) in config['family_ratios'].items():
-            nr, ng, nb = colorsys.hsv_to_rgb(h, min(1.0, s * sat_ratio), min(1.0, v * val_ratio))
-            family[name] = f"{int(nr*255):02x}{int(ng*255):02x}{int(nb*255):02x}"
-            family[f"{name}_rgb"] = f"{int(nr*255)}, {int(ng*255)}, {int(nb*255)}"
+        for name, ratio_tuple in config['family_ratios'].items():
+            # Dynamically handle either 2-value or 3-value presets
+            if len(ratio_tuple) == 3:
+                hue_shift_deg, sat_ratio, val_ratio = ratio_tuple
+                
+                # Only calculate trap zone if a non-zero hue shift is requested
+                if hue_shift_deg != 0:
+                    # Convert normalized float hue to standard degrees (0-360)
+                    hue_degrees = h * 360.0
+                    # Trap zone: Blue (220.0°) through Deep Purple (310.0°)
+                    if 220.0 <= hue_degrees <= 310.0:
+                        # Invert AND proportionally stretch the angle to combat human eye compression
+                        # -25 becomes +32.5, -50 becomes +65
+                        hue_shift_deg = -hue_shift_deg * 1.4
+            else:
+                hue_shift_deg = 0
+                sat_ratio, val_ratio = ratio_tuple
+            
+            # Spin hue wheel and wrap cleanly via % 1.0
+            nh = (h + (hue_shift_deg / 360.0)) % 1.0
+            
+            # Apply multipliers, safely clamped between 0.0 and 1.0
+            ns = min(1.0, max(0.0, s * sat_ratio))
+            nv = min(1.0, max(0.0, v * val_ratio))
+            
+            # Convert back to RGB percentages
+            nr, ng, nb = colorsys.hsv_to_rgb(nh, ns, nv)
+            
+            # CRITICAL FIX: Round to nearest whole integer first, then clamp to 0-255 range
+            r_final = max(0, min(255, int(round(nr * 255))))
+            g_final = max(0, min(255, int(round(ng * 255))))
+            b_final = max(0, min(255, int(round(nb * 255))))
+            
+            # Construct strings using explicit 2-digit zero-padded formatting (:02x)
+            family[name] = f"{r_final:02x}{g_final:02x}{b_final:02x}"
+            family[f"{name}_rgb"] = f"{r_final}, {g_final}, {b_final}"
 
     # Map preset targets to their calculated replacement values
     for old, kind in config['colors']:
@@ -42,7 +75,6 @@ def _build_color_replacements(config, clean_hex, new_rgb):
         elif kind == 'rgb':
             replacements.append((old, new_rgb))
         else:
-            # Safe check to prevent KeyErrors if a ratio is missing
             if kind in family:
                 replacements.append((old, family[kind]))
             else:
@@ -333,10 +365,20 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
             }
 
             index_lines = [
+                "# ==============================================================================",
+                "# AWP DYNAMIC ICON PARADIGM STRUCTURE",
+                "# ==============================================================================",
+                f"# CONFIGURATION LAYOUT: {preset.upper()} Core Registry Generation",
+                "# FRAMEWORK STRUCTURE: Dual Matrix Engine (Fixed PNG Chunks x Scalable SVG Layers)",
+                "# UPSTREAM HERITAGE: Linux Mint Desktop Ecosystem (Mint-Y-Purple Baseline)",
+                "# TARGET COMPATIBILITY: XFCE 4.18+ / GtkIconTheme System Unification",
+                "# ==============================================================================",
+                "",
                 "[Icon Theme]",
                 f"Name={theme_name}",
+                f"Comment=AWP Hybrid Engine • Dynamic Multi-Context Icon Set (Upstream Baseline: Mint-Y-Purple)",
                 "Inherits=Mint-Y,Adwaita,gnome,hicolor",
-                f"Comment=AWP Icon Theme uses {preset} preset and is based on Mint-Y-Purple",
+                "Encoding=UTF-8",
                 ""
             ]
 
@@ -508,6 +550,110 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
             if os.path.exists(target_path):
                 shutil.rmtree(target_path)
             return None
+
+    return theme_name
+
+def bake_awp_cursor(hex_color: str, icon: str = None, preset: str = "oxy"):
+    """
+    AWP Dynamic Cursor Compiling Engine
+    - Reads raw multi-frame X11 binary blobs from preset templates.
+    - Matches native BGRA pixel gradients via fine-tuned hardware filters.
+    - Shifts color spaces mathematically to the active workspace phase.
+    - Deploys a custom cursor theme package directly into ~/.icons/
+    """
+    if not hex_color or hex_color == "":
+        return None
+
+    clean_hex = hex_color.lstrip('#').lower()
+    theme_name = f"awp-cursor-{preset}-{clean_hex}"
+    
+    home = os.path.expanduser("~")
+    template_folder = f"template-cursor-presets/{preset}"
+    template_path = os.path.join(home, "awp", template_folder)
+    target_path = os.path.join(home, ".icons", theme_name)
+
+    # Skip heavy work if this color iteration has already been compiled
+    if os.path.exists(target_path):
+        return theme_name
+
+    try:
+        _printer.info(f"Baking Cursors: {theme_name}", backend="themes")
+
+        # Extract targeted target RGB channels out of workspace hex
+        target_r = int(clean_hex[0:2], 16)
+        target_g = int(clean_hex[2:4], 16)
+        target_b = int(clean_hex[4:6], 16)
+
+        # Copy over the structural template skeleton (keeping links alive)
+        shutil.copytree(template_path, target_path, symlinks=True)
+        cursors_dir = os.path.join(target_path, "cursors")
+
+        # Mutate the actual state machine binaries
+        for filename in os.listdir(cursors_dir):
+            file_path = os.path.join(cursors_dir, filename)
+            if os.path.islink(file_path):
+                continue
+
+            with open(file_path, "rb") as f:
+                binary_data = bytearray(f.read())
+
+            # Sweep pixel chunks (4 bytes each: B, G, R, A)
+            for i in range(0, len(binary_data), 4):
+                if i + 4 > len(binary_data):
+                    break
+
+                b = binary_data[i]
+                g = binary_data[i+1]
+                r = binary_data[i+2]
+                # a = binary_data[i+3] (Alpha preserved for edge anti-aliasing)
+
+                # THE PERFECT OXYGEN FILTER MATRIX:
+                # Lower boundary of 60 sweeps up deep shadows along the tail base
+                if r > 60 and b == g and b < 50:
+                    intensity_factor = r / 147.0
+
+                    # Apply dynamic color-scaling and clamp to hardware maximums
+                    binary_data[i]   = min(int(target_b * intensity_factor), 255) # New Blue
+                    binary_data[i+1] = min(int(target_g * intensity_factor), 255) # New Green
+                    binary_data[i+2] = min(int(target_r * intensity_factor), 255) # New Red
+
+            # Flush the modified matrix back to disk
+            with open(file_path, "wb") as f:
+                f.write(binary_data)
+
+        # Generate custom index.theme file for instant X11 system registration
+        index_path = os.path.join(target_path, "index.theme")
+        index_lines = [
+            "# ==============================================================================",
+            "# AWP HYBRID ARCHITECTURE MANIFEST",
+            "# ==============================================================================",
+            f"# BASE FRAMEWORK: Oxygen Cursors ({preset.upper()} Core Mutation)",
+            "# COMPLIANCE: X11 Mouse Cursor Specification Blob Matrix",
+            "# UPSTREAM HERITAGE: oxy-red-argentina (Debian Package: oxygencursors)",
+            "# TARGET COMPATIBILITY: X11 / XFCE 4.18+ Pointer State Machine Unification",
+            "# ==============================================================================",
+            "",
+            "[Icon Theme]",
+            f"Name={theme_name}",
+            f"Comment=AWP Hybrid Engine • Dynamic BGRA Pixel Matrix (Upstream: oxy-red-argentina)",
+            "Inherits=core",
+            "Encoding=UTF-8"
+        ]
+        with open(index_path, "w") as f:
+            f.write("\n".join(index_lines) + "\n")
+
+        # --- STEP 5: Top-Level Preview ---
+        if icon and os.path.exists(icon):
+            preview_dest = os.path.join(target_path, "folder.png")
+            subprocess.run(["convert", icon, "-strip", preview_dest], check=True)
+
+        _printer.success(f"Cursor theme {theme_name} ready", backend="themes")
+
+    except Exception as e:
+        _printer.error(f"Cursor bake failed: {e}", backend="themes")
+        if os.path.exists(target_path):
+            shutil.rmtree(target_path)
+        return None
 
     return theme_name
 

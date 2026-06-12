@@ -1,10 +1,10 @@
 # ==============================================================================
-# AWP UNIFIED ARCHITECTURE MANIFEST
+# AWP HYBRID ARCHITECTURE MANIFEST
 # ==============================================================================
 # BASE FRAMEWORK: Flat Remix (Darkest Solid Edition by Dani Ruiz)
-# GTK+ 3.0: High-Density Assets with Scale Tweaks (@2x Support)
-# GTK+ 2.0 (LEGACY): Native Interface Clones (Breezified to 203° Standard)
-# PIPELINE STATUS: 100% Modulated via ImageMagick RAM-Disk Workflow
+# GTK+ 3.0 / 4.0: Pure Vectorial SVG Engine
+# GTK+ 2.0 (LEGACY): Integrated Breeze-Dark Asset Layer (PNG Matrix)
+# TARGET COMPATIBILITY: XFCE 4.18+ / Desktop Framework Unification
 # ==============================================================================
 
 [Desktop Entry]

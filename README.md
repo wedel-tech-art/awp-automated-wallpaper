@@ -20,15 +20,17 @@ AWP offers two daemon operation modes for Desktop Environments:
 
 ### Full Daemon (Default)
 - Rotates wallpapers based on timing settings
-- Preloads next wallpaper for smooth transitions  
-- Best for desktops where rotation is desired
+- Preloads the next wallpaper for smooth transitions
+- Best for desktops where automated rotation is desired
 
 ### Light Daemon (No Rotation)
 - Sets wallpaper once per workspace
-- No timer overhead, lower CPU usage (ideal for laptops)
-- All theming features work identically
+- No timer overhead and lower CPU usage (ideal for laptops)
+- Preserves the complete theming pipeline
 
-**How to use:** Create a preset with `_light` suffix (e.g., `xfce_light-debian`) and AWP automatically uses the light daemon while keeping all theming features. The same backend is shared - zero code duplication. The _light suffix tells AWP to use daemon-light.py instead of daemon.py. The backend remains unchanged. You can run either commad always within ~/awp.
+**How to use:** Create a preset with the `_light` suffix (for example `xfce_light-debian`) and AWP automatically switches to the light daemon while preserving all theming capabilities. Both modes share the same backend architecture with zero code duplication. The `_light` suffix instructs AWP to use `daemon-light.py` instead of `daemon.py`.
+
+Run either mode from `~/awp`:
 
 ```bash
 # Full daemon preset
@@ -38,44 +40,48 @@ AWP offers two daemon operation modes for Desktop Environments:
 ./awp_start.sh xfce_light-debian
 ```
 
-## 🎨 GTK & Icon Preset System V3.8
+## 🎨 GTK, Icon & Cursor Preset System V3.8
 
-- **Multi-Preset Architecture:** Replaces the old single-template model with selectable presets for both GTK themes and icon sets.
+- **Cursor Preset System:** Added cursor baking support through `template-cursor-presets/`, introducing the `oxy` preset based on Oxygen cursors for synchronized workspace identity.
 
-- **Dual-Phase Core Modulation (Enhanced Color Fidelity):** Upgraded the theme engine to run a precise double-phase calculation. It dynamically extracts color ratios to modulate assets (PNG/SVG) while cross-referencing and auto-diagnosing the target style, ensuring maximum color fidelity relative to the active workspace identity color without breaking native theme gradients.
+- **Multi-Preset Architecture:** Replaces the original single-template model with selectable GTK, Icon and Cursor preset layers.
 
-- **Dynamic Icon Reconstruction Engine:** Icon presets now store canonical PNG/SVG source assets, utilizing a high-speed RAM-Disk workspace (`/dev/shm`) to completely eliminate disk wear.
+- **Dual-Phase Core Modulation (Enhanced Color Fidelity):** The theme engine performs precise dual-phase calculations, dynamically extracting color relationships to modulate assets (PNG/SVG) while preserving native gradients and maximizing fidelity relative to the active workspace identity color.
 
-- **Expanded Preset Library:** Includes mint, `slot-multicolor`, rami, neon, adwaitaru, and the scalable `breeze` and `sweet` presets supporting hybrid PNG/SVG baking pipelines.
+- **Dynamic Icon Reconstruction Engine:** Icon presets now store canonical PNG/SVG source assets and use a high-speed RAM workspace (`/dev/shm`) to minimize disk usage during generation.
 
-- **On-the-Fly Manifests:** The engine now programmatically generates the clean `index.theme` and full standard XDG directory structure for icon themes during the bake process.
+- **Expanded Preset Library:** Includes mint, `slot-multicolor`, rami, neon, adwaitaru, and the scalable `breeze` and `sweet` presets supporting hybrid PNG/SVG baking workflows.
 
-- **Scalable SVG Support:** SVG-capable presets now generate proper `scalable/` XDG icon directories alongside traditional PNG sizes.
+- **On-the-Fly Manifests:** Icon themes generate clean `index.theme` files and complete XDG directory structures during the bake process.
 
-- **Expanded Coverage:** Beyond "Places," presets now include comprehensive icons support for Devices, Legacy, and Mimetypes (fully tracking Debian `.deb` packages, Word/Writer documents, Excel/Calc spreadsheets, and PowerPoint/Impress presentations across standard Microsoft, OpenXML, and OpenDocument specifications).
+- **Scalable SVG Support:** SVG-capable presets generate proper `scalable/` XDG icon directories alongside traditional PNG sizes.
 
-- **Manifest-Driven Expansion:** Adding new icons or categories is now handled entirely via centralized dictionaries in `core/constants.py`.
+- **Expanded Coverage:** Presets extend beyond Places into Devices, Legacy and Mimetypes, including Debian packages (`.deb`), Writer/Word documents, Calc/Excel spreadsheets, and Impress/PowerPoint presentations across OpenDocument, OpenXML and Microsoft standards.
 
-- **Unified Icon Registry (`ICON_REGISTRY`):** All icon metadata — context, PNG actions, SVG originals, and symlink aliases — now lives in a single source-of-truth dictionary in `core/constants.py`. Manifest generation is derived directly from the registry, eliminating redundancy and making preset expansion or icon reassignment straightforward.
+- **Manifest-Driven Expansion:** New icons and categories are managed through centralized dictionaries in `core/constants.py`.
 
-- **Hybrid PNG/SVG Pipeline:** The baking engine now handles both PNG modulation and SVG direct color replacement in the same pass. SVG-capable presets use `sed`-based hex substitution with mathematically derived family ratios for dark/light variants, producing pixel-perfect colors with zero modulation drift.
+- **Unified Icon Registry (`ICON_REGISTRY`):** All icon metadata — context, PNG actions, SVG originals and symlink aliases — lives in a single source-of-truth registry. Manifest generation derives directly from this structure for simplified expansion and maintenance.
 
-- **SVG Encoding Normalization:** Template SVGs are validated for UTF-8 encoding and proper `width`/`height` attributes before baking, preventing silent GTK render failures.
+- **Hybrid PNG/SVG Pipeline:** The baking engine supports PNG modulation and SVG direct color replacement in a unified pass.
 
-- **Unified Text-Substitution (`gtkrc` & XFWM4 SVGs):** The theme engine now scans and normalizes raw GTK2 `gtkrc` configurations and XFWM4 window manager vector graphics (`*.svg`), binding them to a single source-of-truth color anchor to completely eliminate mismatched factory accent flashes.
+- **SVG Encoding Normalization:** Template SVGs are validated for UTF-8 encoding and normalized dimensions to prevent silent GTK rendering failures.
 
-- **Automated Artifact Cleanup:** Automatically strips legacy, non-functional visual clutter like `thumbnail.png` or `preview.png` files from baked assets to keep the system lightweight.
+- **Unified Text Substitution (`gtkrc` & XFWM4 SVGs):** GTK2 configuration files and XFWM4 vector assets are normalized against a shared accent source to eliminate mismatched transitions and preserve visual continuity.
+
+- **Automated Artifact Cleanup:** Removes unnecessary generated artifacts (`thumbnail.png`, `preview.png`, etc.) to keep output themes lightweight.
 
 - **GTK Preset Variants:**
-  - `breeze` (default): PNG modulation + CSS/SVG replacement.
-  - `flat-remix`: High-density layout supporting normalized asset scales and 203° standard corrections.
-  - `colloid` & `graphite`: Pure CSS/SVG-only recoloring for GTK3/4 and just some GTK2 PNG's.
+  - `breeze` (default): PNG modulation + CSS/SVG replacement with full XFWM4 support.
+  - `flat-remix`: High-density layout with normalized asset scaling and accent-aware XFWM4 controls.
+  - `colloid` & `graphite`: CSS/SVG-first recoloring for GTK3/4 with selective GTK2 PNG support and improved XFWM4 inactive-state handling.
 
-- **Preset-Based Theme Baking:** `bake_awp_theme()` now supports presets (`awp-gtk-{preset}-{hex}` naming).
+- **Window Control Accent Logic:** XFWM4 controls apply adaptive color progression — Close uses the workspace accent, Maximize shifts ±25%, and Minimize ±50% depending on brightness to preserve contrast and balance.
 
-- **Dashboard Integration:** GTK and Icon presets can be selected per workspace in `dab.py`, with sorted preset selection and live workspace theming info integrated via awp_config.ini.
+- **Preset-Based Theme Baking:** `bake_awp_theme()` supports preset generation using `awp-gtk-{preset}-{hex}` naming.
 
-- **Lean & Maintainable:** Presets are lightweight and act as the single source of truth.
+- **Dashboard Integration:** GTK, Icon and Cursor presets can be selected per workspace in `dab.py`, with sorted preset selection and live HUD integration enabling synchronized visual identity across all theme layers.
+
+- **Lean & Maintainable:** Presets remain lightweight and act as the single source of truth.
 
 ## ⚡ Low-Latency State Bridge & Logic V3.7
 
@@ -243,6 +249,7 @@ awp-automated-wallpaper/
 │   ├── presets-backup/             # Pre-flight safety mirror 🛡️
 │   ├── template-theme-presets/     # GTK
 │   ├── template-icon-presets/      # PNG's + scalable SVG's
+│   ├── template-cursor-presets/    # Cursor preset templates (currently oxy)
 │   ├── awp-icon-mom/               # The "Mother" icon template
 │   ├── awp-assets.tar.gz           # 200 procedural color tones
 │   ├── logos/                      # Active workspace icons (symlinks)
@@ -306,23 +313,28 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License — see the LICENSE file for details.
 
-### Icon Preset Credits
+### Visual Preset Credits (Icons, GTK & Cursor Themes)
 
-AWP includes modified icon presets built upon the work of these open-source projects, all under GPLv3 or compatible licenses:
+AWP includes modified and adapted visual presets derived from the following open-source projects and redistributed and/or transformed under their respective licenses.
 
-| Preset | Based On | Author | License | Source |
-| :--- | :--- | :--- | :--- | :--- |
-| slot-multicolor | Slot-Multicolor-Dark-Icons | L4ki | GPLv3 | [GitHub](https://github.com/L4ki/Slot-Plasma-Themes) |
-| breeze | Breeze Chameleon Dark (KDE) | L4ki | GPLv3 | [GitHub](https://github.com/L4ki/Breeze-Chameleon-Icons) |
-| sweet | Sweet | EliverLara | GPLv3 | [GitHub](https://github.com/EliverLara/Sweet) |
-| adwaitaru | Adwaitaru | ricardoherreramx | GPLv3 | [GitHub](https://github.com/ricardoherreramx/adwaitaru) |
-| mint | Mint-Y | Linux Mint | GPLv3/CC-BY-SA | [Website](https://linuxmint.com) |
-| neon | Royal-Z / Neon | SethStormR | GPLv3 | [GitHub](https://github.com/SethStormR/Royal-Z) |
-| rami | Rami (based on Kora) | Rami | GPLv3 | [Gnome-Look](https://www.gnome-look.org/p/2216265) |
+| Preset | Category | Based On | Author | License | Source |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| slot-multicolor | Icon | Slot-Multicolor-Dark-Icons | L4ki | GPLv3 | [GitHub](https://github.com/L4ki/Slot-Plasma-Themes) |
+| breeze | Icon | Breeze Chameleon Dark (KDE) | L4ki | GPLv3 | [GitHub](https://github.com/L4ki/Breeze-Chameleon-Icons) |
+| sweet | Icon | Sweet | EliverLara | GPLv3 | [GitHub](https://github.com/EliverLara/Sweet) |
+| adwaitaru | Icon | Adwaitaru | ricardoherreramx | GPLv3 | [GitHub](https://github.com/ricardoherreramx/adwaitaru) |
+| mint | Icon | Mint-Y | Linux Mint | GPLv3 / CC-BY-SA | [Website](https://linuxmint.com) |
+| neon | Icon | Royal-Z / Neon | SethStormR | GPLv3 | [GitHub](https://github.com/SethStormR/Royal-Z) |
+| rami | Icon | Rami (based on Kora) | Rami | GPLv3 | [Gnome-Look](https://www.gnome-look.org/p/2216265) |
+| breeze | GTK | Breeze GTK | KDE Community | LGPL / GPL | [Website](https://kde.org) |
+| colloid | GTK | Colloid GTK Theme | vinceliuice | GPLv3 | [GitHub](https://github.com/vinceliuice/Colloid-gtk-theme) |
+| flat-remix | GTK | Flat Remix GTK | daniruiz | GPLv3 | [GitHub](https://github.com/daniruiz/flat-remix-gtk) |
+| graphite | GTK | Graphite GTK | vinceliuice | GPLv3 | [GitHub](https://github.com/vinceliuice/Graphite-gtk-theme) |
+| oxy | Cursor | Oxygen Cursors | KDE Community | LGPL / GPL | [Website](https://kde.org) |
 
-AWP does not claim ownership of these icons. They are redistributed under their respective licenses.
+AWP does not claim ownership of bundled visual assets. Icon, GTK and cursor presets remain under their respective upstream licenses and are redistributed and/or modified in accordance with those terms.
 
 ## 🙏 Acknowledgments
 

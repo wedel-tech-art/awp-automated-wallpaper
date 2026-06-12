@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" width="29" height="29">
+  <defs>
+    <filter id="smooth" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="0.4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <rect width="29" height="29" fill="#0d0d0d" />
+  <circle cx="14.5" cy="14.5" r="11" fill="#999922" filter="url(#smooth)" />
+  
+  <polygon points="13,9 20,9 20,16" fill="#ffffff" opacity="0.5" filter="url(#smooth)" />
+  
+  <polygon points="9,13 9,20 16,20" fill="#ffffff" opacity="0.5" filter="url(#smooth)" />
+</svg>

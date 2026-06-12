@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR, DEFAULT_ICON, THEME_CAPABILITIES
 from core.config import AWPConfig
 from core.utils import get_icon_color
-from core.themes import get_available_themes, bake_awp_theme, bake_awp_icon
+from core.themes import get_available_themes, bake_awp_theme, bake_awp_icon, bake_awp_cursor
 from backends import BACKEND_NAMES
 from core.printer import get_printer
 
@@ -231,6 +231,28 @@ class WorkspaceTab(QWidget):
         row.addWidget(self.gtk_preset_combo)
         row.addStretch(1)
         layout.addLayout(row)
+
+        # --- CURSOR BAKE STYLE (NON-PERSISTENT) ---
+        row = QHBoxLayout()
+        row.setSpacing(5)
+        lbl = QLabel("Cursor Style:")
+        lbl.setFixedWidth(120)
+        lbl.setToolTip("Choose template style for cursor baking (not saved)")
+        row.addWidget(lbl)
+        try:
+            from core.constants import CURSOR_PRESETS
+            cursor_items = [(name.capitalize(), name) for name in sorted(CURSOR_PRESETS.keys())]
+        except ImportError:
+            cursor_items = [("Oxy", "oxy")]
+            
+        self.cursor_preset_combo = create_theme_like_combo(cursor_items)
+        index = self.cursor_preset_combo.findData("oxy")
+        if index != -1:
+            self.cursor_preset_combo.setCurrentIndex(index)
+        self.cursor_preset_combo.setToolTip("Temporary style used when baking cursor engines")
+        row.addWidget(self.cursor_preset_combo)
+        row.addStretch(1)
+        layout.addLayout(row)
         
         self.theme_controls = {}
         
@@ -355,7 +377,6 @@ class WorkspaceTab(QWidget):
             hex_val = get_icon_color(path)
             if hex_val:
                 self.icon_preview.setToolTip(f"<b>Detected Hex:</b> {hex_val.upper()}")
-            # ---------------------------------
         else:
             self.icon_preview.clear()
             self.icon_preview.setToolTip("No icon selected")
@@ -474,7 +495,7 @@ class WorkspaceTab(QWidget):
                     self.icon_edit.setText(new_icon_path)
                     self.update_icon_preview()
                 except shutil.SameFileError:
-                    pass  # File is already where it should be - this is fine!
+                    pass  # File is already where it should be
                 
             except Exception as e:
                 _printer.error(f"Could not copy icon: {e}", backend="dab")
@@ -525,9 +546,8 @@ class AWPDashboard(QWidget):
         """Initialize dashboard and load existing configuration."""
         super().__init__()
         _printer.info("Starting AWP Dashboard...", backend="dab")
-        #self.setStyleSheet("QWidget { background-color: #2e2e2e; } QWidget:enabled { color: white; }")
         self.setWindowTitle("AWP Dashboard - Configuration Editor (Qt6)")
-        self.setFixedSize(550, 700)
+        self.setFixedSize(550, 730)
 
         self.config = AWPConfig()
 
@@ -567,7 +587,6 @@ class AWPDashboard(QWidget):
         button_layout = QHBoxLayout()
         button_layout.addStretch(0)
         
-        # Finalized dimensions for a phi ratio experience
         BTN_W = 118
         BTN_H = 32
         GAP = 6
@@ -608,14 +627,7 @@ class AWPDashboard(QWidget):
         self.setLayout(layout)
 
     def setup_keybindings(self):
-        """
-        Configure professional keyboard shortcuts.
-        
-        Shortcuts:
-        - Ctrl+S: Save configuration changes
-        - Ctrl+B: Create configuration backup  
-        - Ctrl+Q: Quit application
-        """
+        """Configure keyboard shortcuts."""
         self.save_btn.setShortcut("Ctrl+S")
         self.backup_btn.setShortcut("Ctrl+B")  
         self.exit_btn.setShortcut("Ctrl+Q")
@@ -624,8 +636,6 @@ class AWPDashboard(QWidget):
         """Create a standardized combo box used across all tabs."""
         combo = QComboBox()
         combo.setFixedWidth(width)
-
-        # Make arrow/padding match WorkspaceTab
         combo.setEditable(editable)
         combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)  # Qt6 enum
 
@@ -633,7 +643,6 @@ class AWPDashboard(QWidget):
             combo.lineEdit().setReadOnly(True)
             combo.lineEdit().setAlignment(Qt.AlignmentFlag.AlignLeft)  # Qt6 enum
 
-        # Add items
         if items:
             for item in items:
                 if isinstance(item, tuple):
@@ -650,11 +659,7 @@ class AWPDashboard(QWidget):
         # === Desktop Environment ===
         de_row = QHBoxLayout()
         de_row.addWidget(QLabel("Desktop Environment:"))
-
-        self.de_combo = self.create_standard_combo(
-            items=sorted(BACKEND_NAMES),
-            width=200
-        )
+        self.de_combo = self.create_standard_combo(items=sorted(BACKEND_NAMES), width=200)
         self.de_combo.setToolTip("Select your desktop environment for proper theme integration")
         self.de_combo.currentTextChanged.connect(self.on_de_changed)
         de_row.addWidget(self.de_combo)
@@ -664,11 +669,7 @@ class AWPDashboard(QWidget):
         # === Session Type ===
         session_row = QHBoxLayout()
         session_row.addWidget(QLabel("Session Type:"))
-
-        self.session_combo = self.create_standard_combo(
-            items=["x11", "wayland"],
-            width=200
-        )
+        self.session_combo = self.create_standard_combo(items=["x11", "wayland"], width=200)
         self.session_combo.setToolTip("Display server protocol (X11 or Wayland)")
         session_row.addWidget(self.session_combo)
         session_row.addStretch()
@@ -678,18 +679,12 @@ class AWPDashboard(QWidget):
         layout.addWidget(QLabel("<b>Screen Blanking</b>"))
         blanking_row = QHBoxLayout()
         blanking_row.addWidget(QLabel("Timeout:"))
-
         self.blanking_combo = self.create_standard_combo(
             width=150,
             items=[
-                ("Disabled", "0"),
-                ("30 seconds", "30"),
-                ("1 minute", "60"),
-                ("5 minutes", "300"),
-                ("10 minutes", "600"),
-                ("20 minutes", "1200"),
-                ("30 minutes", "1800"),
-                ("1 hour", "3600")
+                ("Disabled", "0"), ("30 seconds", "30"), ("1 minute", "60"),
+                ("5 minutes", "300"), ("10 minutes", "600"), ("20 minutes", "1200"),
+                ("30 minutes", "1800"), ("1 hour", "3600")
             ]
         )
         self.blanking_combo.setToolTip("Time before screen blanks/sleeps (X11)")
@@ -707,11 +702,7 @@ class AWPDashboard(QWidget):
         layout.addWidget(QLabel("<b>Workspace Management</b>"))
         ws_row = QHBoxLayout()
         ws_row.addWidget(QLabel("Number of workspaces:"))
-
-        self.ws_count_combo = self.create_standard_combo(
-            width=80,
-            items=[str(i) for i in range(1, 9)]
-        )
+        self.ws_count_combo = self.create_standard_combo(width=80, items=[str(i) for i in range(1, 9)])
         self.ws_count_combo.setEnabled(False)
         self.ws_count_combo.setToolTip(
             "Workspace count is determined by your Desktop Environment.\n"
@@ -726,26 +717,19 @@ class AWPDashboard(QWidget):
         tab.setLayout(layout)
         return tab
 
-
     def get_current_de(self):
         """Get current desktop environment selection."""
         return self.de_combo.currentText().lower()
 
     def on_de_changed(self, text):
         """Handle DE change and update UI availability."""
-        # Trigger the gatekeeper to enable/disable combos in all workspace tabs
         for i in range(self.tab_widget.count()):
             tab = self.tab_widget.widget(i)
             if hasattr(tab, 'update_theme_availability'):
                 tab.update_theme_availability()
 
     def on_blanking_changed(self, text):
-        """
-        Handle blanking timeout changes.
-        
-        Args:
-            text (str): New timeout selection
-        """
+        """Handle blanking timeout changes."""
         if text == "Disabled":
             self.blanking_pause_cb.setChecked(True)
             self.blanking_pause_cb.setEnabled(True)
@@ -754,25 +738,17 @@ class AWPDashboard(QWidget):
             self.blanking_pause_cb.setEnabled(True)
 
     def on_blanking_pause_toggled(self, checked):
-        """
-        Handle blanking pause toggle.
-        
-        Args:
-            checked (bool): Whether blanking is paused
-        """
+        """Handle blanking pause toggle."""
         if checked:
             self.blanking_combo.setCurrentText("Disabled")
         else:
-            # Set to a reasonable default when unpausing
             self.blanking_combo.setCurrentText("20 minutes")
 
     def load_config(self):
         """Load all settings from AWPConfig."""
-        # General settings
         self.de_combo.setCurrentText(self.config.de)
         self.session_combo.setCurrentText(self.config.session_type)
     
-        # Screen blanking settings
         if self.config.blanking_pause or self.config.blanking_timeout == 0:
             self.blanking_combo.setCurrentText("Disabled")
             self.blanking_pause_cb.setChecked(True)
@@ -783,10 +759,9 @@ class AWPDashboard(QWidget):
                     break
             self.blanking_pause_cb.setChecked(False)
     
-        # Workspace count
         self.ws_count_combo.setCurrentText(str(self.config.workspaces_count))
 
-        # Workspace settings
+        # Workspace settings - FIXED: kept 0-based indexing for core data structure alignment
         for i, tab in enumerate(self.workspace_tabs):
             tab.load_from_config(i)
 
@@ -794,10 +769,11 @@ class AWPDashboard(QWidget):
         """
         Genetic Synchronization: Physically creates ~/.themes and ~/.icons folders
         based on the 'icon_color' key in the .ini.
-        Now supports per-workspace icon and gtk presets (non-persistent, UI-based).
+        Now supports per-workspace icon, gtk, and cursor presets (non-persistent, UI-based).
         """
         baked_themes_count = 0
         baked_icons_count = 0
+        baked_cursors_count = 0
         
         _printer.info("Starting genetic themes sync...", backend="dab")
         
@@ -826,14 +802,21 @@ class AWPDashboard(QWidget):
                 combo = tab.gtk_preset_combo
                 gtk_preset = combo.currentData() or combo.currentText() or "breeze"
 
-            _printer.info(f"WS{i}: preset={preset}, color={hex_color}", backend="dab")
+            cursor_preset = "oxy"  # cursor preset default
+            if hasattr(tab, "cursor_preset_combo"):
+                combo = tab.cursor_preset_combo
+                cursor_preset = combo.currentData() or combo.currentText() or "oxy"
+
+            _printer.info(f"WS{i}: color={hex_color} presets[icon={preset}, gtk={gtk_preset}, cursor={cursor_preset}]", backend="dab")
             
             # Define expected paths
             theme_name = f"awp-gtk-{gtk_preset}-{clean_hex}"
             icon_name = f"awp-icons-{preset}-{clean_hex}"
+            cursor_name = f"awp-cursor-{cursor_preset}-{clean_hex}"
             
             theme_path = os.path.expanduser(f"~/.themes/{theme_name}")
             icon_path = os.path.expanduser(f"~/.icons/{icon_name}")
+            cursor_path = os.path.expanduser(f"~/.icons/{cursor_name}")
             
             # --- Check & Bake GTK Theme ---
             if not os.path.exists(theme_path):
@@ -846,14 +829,20 @@ class AWPDashboard(QWidget):
                 _printer.info(f"Syncing: Icons {icon_name} missing. Initiating bake...", backend="dab")
                 bake_awp_icon(hex_color, icon, preset)
                 baked_icons_count += 1
+
+            # --- Check & Bake Cursors ---
+            if not os.path.exists(cursor_path):
+                _printer.info(f"Syncing: Cursors {cursor_name} missing. Initiating bake...", backend="dab")
+                bake_awp_cursor(hex_color, icon, cursor_preset)
+                baked_cursors_count += 1
         
         # Refresh the UI dropdowns/lists
         self.refresh_theme_lists()
         
         # Feedback
-        total_new = baked_themes_count + baked_icons_count
+        total_new = baked_themes_count + baked_icons_count + baked_cursors_count
         if total_new > 0:
-            msg = f"Baked {baked_themes_count} themes and {baked_icons_count} icon sets."
+            msg = f"Baked {baked_themes_count} themes, {baked_icons_count} icon sets, and {baked_cursors_count} cursor packages."
             _printer.success(f"Sync complete: {msg}", backend="dab")
             QMessageBox.information(self, "Sync Complete", msg)
         else:
@@ -893,22 +882,17 @@ class AWPDashboard(QWidget):
                 if saved_val and saved_val.strip() != "":
                     idx = combo.findText(saved_val)
                     if idx >= 0:
-                        # Found it in the system!
                         combo.setCurrentIndex(idx)
                     else:
-                        # NOT found in system (e.g., Cinnamon theme while on XFCE)
-                        # We add it manually so the UI preserves your data
                         combo.addItem(saved_val)
                         new_idx = combo.findText(saved_val)
                         combo.setCurrentIndex(new_idx)
                 else:
-                    # FALLBACK: If INI is truly empty, try to show 'Adwaita' 
-                    # so the UI looks complete even on XFCE.
                     fallback_idx = combo.findText("Adwaita")
                     if fallback_idx >= 0:
                         combo.setCurrentIndex(fallback_idx)
                     else:
-                        combo.setCurrentIndex(0) # Back to (Not set)
+                        combo.setCurrentIndex(0)
                 
                 combo.blockSignals(False)
 
@@ -917,7 +901,6 @@ class AWPDashboard(QWidget):
         try:
             _printer.info("Saving configuration...", backend="dab")
             
-            # 1. Update the 'general' section with UI values
             self.config.set('general', 'os_detected', self.de_combo.currentText())
             self.config.set('general', 'session_type', self.session_combo.currentText())
         
@@ -925,120 +908,22 @@ class AWPDashboard(QWidget):
                 self.config.set('general', 'blanking_timeout', '0')
                 self.config.set('general', 'blanking_pause', 'true')
             else:
-                # currentData() handles the integer seconds mapping
                 timeout_val = str(self.blanking_combo.currentData() or '0')
                 self.config.set('general', 'blanking_timeout', timeout_val)
                 self.config.set('general', 'blanking_pause', 'false')
         
             self.config.set('general', 'workspaces', self.ws_count_combo.currentText())
         
-            # 2. Update all Workspace Tab settings (Wallpaper, Themes, etc.)
             for tab in self.workspace_tabs:
                 tab.save_to_config()
             
-            # 3. Trigger the Core Save
-            # Because we updated core/config.py with .resolve(), this will
-            # automatically 'tunnel' through the symlink to your preset folder.
             self.config.save()
-            
             _printer.success("Configuration saved successfully!", backend="dab")
             QMessageBox.information(self, "Success", "Preset updated successfully!")
                 
         except Exception as e:
             _printer.error(f"Failed to save: {str(e)}", backend="dab")
             QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
-
-    def get_new_general_value(self, key):
-        """
-        Get the new value for a general setting.
-        
-        Args:
-            key (str): Setting key name
-            
-        Returns:
-            str: New value for the setting
-        """
-        if key == 'os_detected':
-            return self.de_combo.currentText()
-        elif key == 'session_type':
-            return self.session_combo.currentText()
-        elif key == 'blanking_timeout':
-            if self.blanking_pause_cb.isChecked():
-                return '0'
-            else:
-                return str(self.blanking_combo.currentData() or '0')
-        elif key == 'blanking_pause':
-            return str(self.blanking_pause_cb.isChecked()).lower()
-        elif key == 'workspaces':
-            return self.ws_count_combo.currentText()
-        return ''
-        
-    def has_general_changes(self, current_config):
-        """
-        Check if general section has changes.
-        
-        Args:
-            current_config (ConfigParser): Current configuration
-            
-        Returns:
-            bool: True if general section has changes
-        """
-        if not current_config.has_section('general'):
-            return True
-        
-        general = current_config['general']
-        current_de = general.get('os_detected', '')
-        current_session = general.get('session_type', '')
-        current_blanking_timeout = general.get('blanking_timeout', '0')
-        current_blanking_pause = general.get('blanking_pause', 'false')
-        current_workspaces = general.get('workspaces', '3')
-    
-        new_de = self.de_combo.currentText()
-        new_session = self.session_combo.currentText()
-        new_workspaces = self.ws_count_combo.currentText()
-    
-        # Handle blanking safely
-        if self.blanking_pause_cb.isChecked():
-            new_blanking_timeout = '0'
-            new_blanking_pause = 'true'
-        else:
-            new_blanking_timeout = str(self.blanking_combo.currentData() or '0')
-            new_blanking_pause = 'false'
-    
-        return (new_de != current_de or
-                new_session != current_session or
-                new_blanking_timeout != current_blanking_timeout or
-                new_blanking_pause != current_blanking_pause or
-                new_workspaces != current_workspaces)
-
-    def has_workspace_changes(self, tab, old_section):
-        """
-        Check if workspace tab has any changes.
-        
-        Args:
-            tab (WorkspaceTab): Workspace tab to check
-            old_section (SectionProxy): Original configuration section
-            
-        Returns:
-            bool: True if workspace has changes
-        """
-        # Check basic settings
-        if (tab.folder_edit.text().strip() != old_section.get('folder', '') or
-            tab.icon_edit.text().strip() != old_section.get('icon', '') or
-            (tab.timing_combo.currentData() or '5m') != old_section.get('timing', '5m') or
-            tab.mode_combo.currentText().lower() != old_section.get('mode', 'random') or
-            (tab.order_combo.currentData() or 'name_az') != old_section.get('order', 'name_az') or
-            (tab.scaling_combo.currentData() or 'scaled') != old_section.get('scaling', 'scaled')):
-            return True
-        
-        # Check theme settings
-        for key, combo in tab.theme_controls.items():
-            new_theme = combo.currentText() if combo.currentText() != "(Not set)" else ""
-            old_theme = old_section.get(key, '')
-            if new_theme != old_theme:
-                return True
-        
-        return False
 
     def backup_config(self):
         """Create backup of current configuration file."""
