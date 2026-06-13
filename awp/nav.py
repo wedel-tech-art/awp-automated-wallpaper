@@ -33,8 +33,7 @@ from core.actions import (
     get_ws_key,
     get_current_workspace,
     set_backend,
-    set_wallpaper,
-    show_hud
+    set_wallpaper
 )
 from backends import get_backend
 from core.printer import get_printer
@@ -269,9 +268,6 @@ def delete_current_wallpaper_and_advance() -> bool:
     full_info = awp.generate_runtime_state(f"ws{ws_num + 1}", wallpaper_path)
     update_runtime_state(full_info)
     
-    # Trigger HUD
-    show_hud()
-    
     _printer.info(f"WS{ws_num + 1}: After deletion -> index {new_idx}", backend="nav")
     return True
 
@@ -407,9 +403,6 @@ def park_current():
     full_info = awp.generate_runtime_state(f"ws{ws_num + 1}", wallpaper_path)
     update_runtime_state(full_info)
     
-    # Trigger HUD (commented for faster workspace switching)
-    # show_hud()
-    
     _printer.info(f"WS{ws_num + 1}: Parked at index {idx}", backend="nav")
 
 
@@ -516,9 +509,6 @@ def main():
     awp = get_awpconfig_instance()
     full_info = awp.generate_runtime_state(f"ws{ws_num + 1}", wallpaper_path)
     update_runtime_state(full_info)
-    
-    # Trigger HUD (commented for faster response)
-    # show_hud()
     
     _printer.info(f"WS{ws_num + 1}: {direction} wallpaper changed", backend="nav")
 

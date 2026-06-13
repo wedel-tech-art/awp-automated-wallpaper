@@ -25,8 +25,7 @@ from core.actions import (
     parse_timing,
     set_backend,
     set_wallpaper,
-    set_panel_icon,
-    show_hud
+    set_panel_icon
 )
 from core.printer import get_printer
 

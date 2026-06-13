@@ -100,17 +100,4 @@ def set_panel_icon(icon_path: str):
     func = get_backend_func("icon")
     if func:
         func(icon_path)
-        
-def show_hud():
-    """
-    Launches the fading info HUD.
-    The HUD script handles its own delay and cleanup.
-    """
-    try:
-        hud_script = os.path.expanduser("~/awp/hud_ws_info.py")
-        # Popen is non-blocking; the daemon continues immediately
-        subprocess.Popen(["python3", hud_script], 
-                         stdout=subprocess.DEVNULL, 
-                         stderr=subprocess.DEVNULL)
-    except Exception as e:
-        print(f"HUD Error: {e}")
+

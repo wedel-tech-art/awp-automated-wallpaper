@@ -257,7 +257,6 @@ awp-automated-wallpaper/
 │   ├── daemon-light.py             # Light background service (no rotation)
 │   ├── dab.py                      # Qt6 Dashboard
 │   ├── nav.py                      # Navigation controller
-│   ├── hud_ws_info.py              # Workspace transition HUD
 │   ├── hud_vertical.py             # Sidebar system monitor
 │   ├── hud_bottom.py               # Bottom dock monitor
 │   ├── awp_setup.py                # Setup wizard (Legacy fallback)
