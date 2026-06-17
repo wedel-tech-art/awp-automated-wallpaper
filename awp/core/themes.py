@@ -10,76 +10,51 @@ import shutil
 import subprocess
 import colorsys
 from core.constants import ICON_PRESETS, THEME_PRESETS, TARGET_ASSETS, ICON_SIZES, ICON_REGISTRY
+from core.utils import (
+    hex_to_hsv, 
+    hsv_to_hex, 
+    apply_hue_shift, 
+    apply_sat_val, 
+    calculate_family_color,
+    hex_to_rgb,
+    rgb_to_hex
+)
 from core.printer import get_printer
 _printer = get_printer()
 
 
-def _build_color_replacements(config, clean_hex, new_rgb):
+def _build_gtk_replacements(config, clean_hex, new_rgb):
     """
-    Build the color replacements list, deriving family shades if needed.
-    All dynamic hue shifts are calculated using the active Mint background hex.
+    GTK themes: includes trap zone logic for XFWM buttons.
+    Called by bake_awp_theme().
     """
     replacements = []
     family = {}
     
     if config.get('family_ratios'):
-        # Convert hex to normalized RGB values
-        r = int(clean_hex[0:2], 16) / 255.0
-        g = int(clean_hex[2:4], 16) / 255.0
-        b = int(clean_hex[4:6], 16) / 255.0
+        h, _, _ = hex_to_hsv(clean_hex)
+        hue_degrees = h * 360
         
-        # Convert to HSV space
-        h, s, v = colorsys.rgb_to_hsv(r, g, b)
-        
-        for name, ratio_tuple in config['family_ratios'].items():
-            # Dynamically handle either 2-value or 3-value presets
-            if len(ratio_tuple) == 3:
-                hue_shift_deg, sat_ratio, val_ratio = ratio_tuple
-                
-                # Only calculate trap zone if a non-zero hue shift is requested
-                if hue_shift_deg != 0:
-                    # Convert normalized float hue to standard degrees (0-360)
-                    hue_degrees = h * 360.0
-                    # Trap zone: Blue (220.0°) through Deep Purple (310.0°)
-                    if 220.0 <= hue_degrees <= 310.0:
-                        # Invert AND proportionally stretch the angle to combat human eye compression
-                        # -25 becomes +32.5, -50 becomes +65
-                        hue_shift_deg = -hue_shift_deg * 1.4
-            else:
-                hue_shift_deg = 0
-                sat_ratio, val_ratio = ratio_tuple
+        for name, (hue_shift_deg, sat_ratio, val_ratio) in config['family_ratios'].items():
+            # GTK trap zone (only for non-zero hue shifts)
+            if hue_shift_deg != 0 and 220.0 <= hue_degrees <= 310.0:
+                hue_shift_deg = -hue_shift_deg * 1.4
             
-            # Spin hue wheel and wrap cleanly via % 1.0
-            nh = (h + (hue_shift_deg / 360.0)) % 1.0
-            
-            # Apply multipliers, safely clamped between 0.0 and 1.0
-            ns = min(1.0, max(0.0, s * sat_ratio))
-            nv = min(1.0, max(0.0, v * val_ratio))
-            
-            # Convert back to RGB percentages
-            nr, ng, nb = colorsys.hsv_to_rgb(nh, ns, nv)
-            
-            # CRITICAL FIX: Round to nearest whole integer first, then clamp to 0-255 range
-            r_final = max(0, min(255, int(round(nr * 255))))
-            g_final = max(0, min(255, int(round(ng * 255))))
-            b_final = max(0, min(255, int(round(nb * 255))))
-            
-            # Construct strings using explicit 2-digit zero-padded formatting (:02x)
-            family[name] = f"{r_final:02x}{g_final:02x}{b_final:02x}"
-            family[f"{name}_rgb"] = f"{r_final}, {g_final}, {b_final}"
-
-    # Map preset targets to their calculated replacement values
+            family[name] = calculate_family_color(clean_hex, sat_ratio, val_ratio, hue_shift_deg)
+            r, g, b = hex_to_rgb(family[name])
+            family[f"{name}_rgb"] = f"{r}, {g}, {b}"
+    
+    # Build replacements
     for old, kind in config['colors']:
         if kind == 'hex':
             replacements.append((old, clean_hex))
         elif kind == 'rgb':
             replacements.append((old, new_rgb))
+        elif kind in family:
+            replacements.append((old, family[kind]))
         else:
-            if kind in family:
-                replacements.append((old, family[kind]))
-            else:
-                _printer.warning(f"Color kind '{kind}' not found in derived family ratios.", backend="themes")
-                
+            _printer.warning(f"Color kind '{kind}' not found in derived family ratios.", backend="themes")
+    
     return replacements
 
 
@@ -234,7 +209,7 @@ def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze'):
             new_rgb = f"{r_int}, {g_int}, {b_int}"
 
             # --- 3. Surgical Replacements ---
-            color_replacements = _build_color_replacements(config, clean_hex, new_rgb)
+            color_replacements = _build_gtk_replacements(config, clean_hex, new_rgb)
 
             for old, new in color_replacements:
                 subprocess.run(["find", target_path, "-type", "f", "(",
@@ -306,6 +281,35 @@ def _build_manifests(registry, preset_name=None):
             symlink_map[f"{name}.svg"] = [f"{s}.svg" for s in config["symlinks"]]
 
     return png_manifest, svg_manifest, symlink_map
+
+
+def _build_icon_replacements(config, clean_hex, new_rgb):
+    """
+    Icon themes: no trap zone, pure color math.
+    Called by bake_awp_icon().
+    """
+    replacements = []
+    family = {}
+    
+    if config.get('family_ratios'):
+        for name, (hue_shift_deg, sat_ratio, val_ratio) in config['family_ratios'].items():
+            # Icons: no trap zone, even if hue_shift != 0
+            family[name] = calculate_family_color(clean_hex, sat_ratio, val_ratio, hue_shift_deg)
+            r, g, b = hex_to_rgb(family[name])
+            family[f"{name}_rgb"] = f"{r}, {g}, {b}"
+    
+    # Build replacements (same logic)
+    for old, kind in config['colors']:
+        if kind == 'hex':
+            replacements.append((old, clean_hex))
+        elif kind == 'rgb':
+            replacements.append((old, new_rgb))
+        elif kind in family:
+            replacements.append((old, family[kind]))
+        else:
+            _printer.warning(f"Color kind '{kind}' not found in derived family ratios.", backend="themes")
+    
+    return replacements
     
 
 def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
@@ -461,7 +465,7 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
             if has_svg:
                 _printer.info("Applying SVG color replacements...", backend="themes")
                 new_rgb = f"{r_int}, {g_int}, {b_int}"
-                svg_replacements = _build_color_replacements(preset_config, clean_hex, new_rgb)
+                svg_replacements = _build_icon_replacements(preset_config, clean_hex, new_rgb)
                 # Copy only svg_recolor SVGs into workspace
                 for folder_path, files in svg_manifest["svg_recolor"].items():
                     for asset in files:

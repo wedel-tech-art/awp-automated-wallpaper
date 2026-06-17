@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Morado claro (color principal) -->
+    <linearGradient id="colorClaro" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a27ae4" />
+      <stop offset="100%" stop-color="#a27ae4" />
+    </linearGradient>
+    <!-- Morado oscuro (franja inferior) -->
+    <linearGradient id="colorOscuro" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4a2e85" />
+      <stop offset="100%" stop-color="#4a2e85" />
+    </linearGradient>
+  </defs>
+
+  <!-- Sombra sutil -->
+  <rect x="16" y="18" width="480" height="480" rx="24" ry="24" fill="#000000" opacity="0.1" />
+
+  <!-- Fondo completo morado claro -->
+  <rect x="8" y="8" width="496" height="496" rx="24" ry="24" fill="url(#colorClaro)" />
+
+  <!-- Franja morado oscuro -->
+  <path d="M 8 425 L 504 425 L 504 488 C 504 496 496 504 488 504 L 24 504 C 16 504 8 496 8 488 Z" fill="url(#colorOscuro)" />
+</svg>

@@ -126,16 +126,18 @@ ICON_REGISTRY = {
         "context": "places",
         "symlinks": ["folder_home", "gnome-fs-home"]
     },
+    
+    # --- TRASH ---
     "user-trash": {
         "context": "places",
-        "png_action": {"original": ["slot-multicolor", "sweet", "mint"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "mint"]},
+        "png_action": {"original": ["mint", "sweet-hollow", "slot-multicolor", "sweet"]},
+        "svg_action": {"svg_original": ["mint", "sweet-hollow", "slot-multicolor", "sweet"]},
         "symlinks": []
     },
     "user-trash-full": {
         "context": "places",
-        "png_action": {"original": ["slot-multicolor", "sweet", "mint"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "mint"]},
+        "png_action": {"original": ["sweet-hollow", "slot-multicolor", "sweet"]},
+        "svg_action": {"svg_original": ["sweet-hollow", "slot-multicolor", "sweet"]},
         "symlinks": []
     },
 
@@ -156,8 +158,8 @@ ICON_REGISTRY = {
     },
     "emblem-symbolic-link": {
         "context": "legacy",
-        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint"]},
+        "png_action": {"original": ["mint", "slot-multicolor", "sweet", "breeze"]},
+        "svg_action": {"svg_original": ["mint", "slot-multicolor", "sweet", "breeze"]},
         "symlinks": []
     },
 
@@ -202,32 +204,34 @@ ICON_REGISTRY = {
     },
     "text-markdown": {
         "context": "mimetypes",
-        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
+        "png_action": {"original": ["mint", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
+        "svg_action": {"svg_original": ["mint", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
         "symlinks": ["text-x-markdown", "markdown", "text-x-readme", "readme"]
     },
+    
+    # --- AUDIO ---
     "audio-mpeg": {
         "context": "mimetypes",
-        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
+        "png_action": {"original": ["mint", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
+        "svg_action": {"svg_original": ["mint", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
         "symlinks": ["audio-mp3", "mpeg"]
     },
     "audio-flac": {
         "context": "mimetypes",
-        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
+        "png_action": {"original": ["mint", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
+        "svg_action": {"svg_original": ["mint", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
         "symlinks": ["flac", "audio-x-flac"]
     },
     "audio-x-wav": {
         "context": "mimetypes",
-        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
+        "png_action": {"original": ["mint", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
+        "svg_action": {"svg_original": ["mint", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
         "symlinks": ["audio-wav", "audio-vnd.wave", "x-wav", "wav"]
     },
     "audio-midi": {
         "context": "mimetypes",
-        "png_action": {"original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["slot-multicolor", "sweet", "breeze", "mint", "adwaitaru", "rami"]},
+        "png_action": {"original": ["mint", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
+        "svg_action": {"svg_original": ["mint", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
         "symlinks": [
             "audio-mid", "audio-x-midi", "audio-sp-midi",
             "audio-smf", "midi", "mid"
@@ -246,8 +250,8 @@ ICON_REGISTRY = {
     # --- (WORD / WRITER) ---
     "x-office-document": {
         "context": "mimetypes",
-        "png_action": {"original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
-        "svg_action": {"svg_original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
+        "png_action": {"original": ["mint", "sweet-hollow", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
+        "svg_action": {"svg_original": ["mint", "sweet-hollow", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
         "symlinks": [
             "application-msword", "application-vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application-vnd.oasis.opendocument.text", "application-vnd.oasis.opendocument.text-rtl",
@@ -260,8 +264,8 @@ ICON_REGISTRY = {
     # --- (EXCEL / CALC) ---
     "x-office-spreadsheet": {
         "context": "mimetypes",
-        "png_action": {"original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
-        "svg_action": {"svg_original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
+        "png_action": {"original": ["mint", "sweet-hollow", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
+        "svg_action": {"svg_original": ["mint", "sweet-hollow", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
         "symlinks": [
             "application-vnd.ms-excel", "application-vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application-vnd.oasis.opendocument.spreadsheet", "application-vnd.sun.xml.calc",
@@ -272,8 +276,8 @@ ICON_REGISTRY = {
     # --- (POWERPOINT / IMPRESS) ---
     "x-office-presentation": {
         "context": "mimetypes",
-        "png_action": {"original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
-        "svg_action": {"svg_original": ["mint", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
+        "png_action": {"original": ["mint", "sweet-hollow", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
+        "svg_action": {"svg_original": ["mint", "sweet-hollow", "slot-multicolor", "adwaitaru", "rami", "breeze", "sweet"]},
         "symlinks": [
             "application-vnd.ms-powerpoint", "application-vnd.openxmlformats-officedocument.presentationml.presentation",
             "application-vnd.openxmlformats-officedocument.presentationml.slideshow", "application-vnd.ms-powerpoint.presentation.macroEnabled.12",
@@ -446,49 +450,117 @@ GTK2_ASSETS = [
     "spin-rtl-down-active.png", "spin-rtl-up-active.png", "tab.png", "treeview-ltr-button-active.png", "treeview-rtl-button-active.png"
 ]
 
-_PURPLE = {
-    'colors': [
-        ('a27ae4', 'hex'),
-        ('7155a0', 'dark_shade'),
-        ('cbb1f0', 'lighter'),
-        ('dbcbfa', 'lightest'),
-    ],
-    'family_ratios': {
-        'dark_shade': (1.01, 0.70),
-        'lighter':    (0.56, 1.05),
-        'lightest':   (0.40, 1.15),
+
+ICON_PRESETS = {
+    'mint': {
+        'path': 'template-icon-presets/mint',
+        'colors': [
+            ('a27ae4', 'hex'),        # 29 occurrences
+            ('7240c3', 'mid_dark'),   # 29 occurrences - signature!
+            ('2c1e44', 'deepest'),    # 18 occurrences
+            ('7155a0', 'dark_shade'), # 17 occurrences
+            ('4a2e85', 'darkest'),    # 3 occurrences
+        ],
+        'family_ratios': {
+            'mid_dark':   (2.5, 1.45, 0.86),
+            'deepest':    (0.6, 1.20, 0.30),
+            'dark_shade': (2.3, 1.01, 0.70),
+            'darkest':    (0.3, 1.41, 0.58),
+        },
+    },
+    'rami': {
+        'path': 'template-icon-presets/rami',
+        'colors': [
+            ('a27ae4', 'hex'),        # 30 occurrences
+            ('7155a0', 'dark_shade'), # 25 occurrences
+            ('dbcbfa', 'lightest'),   # 18 occurrences
+            ('cbb1f0', 'lighter'),    # 5 occurrences
+        ],
+        'family_ratios': {
+            'dark_shade': (2.3, 1.01, 0.70),
+            'lightest':   (0.0, 0.40, 1.15),
+            'lighter':    (4.4, 0.56, 1.05),
+        },
+    },
+    'adwaitaru': {
+        'path': 'template-icon-presets/adwaitaru',
+        'colors': [
+            ('a27ae4', 'hex'),        # 27 occurrences
+            ('dbcbfa', 'lightest'),   # 17 occurrences - bright!
+            ('7155a0', 'dark_shade'), # 4 occurrences
+        ],
+        'family_ratios': {
+            'lightest':   (0.0, 0.40, 1.15),
+            'dark_shade': (2.3, 1.01, 0.70),
+        },
+    },
+    'slot-multicolor': {
+        'path': 'template-icon-presets/slot-multicolor',
+        'colors': [
+            ('7155a0', 'dark_shade'), # 33 occurrences - mostly dark!
+            ('a27ae4', 'hex'),        # 26 occurrences
+            ('cbb1f0', 'lighter'),    # 2 occurrences
+        ],
+        'family_ratios': {
+            'dark_shade': (2.3, 1.01, 0.70),
+            'lighter':    (4.4, 0.56, 1.05),
+        },
+    },
+    'sweet': {
+        'path': 'template-icon-presets/sweet',
+        'colors': [
+            ('7155a0', 'dark_shade'), # 47 occurrences - very dark!
+            ('a27ae4', 'hex'),        # 26 occurrences
+        ],
+        'family_ratios': {
+            'dark_shade': (2.3, 1.01, 0.70),
+        },
+    },
+    'sweet-hollow': {
+        'path': 'template-icon-presets/sweet-hollow',
+        'colors': [
+            ('a27ae4', 'hex'),        # 29 occurrences
+            ('7155a0', 'dark_shade'), # 28 occurrences
+        ],
+        'family_ratios': {
+            'dark_shade': (2.3, 1.01, 0.70),
+        },
+    },
+    'breeze': {
+        'path': 'template-icon-presets/breeze',
+        'colors': [
+            ('a27ae4', 'hex'),        # 23 occurrences
+            ('7155a0', 'dark_shade'), # 3 occurrences
+        ],
+        'family_ratios': {
+            'dark_shade': (2.3, 1.01, 0.70),
+        },
+    },
+    'neon': {
+        'path': 'template-icon-presets/neon',
+        'colors': [
+            ('a27ae4', 'hex'),        # 135 occurrences - all main!
+        ],
+        'family_ratios': {},  # No ratios needed - only main color
     },
 }
 
-ICON_PRESETS = {
-    'slot-multicolor': {'path': 'template-icon-presets/slot-multicolor', **_PURPLE},
-    'sweet':           {'path': 'template-icon-presets/sweet',           **_PURPLE},
-    'breeze':          {'path': 'template-icon-presets/breeze',          **_PURPLE},
-    'mint':            {'path': 'template-icon-presets/mint',            **_PURPLE},
-    'adwaitaru':       {'path': 'template-icon-presets/adwaitaru',       **_PURPLE},
-    'neon':            {'path': 'template-icon-presets/neon',            **_PURPLE},
-    'rami':            {'path': 'template-icon-presets/rami',            **_PURPLE},
-}
 
 THEME_PRESETS = {
     'breeze': {
         'path':    'template-theme-presets/breeze',
         'rebrand': ['Breeze-Dark', 'Breeze'],
         'colors':  [
-            # === ORIGINAL GTK ENGINE MAPPINGS ===
             ('3daee9', 'hex'),
             ('61, 174, 233', 'rgb'),
             ('37, 164, 230', 'rgb'),
-            
-            # === SAFE XFWM4 MAPPINGS (Cloned from Colloid SVG hooks) ===
-            ('cc241d', 'hex'),           # Close button -> Maps directly to Active Workspace Accent
-            ('d79921', 'hide_gold'),     # Hide button -> Calculates your -50° sequential shift
-            ('98971a', 'maximize_blue'), # Maximize button -> Calculates your -25° sequential shift
+            ('cc241d', 'hex'),
+            ('d79921', 'hide_gold'),
+            ('98971a', 'maximize_blue'),
         ],
         'family_ratios': {
-            # Sequential window engine parameters (Instantly grabs your intelligent trap-zone fix!)
-            'maximize_blue':  (-25, 1.00, 1.00), # Next to main color (-25° or +25°)
-            'hide_gold':      (-50, 1.00, 1.00), # Further away (-50° or +50°)
+            'maximize_blue':  (-25, 1.00, 1.00),
+            'hide_gold':      (-50, 1.00, 1.00),
         },
         'assets':  TARGET_ASSETS,
     },
@@ -496,7 +568,6 @@ THEME_PRESETS = {
         'path':    'template-theme-presets/colloid',
         'rebrand': ['Colloid-Orange-Dark-Gruvbox'],
         'colors':  [
-            # === ORIGINAL GTK ENGINE MAPPINGS (Do Not Touch) ===
             ('fe8019', 'hex'),
             ('254, 128, 25', 'rgb'),
             ('d65d0e', 'dark_shade'),
@@ -505,23 +576,19 @@ THEME_PRESETS = {
             ('254, 145, 55', 'shade_rgb'),
             ('fda24d', 'lighter'),
             ('253, 162, 77', 'lighter_rgb'),
-
-            # === SAFE XFWM4 MAPPINGS (Using original template colors as hooks) ===
-            ('cc241d', 'hex'),           # Close button -> Maps directly to Active Workspace Accent
-            ('d79921', 'hide_gold'),     # Hide button -> Calculates your -50° sequential shift
-            ('98971a', 'maximize_blue'), # Maximize button -> Calculates your -25° sequential shift
+            ('cc241d', 'hex'),
+            ('d79921', 'hide_gold'),
+            ('98971a', 'maximize_blue'),
         ],
         'family_ratios': {
-            'dark_shade':     (1.0, 0.78),
-            'dark_shade_rgb': (1.0, 0.78),
-            'shade':          (1.0, 0.93),
-            'shade_rgb':      (1.0, 0.93),
-            'lighter':        (0.85, 1.10),
-            'lighter_rgb':    (0.85, 1.10),
-            
-            # Your sequential window engine parameters
-            'maximize_blue':  (-25, 1.00, 1.00), # Next to main color (-25°)
-            'hide_gold':      (-50, 1.00, 1.00), # Further away (-50°)
+            'dark_shade':     (0, 1.0, 0.78),      # hue=0
+            'dark_shade_rgb': (0, 1.0, 0.78),      # hue=0
+            'shade':          (0, 1.0, 0.93),      # hue=0
+            'shade_rgb':      (0, 1.0, 0.93),      # hue=0
+            'lighter':        (0, 0.85, 1.10),     # hue=0
+            'lighter_rgb':    (0, 0.85, 1.10),     # hue=0
+            'maximize_blue':  (-25, 1.00, 1.00),
+            'hide_gold':      (-50, 1.00, 1.00),
         },
         'assets': GTK2_ASSETS,
     },
@@ -531,22 +598,20 @@ THEME_PRESETS = {
         'colors':  [
             ('fe8019', 'hex'),
             ('254, 128, 25', 'rgb'),
-            
             ('d65d0e', 'dark_shade'),
             ('214, 93, 14', 'dark_shade_rgb'),
-            
             ('fe9137', 'shade'),
             ('254, 145, 55', 'shade_rgb'),
             ('fda24d', 'lighter'),
             ('253, 162, 77', 'lighter_rgb'),
         ],
         'family_ratios': {
-            'dark_shade':     (1.0, 0.78),
-            'dark_shade_rgb': (1.0, 0.78),
-            'shade':          (1.0, 0.93),
-            'shade_rgb':      (1.0, 0.93),
-            'lighter':        (0.85, 1.10),
-            'lighter_rgb':    (0.85, 1.10),
+            'dark_shade':     (0, 1.0, 0.78),      # hue=0
+            'dark_shade_rgb': (0, 1.0, 0.78),      # hue=0
+            'shade':          (0, 1.0, 0.93),      # hue=0
+            'shade_rgb':      (0, 1.0, 0.93),      # hue=0
+            'lighter':        (0, 0.85, 1.10),     # hue=0
+            'lighter_rgb':    (0, 0.85, 1.10),     # hue=0
         },
         'assets': GTK2_ASSETS,
     },
@@ -554,33 +619,23 @@ THEME_PRESETS = {
         'path':    'template-theme-presets/flat-remix',
         'rebrand': ['Flat-Remix-GTK-Blue-Darkest-Solid'],
         'colors':  [
-            # === MAIN ACCENT ===
             ('2777ff', 'hex'), ('3b84ff', 'hex'), ('317dff', 'hex'), ('1d71ff', 'hex'),
             ('2165d9', 'hex'), ('2262cf', 'hex'), ('377cf1', 'hex'), ('3b83fd', 'hex'),
             ('468aff', 'hex'),
-
-            # === DARK BORDERS ===
             ('00348d', 'dark_border'), ('00215a', 'dark_border'), ('0047c0', 'dark_border'),
             ('0052df', 'dark_border'), ('0056e9', 'dark_border'), ('004fd4', 'dark_border'),
             ('1d59be', 'dark_border'),
-
-            # === BRIGHT LIGHTS / HOVERS ===
             ('6ea4ff', 'hover_light'), ('74a7ff', 'hover_light'), ('8db7ff', 'hover_light'),
             ('5a97ff', 'hover_light'), ('4187ff', 'hover_light'), ('5594ff', 'hover_light'),
             ('4b8dff', 'hover_light'), ('83b6ec', 'hover_light'), ('337fdc', 'hover_light'),
-
-            # === COUSIN PALETTE XFWM4 HOOKS ===
-            ('999911', 'hide_gold'),     # Minimizes/Hides: Template placeholder mapped to Left Cousin
-            ('999922', 'maximize_blue'), # Maximizes: Template placeholder mapped to Right Cousin
+            ('999911', 'hide_gold'),
+            ('999922', 'maximize_blue'),
         ],
         'family_ratios': {
-            # Classic 2-value ratios (automatically processed with 0° Hue shift)
-            'dark_border':   (1.00, 0.45),
-            'hover_light':   (0.50, 1.00),
-            
-            # New 3-value ratios: (Hue Shift Degrees, Saturation Multiplier, Value Multiplier)
-            'hide_gold':     (-50, 1.00, 1.00), # Slide Hue back 45°
-            'maximize_blue': (-25,  1.00, 1.00), # Slide Hue forward 45°
+            'dark_border':   (0, 1.00, 0.45),      # hue=0
+            'hover_light':   (0, 0.50, 1.00),      # hue=0
+            'hide_gold':     (-50, 1.00, 1.00),
+            'maximize_blue': (-25, 1.00, 1.00),
         },
         'assets': FLAT_REMIX_ASSETS,
     },

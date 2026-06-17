@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cuerpoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a27ae4" />
+      <stop offset="100%" stop-color="#7240c3"/>
+    </linearGradient>
+    <linearGradient id="solapaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7240c3" />
+      <stop offset="100%" stop-color="#7155a0" />
+    </linearGradient>
+  </defs>
+
+  <path d="M 12 18 H 24 L 32 23 H 52 C 54 23 56 25 56 27 V 34 H 8 V 22 C 8 20 10 18 12 18 Z" fill="url(#solapaGradient)" />
+  <path d="M 14 26 C 13 26 12 27 12 28 V 54 H 52 V 28 C 52 27 51 26 50 26 Z" fill="#dcdae8" />
+  <path d="M 12 30 H 52 C 54 30 56 32 56 34 V 56 C 56 58 54 58 52 58 H 12 C 10 58 8 58 8 56 V 34 C 8 32 10 30 12 30 Z" fill="url(#cuerpoGradient)" />
+
+  <g transform="translate(23 35) scale(0.42)" fill="#2c1e44">
+    <!-- Marco de la imagen -->
+    <path d="M42 6C42 3 39 0 36 0C36 0 6 0 6 0C3 0 0 3 0 6C0 6 0 36 0 36C0 39 3 42 6 42C6 42 36 42 36 42C39 42 42 39 42 36C42 36 42 6 42 6ZM36 3C37.5 3 39 4.5 39 6C39 6 39 36 39 36C39 37.5 37.5 39 36 39C36 39 6 39 6 39C4.5 39 3 37.5 3 36C3 36 3 6 3 6C3 4.5 4.5 3 6 3C6 3 36 3 36 3Z" fill-rule="evenodd"/>
+    <!-- Montañas -->
+    <path d="M0 9L9 0L19.5 10.5L24 6L30 12L30 18L0 18Z" transform="translate(6 18)"/>
+    <!-- Sol -->
+    <circle r="4.5" cx="28.5" cy="13.5"/>
+  </g>
+</svg>

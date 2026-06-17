@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cuerpoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a27ae4" />
+      <stop offset="100%" stop-color="#7240c3"/>
+    </linearGradient>
+    <linearGradient id="solapaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7240c3" />
+      <stop offset="100%" stop-color="#7155a0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Solapa bajada -->
+  <path d="M 12 18 H 24 L 32 23 H 52 C 54 23 56 25 56 27 V 34 H 8 V 22 C 8 20 10 18 12 18 Z" fill="url(#solapaGradient)" />
+  
+  <path d="M 14 26 C 13 26 12 27 12 28 V 54 H 52 V 28 C 52 27 51 26 50 26 Z" fill="#dcdae8" />
+  
+  <path d="M 12 30 H 52 C 54 30 56 32 56 34 V 56 C 56 58 54 58 52 58 H 12 C 10 58 8 58 8 56 V 34 C 8 32 10 30 12 30 Z" fill="url(#cuerpoGradient)" />
+
+  <!-- ================================================ -->
+  <!-- EMBLEMA DE RED - BOLAS GRANDES MOVIDAS 1 UNIDAD  -->
+  <!-- Escala: 0.9  |  Posición: (4, 12)                -->
+  <!-- ================================================ -->
+  <g transform="translate(4, 12) scale(0.9)" fill="#2c1e44">
+    <!-- Bolas grandes -->
+    <circle cx="40" cy="27" r="2.8" />   <!-- Superior derecha: +1 derecha, +1 arriba -->
+    <circle cx="25" cy="36" r="2.8" />   <!-- Izquierda: sin cambios -->
+    <circle cx="40" cy="46" r="2.8" />   <!-- Inferior derecha: +1 derecha, +1 abajo -->
+    
+    <!-- Bolas pequeñas (sin cambios) -->
+    <circle cx="35.5" cy="30" r="0.9" />
+    <circle cx="32.5" cy="32" r="0.9" />
+    <circle cx="29.5" cy="34" r="0.9" />
+    <circle cx="29.5" cy="39" r="0.9" />
+    <circle cx="32.5" cy="41" r="0.9" />
+    <circle cx="35.5" cy="43" r="0.9" />
+  </g>
+</svg>

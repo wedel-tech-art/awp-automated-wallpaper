@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cuerpoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a27ae4" />
+      <stop offset="100%" stop-color="#7240c3"/>
+    </linearGradient>
+    <linearGradient id="solapaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7240c3" />
+      <stop offset="100%" stop-color="#7155a0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Solapa bajada -->
+  <path d="M 12 18 H 24 L 32 23 H 52 C 54 23 56 25 56 27 V 34 H 8 V 22 C 8 20 10 18 12 18 Z" fill="url(#solapaGradient)" />
+  
+  <path d="M 14 26 C 13 26 12 27 12 28 V 54 H 52 V 28 C 52 27 51 26 50 26 Z" fill="#dcdae8" />
+  
+  <path d="M 12 30 H 52 C 54 30 56 32 56 34 V 56 C 56 58 54 58 52 58 H 12 C 10 58 8 58 8 56 V 34 C 8 32 10 30 12 30 Z" fill="url(#cuerpoGradient)" />
+
+  <!-- ================================================ -->
+  <!-- EMBLEMA DE USER-BOOKMARKS - UN POCO MÁS DERECHA Y ABAJO -->
+  <!-- Escala: 0.35  |  Posición: (26, 36)                -->
+  <!-- ================================================ -->
+  <g transform="translate(26, 36) scale(0.35)" fill="#2c1e44">
+    <path d="M36 48C36 48 36 7.5 36 7.5C36 3.3573 32.6427 0 28.5 0C28.5 0 7.5 0 7.5 0C3.3573 0 0 3.3573 0 7.5C0 7.5 0 48 0 48L18 30C18 30 36 48 36 48ZM3 40.7574C3 40.7574 18 25.7574 18 25.7574L33 40.7574C33 40.7574 33 7.5 33 7.5C33 6.25707 32.5608 5.19636 31.6821 4.31781C30.8037 3.43926 29.7429 3 28.5 3C28.5 3 7.5 3 7.5 3C6.25707 3 5.19636 3.43926 4.31781 4.31781C3.43926 5.19636 3 6.25707 3 7.5C3 7.5 3 40.7574 3 40.7574Z" fill="#2c1e44" fill-rule="evenodd"/>
+  </g>
+</svg>

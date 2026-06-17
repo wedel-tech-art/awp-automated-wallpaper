@@ -17,6 +17,125 @@ VALID_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp", ".avif")
 
 _printer = get_printer()
 
+
+def hex_to_hsv(hex_color: str):
+    """
+    Convert hex color (without #) to normalized HSV tuple.
+    
+    Args:
+        hex_color: 6-character hex string (e.g., 'a27ae4')
+    
+    Returns:
+        tuple: (hue 0-1, saturation 0-1, value 0-1)
+    """
+    r = int(hex_color[0:2], 16) / 255.0
+    g = int(hex_color[2:4], 16) / 255.0
+    b = int(hex_color[4:6], 16) / 255.0
+    return colorsys.rgb_to_hsv(r, g, b)
+
+
+def hsv_to_hex(h: float, s: float, v: float) -> str:
+    """
+    Convert normalized HSV tuple to hex color (without #).
+    
+    Args:
+        h: Hue (0-1)
+        s: Saturation (0-1)
+        v: Value (0-1)
+    
+    Returns:
+        str: 6-character hex string (e.g., 'a27ae4')
+    """
+    r, g, b = colorsys.hsv_to_rgb(h, s, v)
+    r_final = max(0, min(255, int(round(r * 255))))
+    g_final = max(0, min(255, int(round(g * 255))))
+    b_final = max(0, min(255, int(round(b * 255))))
+    return f"{r_final:02x}{g_final:02x}{b_final:02x}"
+
+
+def apply_hue_shift(h: float, shift_deg: float) -> float:
+    """
+    Apply hue shift in degrees, wrap around 0-1 range.
+    
+    Args:
+        h: Normalized hue (0-1)
+        shift_deg: Degrees to shift (positive or negative)
+    
+    Returns:
+        float: New normalized hue
+    """
+    return (h + (shift_deg / 360.0)) % 1.0
+
+
+def apply_sat_val(s: float, v: float, sat_ratio: float, val_ratio: float):
+    """
+    Apply saturation and value multipliers with clamping to 0-1.
+    
+    Args:
+        s: Saturation (0-1)
+        v: Value (0-1)
+        sat_ratio: Multiplier for saturation
+        val_ratio: Multiplier for value
+    
+    Returns:
+        tuple: (new_saturation, new_value)
+    """
+    ns = min(1.0, max(0.0, s * sat_ratio))
+    nv = min(1.0, max(0.0, v * val_ratio))
+    return ns, nv
+
+
+def calculate_family_color(base_hex: str, sat_ratio: float, val_ratio: float, hue_shift_deg: float = 0) -> str:
+    """
+    Pure calculation: base_hex + ratios -> new hex.
+    
+    Args:
+        base_hex: Base hex color without # (e.g., 'a27ae4')
+        sat_ratio: Saturation multiplier
+        val_ratio: Value multiplier
+        hue_shift_deg: Degrees to shift hue (default 0)
+    
+    Returns:
+        str: New hex color without #
+    """
+    h, s, v = hex_to_hsv(base_hex)
+    h = apply_hue_shift(h, hue_shift_deg)
+    s, v = apply_sat_val(s, v, sat_ratio, val_ratio)
+    return hsv_to_hex(h, s, v)
+
+
+def hex_to_rgb(hex_color: str) -> tuple:
+    """
+    Convert hex color to RGB tuple.
+    
+    Args:
+        hex_color: 6-character hex string (e.g., 'a27ae4')
+    
+    Returns:
+        tuple: (r, g, b) as integers 0-255
+    """
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    return (r, g, b)
+
+
+def rgb_to_hex(r: int, g: int, b: int) -> str:
+    """
+    Convert RGB tuple to hex string.
+    
+    Args:
+        r: Red (0-255)
+        g: Green (0-255)
+        b: Blue (0-255)
+    
+    Returns:
+        str: 6-character hex string
+    """
+    return f"{r:02x}{g:02x}{b:02x}"
+
+
+
 def x11_blanking(timeout_seconds: int):
     """Universal X11 screen blanking control via xset."""
     try:

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cuerpoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a27ae4" />
+      <stop offset="100%" stop-color="#7240c3"/>
+    </linearGradient>
+    <linearGradient id="fondoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7240c3" />
+      <stop offset="100%" stop-color="#4a2e85" />
+    </linearGradient>
+  </defs>
+
+  <!-- CAPA 1: Fondo morado oscuro completo (solapa + cuerpo trasero) -->
+  <path d="M 12 18 H 24 L 32 23 H 52 C 54 23 56 25 56 27 V 60 C 56 62 54 62 52 62 H 12 C 10 62 8 62 8 60 V 22 C 8 20 10 18 12 18 Z" fill="url(#fondoGradient)" />
+
+  <!-- CAPA 2: Cuerpo morado claro (bajado, dibujado encima) -->
+  <path d="M 12 36 H 52 C 54 36 56 38 56 40 V 60 C 56 62 54 62 52 62 H 12 C 10 62 8 62 8 60 V 40 C 8 38 10 36 12 36 Z" fill="url(#cuerpoGradient)" />
+</svg>
