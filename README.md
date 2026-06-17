@@ -22,7 +22,7 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 - **Independent Icon Preset Definitions:** Each icon preset now has its own dedicated `colors` and `family_ratios` definition in `ICON_PRESETS`. This replaces the shared `_PURPLE` dictionary, allowing each preset to express its unique color personality — from the rich 5-color Mint to the minimal 1-color Neon.
 
-- **SVG-Based Mint Preset (Rebuilt):** The original `mint` preset has been completely rebuilt from the ground up. Ditched the legacy PNG-based Mint-Y-Purple template and created a new, modern SVG-based Mint from scratch using `slot-multicolor` folder structures and `adwaitaru` label/emblems. The result: a cleaner, more maintainable, and infinitely scalable Mint with richer gradients and deeper color relationships.
+- **Mint Preset Rebuilt (Mostly SVG):** The `mint` preset has been completely rebuilt from the ground up. Most assets were replaced with original SVG artwork, with only a few supplementary PNG assets retained for audio and emblem icons.
 
 - **Sweet-Hollow Preset:** A new modern variant of the `sweet` family featuring hollow-body folders and a neon-inspired aesthetic. Perfect for users who want the sweet icon style with a lighter, more transparent visual footprint.
 
@@ -348,7 +348,7 @@ AWP includes modified and adapted visual presets derived from the following open
 | sweet | Icon | Sweet (filled variant) | EliverLara | GPLv3 | [GitHub](https://github.com/EliverLara/Sweet) |
 | sweet-hollow | Icon | Sweet (hollow variant) | EliverLara | GPLv3 | [GitHub](https://github.com/EliverLara/Sweet) |
 | adwaitaru | Icon | Adwaitaru | ricardoherreramx | GPLv3 | [GitHub](https://github.com/ricardoherreramx/adwaitaru) |
-| mint | Icon | AWP Original (SVG-based rebuild) | AWP Original | MIT | Built from scratch |
+| mint | Icon | AWP Original + some added SVG/PNG | AWP Original + Various | MIT/GPLv3 | Built from scratch |
 | neon | Icon | Royal-Z / Neon | SethStormR | GPLv3 | [GitHub](https://github.com/SethStormR/Royal-Z) |
 | rami | Icon | Rami (based on Kora) | Rami | GPLv3 | [Gnome-Look](https://www.gnome-look.org/p/2216265) |
 | breeze | GTK | Breeze GTK | KDE Community | LGPL / GPL | [Website](https://kde.org) |
@@ -369,5 +369,5 @@ AWP does not claim ownership of bundled visual assets. Icon, GTK and cursor pres
 - Tested on Linux Mint XFCE, Debian, and other major distributions.
 - Theme, cursor and visual preset workflows are inspired by the excellent work of the KDE, Linux Mint, XFCE, GNOME and wider Linux desktop communities.
 - **Visual Preset Credits:** slot-multicolor (L4ki), breeze (L4ki/KDE), sweet & sweet-hollow (EliverLara), adwaitaru (ricardoherreramx), neon (SethStormR), rami (Rami author), colloid (vinceliuice), flat-remix (daniruiz), graphite (vinceliuice), and Oxygen Cursors (KDE Community). See the License section for full attribution details.
-- **Special Credit:** The AWP `mint` icon preset is an **original AWP creation** — rebuilt from scratch using SVG technology and inspired by the Linux Mint design language. Distributed under the MIT License as part of AWP.
+- **Special Credit:** The AWP `mint` icon preset is an **original AWP creation** — rebuilt from scratch with most assets converted to original SVG artwork. Distributed under the MIT License as part of AWP.
 - Special thanks to the open-source community and all AWP users.
