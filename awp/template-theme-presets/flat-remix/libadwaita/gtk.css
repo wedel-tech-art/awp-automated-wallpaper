@@ -1,4 +1,5 @@
 @define-color accent_bg_color #2777ff;
+@define-color theme_selected_bg_color #1a5599;
 @define-color accent_fg_color #ffffff;
 @define-color accent_color @accent_bg_color;
 @define-color destructive_bg_color @red_4;

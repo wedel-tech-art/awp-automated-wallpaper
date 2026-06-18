@@ -54,7 +54,7 @@ popover.background .menuitem.button.flat:selected, .csd treeview.view:selected, 
 
 .nemo-window .nemo-window-pane widget.entry:selected, window.background.csd evview.view.content-view:selected, window.background.csd evview.view.content-view:selected:backdrop, .nautilus-window.background.csd notebook widget.view:selected, entry selection, textview text selection:focus, textview text selection, widget.view:selected, .view:selected {
   color: #fbf1c7;
-  background-color: #fe8019;
+  background-color: #b35a12;
 }
 
 .linked:not(.vertical) > button, .linked:not(.vertical) > entry {
@@ -134,7 +134,7 @@ popover.background .menuitem.button.flat:selected, .csd treeview.view:selected, 
 }
 
 .gtkstyle-fallback:selected {
-  background-color: #fe8019;
+  background-color: #b35a12;
   color: #fbf1c7;
 }
 
@@ -1279,7 +1279,7 @@ searchbar > revealer > box {
 }
 
 .titlebar.selection-mode + separator, .titlebar.selection-mode + separator.sidebar, .selection-mode .titlebar + separator, .selection-mode .titlebar + separator.sidebar {
-  background-color: #fe8019;
+  background-color: #b35a12;
 }
 
 .titlebar.selection-mode + separator:backdrop, .titlebar.selection-mode + separator.sidebar:backdrop, .selection-mode .titlebar + separator:backdrop, .selection-mode .titlebar + separator.sidebar:backdrop {
@@ -2955,7 +2955,7 @@ progressbar.osd trough {
 }
 
 progressbar.osd progress {
-  background-color: #fe8019;
+  background-color: #b35a12;
 }
 
 progressbar trough.empty progress {
@@ -8283,7 +8283,7 @@ text widgets and the like base background color */
 @define-color theme_base_color #282524;
 /*
 base background color of selections */
-@define-color theme_selected_bg_color #fe8019;
+@define-color theme_selected_bg_color #b35a12;
 /*
 text/foreground color of selections */
 @define-color theme_selected_fg_color #fbf1c7;
@@ -8310,7 +8310,7 @@ text widgets and the like base background color on backdrop windows */
 @define-color theme_unfocused_base_color #282524;
 /*
 base background color of selections on backdrop windows */
-@define-color theme_unfocused_selected_bg_color #fe8019;
+@define-color theme_unfocused_selected_bg_color #b35a12;
 /*
 text/foreground color of selections on backdrop windows */
 @define-color theme_unfocused_selected_fg_color #fbf1c7;

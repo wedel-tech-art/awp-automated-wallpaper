@@ -54,6 +54,16 @@ SCALING_FEH = {
 # ============================================================================
 ICON_SIZES = ["16", "22", "24", "32", "48", "64", "96"]
 
+
+# ============================================================================
+# SELECTION BRIGHTNESS - Central control for all themes
+# ============================================================================
+# 0.70 = 70% brightness (safe, works with ALL colors including extreme yellow)
+# 0.75 = 75% brightness (balanced, works with most colors)
+# 0.80 = 80% brightness (vibrant, works with dark/medium colors only)
+SELECTION_BRIGHTNESS = 0.75  # Default: 70% - maximum readability
+
+
 ICON_REGISTRY = {
     # --- PLACES ---
     "folder": {
@@ -551,16 +561,18 @@ THEME_PRESETS = {
         'path':    'template-theme-presets/breeze',
         'rebrand': ['Breeze-Dark', 'Breeze'],
         'colors':  [
-            ('3daee9', 'hex'),
-            ('61, 174, 233', 'rgb'),
-            ('37, 164, 230', 'rgb'),
-            ('cc241d', 'hex'),
-            ('d79921', 'hide_gold'),
-            ('98971a', 'maximize_blue'),
+            ('3daee9', 'hex'),           # Main accent
+            ('61, 174, 233', 'rgb'),     # RGB version
+            ('37, 164, 230', 'rgb'),     # RGB alt
+            ('cc241d', 'hex'),           # Close button
+            ('d79921', 'hide_gold'),     # Hide button
+            ('98971a', 'maximize_blue'), # Maximize button
+            ('2673a8', 'selection_bg'),
         ],
         'family_ratios': {
             'maximize_blue':  (-25, 1.00, 1.00),
             'hide_gold':      (-50, 1.00, 1.00),
+            'selection_bg':   (0, 1.0, SELECTION_BRIGHTNESS),
         },
         'assets':  TARGET_ASSETS,
     },
@@ -579,16 +591,18 @@ THEME_PRESETS = {
             ('cc241d', 'hex'),
             ('d79921', 'hide_gold'),
             ('98971a', 'maximize_blue'),
+            ('b35a12', 'selection_bg'),
         ],
         'family_ratios': {
-            'dark_shade':     (0, 1.0, 0.78),      # hue=0
-            'dark_shade_rgb': (0, 1.0, 0.78),      # hue=0
-            'shade':          (0, 1.0, 0.93),      # hue=0
-            'shade_rgb':      (0, 1.0, 0.93),      # hue=0
-            'lighter':        (0, 0.85, 1.10),     # hue=0
-            'lighter_rgb':    (0, 0.85, 1.10),     # hue=0
+            'dark_shade':     (0, 1.0, 0.78),
+            'dark_shade_rgb': (0, 1.0, 0.78),
+            'shade':          (0, 1.0, 0.93),
+            'shade_rgb':      (0, 1.0, 0.93),
+            'lighter':        (0, 0.85, 1.10),
+            'lighter_rgb':    (0, 0.85, 1.10),
             'maximize_blue':  (-25, 1.00, 1.00),
             'hide_gold':      (-50, 1.00, 1.00),
+            'selection_bg':   (0, 1.00, SELECTION_BRIGHTNESS),
         },
         'assets': GTK2_ASSETS,
     },
@@ -604,14 +618,16 @@ THEME_PRESETS = {
             ('254, 145, 55', 'shade_rgb'),
             ('fda24d', 'lighter'),
             ('253, 162, 77', 'lighter_rgb'),
+            ('b35a12', 'selection_bg'),
         ],
         'family_ratios': {
-            'dark_shade':     (0, 1.0, 0.78),      # hue=0
-            'dark_shade_rgb': (0, 1.0, 0.78),      # hue=0
-            'shade':          (0, 1.0, 0.93),      # hue=0
-            'shade_rgb':      (0, 1.0, 0.93),      # hue=0
-            'lighter':        (0, 0.85, 1.10),     # hue=0
-            'lighter_rgb':    (0, 0.85, 1.10),     # hue=0
+            'dark_shade':     (0, 1.0, 0.78),
+            'dark_shade_rgb': (0, 1.0, 0.78),
+            'shade':          (0, 1.0, 0.93),
+            'shade_rgb':      (0, 1.0, 0.93),
+            'lighter':        (0, 0.85, 1.10),
+            'lighter_rgb':    (0, 0.85, 1.10),
+            'selection_bg':   (0, 1.00, SELECTION_BRIGHTNESS),
         },
         'assets': GTK2_ASSETS,
     },
@@ -630,12 +646,14 @@ THEME_PRESETS = {
             ('4b8dff', 'hover_light'), ('83b6ec', 'hover_light'), ('337fdc', 'hover_light'),
             ('999911', 'hide_gold'),
             ('999922', 'maximize_blue'),
+            ('1a5599', 'selection_bg'),
         ],
         'family_ratios': {
-            'dark_border':   (0, 1.00, 0.45),      # hue=0
-            'hover_light':   (0, 0.50, 1.00),      # hue=0
+            'dark_border':   (0, 1.00, 0.45),
+            'hover_light':   (0, 0.50, 1.00),
             'hide_gold':     (-50, 1.00, 1.00),
             'maximize_blue': (-25, 1.00, 1.00),
+            'selection_bg':  (0, 1.00, SELECTION_BRIGHTNESS),
         },
         'assets': FLAT_REMIX_ASSETS,
     },

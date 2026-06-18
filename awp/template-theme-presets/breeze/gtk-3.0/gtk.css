@@ -21,7 +21,7 @@ background color of hovering selected widgets*/
 @define-color theme_hovering_selected_bg_color_breeze #3daee9;
 /*
 base background color of selections */
-@define-color theme_selected_bg_color_breeze #3daee9;
+@define-color theme_selected_bg_color_breeze #2673a8;
 /*
 text/foreground color of selections */
 @define-color theme_selected_fg_color_breeze #fcfcfc;

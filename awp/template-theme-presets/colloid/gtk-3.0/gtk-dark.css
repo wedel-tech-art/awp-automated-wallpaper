@@ -8283,7 +8283,7 @@ text widgets and the like base background color */
 @define-color theme_base_color #282524;
 /*
 base background color of selections */
-@define-color theme_selected_bg_color #fe8019;
+@define-color theme_selected_bg_color #b35a12;
 /*
 text/foreground color of selections */
 @define-color theme_selected_fg_color #fbf1c7;
@@ -8310,7 +8310,7 @@ text widgets and the like base background color on backdrop windows */
 @define-color theme_unfocused_base_color #282524;
 /*
 base background color of selections on backdrop windows */
-@define-color theme_unfocused_selected_bg_color #fe8019;
+@define-color theme_unfocused_selected_bg_color #b35a12;
 /*
 text/foreground color of selections on backdrop windows */
 @define-color theme_unfocused_selected_fg_color #fbf1c7;

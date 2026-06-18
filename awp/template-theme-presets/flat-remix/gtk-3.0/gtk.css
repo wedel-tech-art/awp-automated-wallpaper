@@ -53,7 +53,7 @@
     background-color: #080808; }
   .gtkstyle-fallback:selected {
     color: #ffffff;
-    background-color: #2777ff; }
+    background-color: #1a5599; }
 
 .view, iconview,
 .view text,
@@ -112,14 +112,14 @@ flowbox flowboxchild {
   .content-view .tile:backdrop {
     background-color: black; }
   .content-view .tile:active, .content-view .tile:selected {
-    background-color: #2777ff; }
+    background-color: #1a5599; }
   .content-view .tile:disabled {
     background-color: #080808; }
 
 label {
   caret-color: currentColor; }
   label selection {
-    background-color: #2777ff;
+    background-color: #1a5599;
     color: #ffffff; }
   label:disabled {
     color: #7d7d7c; }
@@ -1653,11 +1653,11 @@ headerbar {
     color: #ffffff;
     border-color: #00348d;
     text-shadow: 0 -1px rgba(0, 0, 0, 0.5);
-    background: #2777ff linear-gradient(to top, #3b84ff, #468aff);
+    background: #1a5599 linear-gradient(to top, #3b84ff, #468aff);
     box-shadow: inset 0 1px rgba(46, 123, 254, 0.535); }
     .selection-mode .titlebar:backdrop:not(headerbar), .selection-mode.titlebar:backdrop:not(headerbar), .selection-mode headerbar:backdrop,
     headerbar.selection-mode:backdrop {
-      background-color: #2777ff;
+      background-color: #1a5599;
       background-image: none;
       box-shadow: inset 0 1px rgba(49, 125, 254, 0.442); }
       .selection-mode .titlebar:backdrop:not(headerbar) label, .selection-mode.titlebar:backdrop:not(headerbar) label, .selection-mode headerbar:backdrop label,
@@ -2119,7 +2119,7 @@ menu,
     .menu menuitem:hover,
     .context-menu menuitem:hover {
       color: #ffffff;
-      background-color: #2777ff; }
+      background-color: #1a5599; }
     menu menuitem:disabled,
     .menu menuitem:disabled,
     .context-menu menuitem:disabled {
@@ -4435,7 +4435,7 @@ textview text selection:focus,
 textview text selection, iconview:selected:focus, iconview:selected, iconview text selection:focus, iconview text selection, flowbox flowboxchild:selected,
 entry selection, modelbutton.flat:selected,
 .menuitem.button.flat:selected, spinbutton:not(.vertical) selection, treeview.view:selected:focus, treeview.view:selected, row:selected, calendar:selected {
-  background-color: #2777ff; }
+  background-color: #1a5599; }
   label:selected, .selection-mode button.titlebutton, .view:selected:focus, .view:selected,
   .view text:selected:focus,
   textview text:selected:focus,
@@ -6137,7 +6137,7 @@ filechooser placessidebar.sidebar row.sidebar-row,
   .nautilus-window .path-bar-box .text-button:checked, .nautilus-window .path-bar-box widget > .text-button:last-child {
     color: #ffffff;
     outline-color: rgba(238, 238, 236, 0.3);
-    border-color: #2777ff;
+    border-color: #1a5599;
     background-image: linear-gradient(to right, #317dff, #1d71ff);
     box-shadow: 0 2px 4px rgba(39, 119, 255, 0.25);
     padding: 3px;
@@ -6318,8 +6318,8 @@ XfdesktopIconView.rubberband {
   .thunar .path-bar button:checked {
     color: #ffffff;
     outline-color: rgba(238, 238, 236, 0.3);
-    border-color: #2777ff;
-    background-image: linear-gradient(to right, #317dff, #1d71ff);
+    border-color: #1a5599;
+    background-image: linear-gradient(to right, #1a5599, #1a5599);
     box-shadow: 0 2px 4px rgba(39, 119, 255, 0.25);
     border-radius: 99px; }
 
@@ -6819,7 +6819,7 @@ text widgets and the like base background color */
 @define-color theme_base_color black;
 /*
 base background color of selections */
-@define-color theme_selected_bg_color #2777ff;
+@define-color theme_selected_bg_color #1a5599;
 /*
 text/foreground color of selections */
 @define-color theme_selected_fg_color #ffffff;
@@ -6846,7 +6846,7 @@ text widgets and the like base background color on backdrop windows */
 @define-color theme_unfocused_base_color #030303;
 /*
 base background color of selections on backdrop windows */
-@define-color theme_unfocused_selected_bg_color #2777ff;
+@define-color theme_unfocused_selected_bg_color #1a5599;
 /*
 text/foreground color of selections on backdrop windows */
 @define-color theme_unfocused_selected_fg_color #ffffff;

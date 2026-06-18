@@ -14,7 +14,8 @@ from core.constants import (
     QT6CT_CONF_PATH,
     QT6CT_COLORS_DIR,
     KDE_COLORS_DIR,
-    KDE_ACCENT_SHM
+    KDE_ACCENT_SHM,
+    SELECTION_BRIGHTNESS
 )
 
 # Get printer instance
@@ -61,21 +62,25 @@ def ensure_qt6_kde_symlinks():
     _printer.info("Qt6 & KDE symlinks verified", backend="common")
 
 def write_qt6_kde_accent(accent_color: str):
-    """Write Qt6 and KDE accent colors to RAM (shared across all backends)."""
+    """Write Qt6 and KDE accent colors to RAM with dark selection for readability."""
     ensure_qt6_kde_symlinks()
     
     accent_raw = accent_color.lstrip('#').lower()
     
-    # Qt6 format
+    # Calculate dark version (70% brightness) for selection backgrounds
+    from core.utils import calculate_family_color
+    dark_raw = calculate_family_color(accent_raw, 1.0, SELECTION_BRIGHTNESS, 0.0)
+    
+    # Qt6 format with dark selection
     qt_content = f'''[ColorScheme]
-active_colors=#ffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{accent_raw}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{accent_raw}
-inactive_colors=#ffffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{accent_raw}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{accent_raw}
-disabled_colors=#ff808080, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ff808080, #ffffffff, #ff808080, #ff242424, #ff2e2e2e, #ffffffff, #{accent_raw}, #ff808080, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{accent_raw}'''
+active_colors=#ffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{dark_raw}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{dark_raw}
+inactive_colors=#ffffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{dark_raw}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{dark_raw}
+disabled_colors=#ff808080, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ff808080, #ffffffff, #ff808080, #ff242424, #ff2e2e2e, #ffffffff, #{dark_raw}, #ff808080, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{dark_raw}'''
     
     with open(QT6_ACCENT_SHM, 'w') as f:
         f.write(qt_content)
     
-    # KDE format
+    # KDE format with dark selection
     kde_content = f"""[General]
 Name=AWP_Dynamic
 ReferenceColorScheme=BreezeDark
@@ -85,9 +90,9 @@ Color=#2e2e2e
 [Foreground:Normal]
 Color=#cfcfc2
 [Background:Selection]
-Color={accent_color}
+Color=#{dark_raw}
 [Colors:Selection]
-BackgroundNormal={accent_color}
+BackgroundNormal=#{dark_raw}
 ForegroundNormal=#ffffff
 [Colors:Window]
 BackgroundNormal=#2e2e2e
@@ -103,7 +108,7 @@ ForegroundNormal=#cfcfc2
     with open(KDE_ACCENT_SHM, 'w') as f:
         f.write(kde_content)
     
-    _printer.info(f"Qt6 & KDE accents synced in RAM: {accent_color}", backend="common")
+    _printer.info(f"Qt6 & KDE accents synced in RAM: {accent_color} (selection: #{dark_raw})", backend="common")
 
 
 # ============================================================================
