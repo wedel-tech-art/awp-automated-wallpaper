@@ -405,11 +405,11 @@ AWP includes a comprehensive asset package (`awp-logos.tar.gz`) containing **3 d
 │   ├── awp-dark-{hue}-{color}.svg          # Design 2 × 360 colors
 ├── logos-firma-svg/                        # Scalable Vector Graphics
 │   ├── awp-firma-{hue}-{color}.svg         # Design 3 × 360 colors
-├── logos-awp-png/                          # Scalable Vector Graphics
+├── logos-awp-png/                          # PNG renders (512x512)
 │   ├── awp-assets-{hue}-{color}.png        # Design 1 × 360 colors
-├── logos-dark-png/                         # Scalable Vector Graphics
+├── logos-dark-png/                         # PNG renders (512x512)
 │   ├── awp-dark-{hue}-{color}.png          # Design 2 × 360 colors
-└── logos-firma-png/                        # Scalable Vector Graphics
+└── logos-firma-png/                        # PNG renders (512x512)
     └── awp-firma-{hue}-{color}.png         # Design 3 × 360 colors
 ```
 
