@@ -288,6 +288,12 @@ python3 dab.py
 ### Workspace 3 Configuration
 ![Workspace 3 Configuration](screenshots/ws3_config.png)
 
+### Baker - Theme Generator
+![Baker Main Window](screenshots/baker_main.png)
+
+*Baker's main interface showing workspace selection, color picker, and theme presets.*
+
+
 ## 📁 Project Structure
 ```
 awp-automated-wallpaper/
