@@ -1,27 +1,32 @@
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512" id="svg29" style="isolation:isolate">
-  <defs id="defs13">
-    <linearGradient xlink:href="#a" id="b" gradientUnits="userSpaceOnUse" x1="0" y1="60.774" x2="0" y2="2.345"/>
-    <linearGradient id="a" y1="392.36" y2="336.36" x2="0" gradientUnits="userSpaceOnUse" gradientTransform="translate(254 -254)">
-      <stop stop-color="#4ADE80" stop-opacity="0" id="stop3"/>
-      <stop offset="1" stop-color="#4ADE80" stop-opacity="0.18" id="stop5"/>
-    </linearGradient>
-    <linearGradient id="c" y1="17.475" y2="31" x1="41.616" x2="54" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#052E16" id="stop8"/>
-      <stop offset="1" stop-opacity="0" id="stop10"/>
-    </linearGradient>
-  </defs>
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 128 128" style="isolation:isolate">
+    <defs>
+        <linearGradient id="sheets_grad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stop-color="#34D399" />
+            <stop offset="100%" stop-color="#0D8A3E" />
+        </linearGradient>
+        
+        <linearGradient id="fold_grad" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stop-color="#0A6B30" />
+            <stop offset="100%" stop-color="#065020" />
+        </linearGradient>
+    </defs>
 
-  <path d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 17 Z" id="path15" style="fill:#16A34A"/>
+    <g transform="translate(64.0000 64.0000) scale(0.937931) translate(-64.0000 -64.0000)"><g id="sheet" stroke="#0D8A3E" stroke-width="2" stroke-linejoin="round" transform="translate(19 7)">
+        
+        <path id="paper" fill="url(#sheets_grad)" d="M61.5 0L90 28.5L90 105C90 109.97 85.97 114 81 114L9 114C4.02876 114 0 109.97 0 105L0 9C0 4.02876 4.02876 0 9 0L61.5 0Z" />
+        
+        
+        <path id="corner" fill="url(#fold_grad)" d="M0 0L28 28L0 28Z" transform="translate(62 0)" />
+    </g>
 
-  <path d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 17 Z" id="path19" style="fill:url(#b)"/>
+    
+    <path id="cells" d="M36 0L36 32L0 32L0 58L56 58L56 0L36 0ZM54 2L54 8L38 8L38 2L54 2ZM54 10L54 16L38 16L38 10L54 10ZM54 18L54 24L38 24L38 18L54 18ZM38 32L54 32L54 26L38 26L38 32ZM18 40L2 40L2 34L18 34L18 40ZM20 34L36 34L36 40L20 40L20 34ZM38 34L38 40L54 40L54 34L38 34ZM18 48L2 48L2 42L18 42L18 48ZM20 42L36 42L36 48L20 48L20 42ZM38 42L38 48L54 48L54 42L38 42ZM18 50L18 56L2 56L2 50L18 50ZM20 50L36 50L36 56L20 56L20 50ZM38 50L38 56L54 56L54 50 M38 50Z" fill="#ffffff" fill-rule="evenodd" transform="translate(36 48)" />
 
-  <path d="M 21,22 V 44 H 43 V 22 Z m 1,1 h 20 v 4 H 22 Z m 0,5 h 5 v 3 h -5 z m 6,0 h 8 v 3 h -8 z m 9,0 h 5 v 3 h -5 z m -15,4 h 5 v 3 h -5 z m 6,0 h 8 v 3 h -8 z m 9,0 h 5 v 3 h -5 z m -15,4 h 5 v 3 h -5 z m 6,0 h 8 v 3 h -8 z m 9,0 h 5 v 3 h -5 z m -15,4 h 5 v 3 h -5 z m 6,0 h 8 v 3 h -8 z m 9,0 h 5 v 3 h -5 z" id="path17" style="color:#000000;opacity:0.85;fill:#ffffff"/>
-
-  <path d="M 40,3 H 15 C 12.23,3 10,5.23 10,8 V 9.014 A 5.005,5.005 0 0 1 11.46,5.474 4.989,4.989 0 0 1 15,4.015 H 40 V 4 Z" id="path21" style="opacity:0.3;fill:#ffffff"/>
-
-  <path d="M 54,54.86 A 5.004,5.004 0 0 1 52.54,58.398 4.989,4.989 0 0 1 49,59.86 H 15 A 5.005,5.005 0 0 1 11.46,58.4 4.989,4.989 0 0 1 10,54.86 V 56 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 z" id="path23" style="opacity:0.18;fill-opacity:0.992"/>
-
-  <path d="M 40,3 V 14.535 A 2.456,2.456 0 0 0 42.465,17 H 54 Z" id="path25" style="opacity:0.35;fill:#ffffff;fill-rule:evenodd"/>
-
-  <path d="M 40.73,16.283 54,31 V 17 H 42.465 c -0.68,0 -1.29,-0.276 -1.735,-0.717 z" id="path27" style="opacity:0.15;fill:url(#c);fill-rule:evenodd"/>
-</svg>
+    
+    <g id="graph" transform="translate(36 48)">
+        <rect width="8" height="22" fill="#ffffff" x="24" y="6" />
+        <rect width="8" height="28" fill="#ffffff" x="12" />
+        <rect width="8" height="16" fill="#ffffff" y="12" />
+    </g>
+</g></svg>

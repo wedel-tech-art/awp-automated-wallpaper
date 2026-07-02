@@ -14,6 +14,42 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 ## 🚀 Key Features
 
+## 🧁 AWP Baker — The Ultimate Theme Generation Tool (V3.11)
+
+AWP Baker (`baker`) is a **standalone, surgical theme generation tool** that changes how you manage workspace colors forever.
+
+### ✨ What Makes Baker Special
+
+- **Color-Driven Design:** Pick ANY hex color → Instant SVG-based icon → Bake GTK + Icons + Cursors in one click.
+- **Surgical Precision:** Update ONE workspace at a time — no more waiting for all 8 workspaces to rebuild.
+- **Multi-Preset Support:** Work with ANY preset (current or not). Prepare themes for other DEs before switching.
+- **SVG Template System:** Beautiful folder-style icons with 7+ templates (AWP, Debian, Ubuntu, Mint, KDE, GNOME, Plasma).
+- **Fool Bake Mode:** Pure theme baking without touching your config — perfect for testing.
+- **Regenerate All:** Rebuild ALL themes from the INI file in one operation.
+- **Clean Start:** Remove ALL old themes before regenerating for a fresh start.
+- **Progress Bar:** Visual feedback with dynamic accent color matching.
+- **Dark Theme with Dynamic Accents:** The UI adapts to your selected hex color in real-time.
+
+### 🎨 SVG Templates
+
+| Template | Description |
+|----------|-------------|
+| **awp** | Custom AWP logo (stylized "AWP" in one stroke) |
+| **debian** | Debian swirl, classical |
+| **swirldeb** | Debian swirl + "debian" text (balanced design) |
+| **ubuntu** | Ubuntu circle of friends logo |
+| **mint** | Linux Mint leaf logo |
+| **kde** | KDE gear logo |
+| **gnome** | GNOME foot logo |
+| **plasma** | Plasma/KDE logo |
+
+### 🎮 Baker Workflow
+
+```bash
+# Launch baker from terminal
+python3 ~/awp/baker
+```
+
 ## 🧬 Color Engine Evolution V3.10
 
 - **Smart Selection Dimmer:** A global brightness control (`SELECTION_BRIGHTNESS`) automatically darkens selection backgrounds across all GTK themes and Qt6/KDE apps to 75% (assignable) brightness. This ensures white text remains perfectly readable even with extreme accent colors (like bright yellow), while maintaining the color's personality. The dimmer is applied uniformly across Breeze, Colloid, Graphite, Flat-Remix, and the AWP Dashboard — a single variable controls everything, even QT/KDE accents as well.
@@ -147,7 +183,7 @@ Run either mode from `~/awp`:
 # Install System Tools & Python Bindings
 ```
 sudo apt update
-sudo apt install imagemagick python3-pyqt6 feh
+sudo apt install imagemagick python3-pyqt6 feh librsvg2-bin
 ```
 
 # ⚡ Installation & First Run
@@ -182,6 +218,11 @@ mv ~/awp/presets/xfce_light-debian/xfce-debian.ini \
 ```
 
 ## 🎮 Usage
+
+### Baker (New Theme Tool)
+```
+In ~/awp do "./baker" for surgical theme generation and color management.
+```
 
 ### Dashboard Qt6
 ```
@@ -251,6 +292,7 @@ python3 dab.py
 ```
 awp-automated-wallpaper/
 ├── awp/                            # Main Application Directory
+│   ├── baker                       # 🧁 AWP Baker (Fast theme generator)
 │   ├── core/                       # Centralized business logic
 │   │   ├── actions.py              # Core wallpaper operations
 │   │   ├── config.py               # Configuration management
@@ -275,7 +317,7 @@ awp-automated-wallpaper/
 │   ├── template-icon-presets/      # PNG's + scalable SVG's
 │   ├── template-cursor-presets/    # Cursor preset templates (currently oxy)
 │   ├── awp-icon-mom/               # The "Mother" icon template
-│   ├── awp-assets.tar.gz           # 200 procedural color tones
+│   ├── awp-logos.tar.gz            # 6 folders with 360 AWP icons PNG/SVG
 │   ├── logos/                      # Active workspace icons (symlinks)
 │   ├── daemon.py                   # Full background service (with rotation)
 │   ├── daemon-light.py             # Light background service (no rotation)
@@ -294,6 +336,7 @@ awp-automated-wallpaper/
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
+| **V3.11** | Jul 2026 | 🧁 AWP Baker — Standalone color & theme generator with SVG templates, multi-preset support, surgical operations, and progress bar |
 | **V3.10** | Jun 2026 | 🧬 Color Engine Evolution — Refactored color math, independent icon presets, SVG-based Mint rebuild, Sweet-Hollow preset, standardized 3-value ratios |
 | **V3.9** | Jun 2026 | 🔆 Light Daemon Mode — `_light` preset suffix for no-rotation operation, shared backends, zero duplication |
 | **V3.8** | May 2026 | 🎨 GTK & Icon Preset System — Unified `ICON_REGISTRY`, hybrid PNG/SVG baking pipeline, scalable XDG icon tree with auto-generated symlinks, and mathematically pure SVG color replacement |
@@ -309,6 +352,11 @@ awp-automated-wallpaper/
 | **V2.1** | Jan 2025 | 🧰 Centralized Utilities |
 
 ## 🔧 Troubleshooting
+
+### Baker not generating icons?
+- Ensure `rsvg-convert` is installed: `sudo apt install librsvg2-bin`
+- Check that SVG templates exist in `core/constants.py`
+- Try Fool Bake mode to isolate the issue
 
 ### Light daemon not working?
 - Ensure your preset name ends with `_light-debian` (e.g., `xfce_light-debian`)
@@ -339,6 +387,50 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 This project is licensed under the MIT License — see the LICENSE file for details.
 
+### 📦 AWP Logos Asset Package
+
+AWP includes a comprehensive asset package (`awp-logos.tar.gz`) containing **3 distinct AWP logo designs**, each available in **SVG and PNG formats**, across **360 carefully curated colors**.
+
+```
+📦 awp-logos.tar.gz
+├── logos-awp-svg/                          # Scalable Vector Graphics
+│   ├── awp-assets-{hue}-{color}.svg        # Design 1 × 360 colors
+├── logos-dark-svg/                         # Scalable Vector Graphics
+│   ├── awp-dark-{hue}-{color}.svg          # Design 2 × 360 colors
+├── logos-firma-svg/                        # Scalable Vector Graphics
+│   ├── awp-firma-{hue}-{color}.svg         # Design 3 × 360 colors
+├── logos-awp-png/                          # Scalable Vector Graphics
+│   ├── awp-assets-{hue}-{color}.png        # Design 1 × 360 colors
+├── logos-dark-png/                         # Scalable Vector Graphics
+│   ├── awp-dark-{hue}-{color}.png          # Design 2 × 360 colors
+└── logos-firma-png/                        # Scalable Vector Graphics
+    └── awp-firma-{hue}-{color}.png         # Design 3 × 360 colors
+```
+
+**3 designs × 360 colors × 2 formats = 2,160 unique icons!** 🎨
+
+### 🎨 The 3 AWP Designs
+
+| Design | Description |
+|--------|-------------|
+| **logos-awp** | Classic AWP logo — stylized "AWP" in one continuous stroke |
+| **logos-dark** | Alternative AWP logo — black background colored "AWP" logo |
+| **logos-firma** | No background, just the AWP "signature" — contemporary take on the AWP identity |
+
+> 💡 These designs are **original AWP creations**, available for use with any AWP workspace. The SVG versions are fully scalable, while the PNG versions are pre-rendered at 512x512 for immediate use.
+
+### 🙏 Tribute & Inspiration
+
+The SVG templates in AWP Baker are a tribute to the open-source community:
+
+- **Debian** — For the philosophy of freedom
+- **Ubuntu** — For making Linux accessible to millions
+- **Linux Mint** — For the elegant Mint-Y theme
+- **KDE** — For the Plasma desktop and Breeze theme
+- **GNOME** — For the clean, minimalist design philosophy
+
+> 💙 **"We stand on the shoulders of giants."** — All community tribute templates are created as artistic reinterpretations, not endorsed by or affiliated with their respective projects.
+
 ### Visual Preset Credits (Icons, GTK & Cursor Themes)
 
 AWP includes modified and adapted visual presets derived from the following open-source projects and redistributed and/or transformed under their respective licenses.
@@ -353,6 +445,7 @@ AWP includes modified and adapted visual presets derived from the following open
 | mint | Icon | AWP Original + some added SVG/PNG | AWP Original + Various | MIT/GPLv3 | Built from scratch |
 | neon | Icon | Royal-Z / Neon | SethStormR | GPLv3 | [GitHub](https://github.com/SethStormR/Royal-Z) |
 | rami | Icon | Rami (based on Kora) | Rami | GPLv3 | [Gnome-Look](https://www.gnome-look.org/p/2216265) |
+| besgnulinux | Icon | Besgnulinux Icon Theme | besgnulinux | **Custom Permission (GPL-compatible)** | [Gnome-Look](https://www.gnome-look.org/p/1832128) |
 | breeze | GTK | Breeze GTK | KDE Community | LGPL / GPL | [Website](https://kde.org) |
 | colloid | GTK | Colloid GTK Theme | vinceliuice | GPLv3 | [GitHub](https://github.com/vinceliuice/Colloid-gtk-theme) |
 | flat-remix | GTK | Flat Remix GTK | daniruiz | GPLv3 | [GitHub](https://github.com/daniruiz/flat-remix-gtk) |
@@ -363,6 +456,10 @@ AWP includes modified and adapted visual presets derived from the following open
 
 > ℹ️ **Sweet/Sweet-Hollow Presets:** Both presets are derived from the original Sweet icon theme by EliverLara. `sweet` uses the filled variant, while `sweet-hollow` uses the hollow variant with modified color relationships for a neon-inspired aesthetic. Both are redistributed under GPLv3.
 
+> ℹ️ **Besgnulinux Preset:** Used with explicit permission from the creator (besgnulinux) who stated: *"You can share them or make changes to them."* Modified and enhanced for AWP Icon Presets. Original design available at [Gnome-Look](https://www.gnome-look.org/p/1832128/).
+
+> ℹ️ **DeepMacOS Preset:** Trash icons used from the DeepMacOS IconTheme, distributed under GPLv3. Original design available at [OpenDesktop](https://www.opendesktop.org/p/2104775).
+
 AWP does not claim ownership of bundled visual assets. Icon, GTK and cursor presets remain under their respective upstream licenses and are redistributed and/or modified in accordance with those terms.
 
 ## 🙏 Acknowledgments
@@ -370,6 +467,8 @@ AWP does not claim ownership of bundled visual assets. Icon, GTK and cursor pres
 - Built with Python 3 and PyQt6.
 - Tested on Linux Mint XFCE, Debian, and other major distributions.
 - Theme, cursor and visual preset workflows are inspired by the excellent work of the KDE, Linux Mint, XFCE, GNOME and wider Linux desktop communities.
-- **Visual Preset Credits:** slot-multicolor (L4ki), breeze (L4ki/KDE), sweet & sweet-hollow (EliverLara), adwaitaru (ricardoherreramx), neon (SethStormR), rami (Rami author), colloid (vinceliuice), flat-remix (daniruiz), graphite (vinceliuice), and Oxygen Cursors (KDE Community). See the License section for full attribution details.
+- **Visual Preset Credits:** slot-multicolor (L4ki), breeze (L4ki/KDE), sweet & sweet-hollow (EliverLara), adwaitaru (ricardoherreramx), neon (SethStormR), rami (Rami author), **besgnulinux (besgnulinux)**, **deepmacos (mirabellalorenzo03)**, colloid (vinceliuice), flat-remix (daniruiz), graphite (vinceliuice), and Oxygen Cursors (KDE Community). See the License section for full attribution details.
 - **Special Credit:** The AWP `mint` icon preset is an **original AWP creation** — rebuilt from scratch with most assets converted to original SVG artwork. Distributed under the MIT License as part of AWP.
+- **AWP Logo Designs:** The 3 AWP logo designs in `awp-logos.tar.gz` are original creations. Available in SVG and PNG formats across 360 colors.
+- **SVG Templates:** The AWP Baker SVG templates (awp, debian, swirldeb, ubuntu, mint, kde, gnome, plasma) are artistic reinterpretations created as tributes to the open-source projects that inspire us.
 - Special thanks to the open-source community and all AWP users.

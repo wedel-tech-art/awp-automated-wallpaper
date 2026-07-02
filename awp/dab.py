@@ -22,7 +22,7 @@ from PyQt6.QtGui import QPixmap
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR, DEFAULT_ICON, THEME_CAPABILITIES
 from core.config import AWPConfig
-from core.utils import get_icon_color
+from core.utils import get_icon_color, hex_to_hsv
 from core.themes import get_available_themes, bake_awp_theme, bake_awp_icon, bake_awp_cursor
 from backends import BACKEND_NAMES
 from core.printer import get_printer
@@ -363,20 +363,40 @@ class WorkspaceTab(QWidget):
             self.order_combo.setCurrentIndex(0)
 
     def update_icon_preview(self):
-        """Update live preview of selected workspace icon."""
+        """Update live preview and show Hex/HSV details in tooltip."""
         path = self.icon_edit.text().strip()
-        if not path or not os.path.isfile(path):
-            path = DEFAULT_ICON if os.path.isfile(DEFAULT_ICON) else ""
-        if path:
-            pix = QPixmap(path)
+        display_path = path if (path and os.path.isfile(path)) else (DEFAULT_ICON if os.path.isfile(DEFAULT_ICON) else "")
+        
+        if display_path:
+            pix = QPixmap(display_path)
             self.icon_preview.setPixmap(pix.scaled(60, 60, 
                 Qt.AspectRatioMode.KeepAspectRatio, 
                 Qt.TransformationMode.SmoothTransformation))
             
-            # --- NEW: Dynamic Hex Identity ---
-            hex_val = get_icon_color(path)
+            # 1. Get Hex
+            hex_val = get_icon_color(display_path)
+            
+            # 2. Convert to HSV if we have a valid hex
+            hsv_info = "N/A"
             if hex_val:
-                self.icon_preview.setToolTip(f"<b>Detected Hex:</b> {hex_val.upper()}")
+                # utils.hex_to_hsv expects the hex without the '#'
+                h, s, v = hex_to_hsv(hex_val.lstrip('#'))
+                # Format to Degrees and Percentages
+                hsv_info = f"H:{int(h * 360)}° S:{int(s * 100)}% V:{int(v * 100)}%"
+            
+            # 3. Build Tooltip
+            filename = os.path.basename(display_path)
+            width = pix.width()
+            height = pix.height()
+            
+            tooltip = (
+                f"<b>File:</b> {filename}<br>"
+                f"<b>Dimensions:</b> {width}x{height} px<br>"
+                f"<b>Hex:</b> {hex_val.upper() if hex_val else 'N/A'}<br>"
+                f"<b>HSV:</b> {hsv_info}"
+            )
+            self.icon_preview.setToolTip(tooltip)
+            
         else:
             self.icon_preview.clear()
             self.icon_preview.setToolTip("No icon selected")

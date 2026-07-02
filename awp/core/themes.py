@@ -9,7 +9,7 @@ import os
 import shutil
 import subprocess
 import colorsys
-from core.constants import ICON_PRESETS, THEME_PRESETS, TARGET_ASSETS, ICON_SIZES, ICON_REGISTRY
+from core.constants import ICON_PRESETS, THEME_PRESETS, CURSOR_PRESETS, TARGET_ASSETS, ICON_SIZES, ICON_REGISTRY
 from core.utils import (
     hex_to_hsv, 
     hsv_to_hex, 
@@ -572,7 +572,14 @@ def bake_awp_cursor(hex_color: str, icon: str = None, preset: str = "oxy"):
     theme_name = f"awp-cursor-{preset}-{clean_hex}"
     
     home = os.path.expanduser("~")
-    template_folder = f"template-cursor-presets/{preset}"
+    
+    # Get preset config - handle both dict and string formats
+    preset_config = CURSOR_PRESETS.get(preset, CURSOR_PRESETS.get('oxy'))
+    if isinstance(preset_config, dict):
+        template_folder = preset_config['path']
+    else:
+        template_folder = preset_config
+    
     template_path = os.path.join(home, "awp", template_folder)
     target_path = os.path.join(home, ".icons", theme_name)
 
@@ -646,7 +653,7 @@ def bake_awp_cursor(hex_color: str, icon: str = None, preset: str = "oxy"):
         with open(index_path, "w") as f:
             f.write("\n".join(index_lines) + "\n")
 
-        # --- STEP 5: Top-Level Preview ---
+        # --- Top-Level Preview ---
         if icon and os.path.exists(icon):
             preview_dest = os.path.join(target_path, "folder.png")
             subprocess.run(["convert", icon, "-strip", preview_dest], check=True)
@@ -736,3 +743,44 @@ def get_available_themes() -> dict:
     themes['desktop_themes'] = sorted(list(set(themes['desktop_themes'])), key=str.lower)
 
     return themes
+
+
+def clean_old_themes():
+    """
+    Remove all existing AWP themes from ~/.themes and ~/.icons.
+    
+    Returns:
+        List of removed item paths
+    """
+    import os
+    import shutil
+    
+    removed = []
+    
+    # Clean ~/.themes
+    themes_dir = os.path.expanduser("~/.themes")
+    if os.path.exists(themes_dir):
+        for item in os.listdir(themes_dir):
+            if item.startswith('awp-'):
+                item_path = os.path.join(themes_dir, item)
+                if os.path.isdir(item_path):
+                    try:
+                        shutil.rmtree(item_path)
+                        removed.append(f"~/.themes/{item}")
+                    except Exception:
+                        pass
+    
+    # Clean ~/.icons
+    icons_dir = os.path.expanduser("~/.icons")
+    if os.path.exists(icons_dir):
+        for item in os.listdir(icons_dir):
+            if item.startswith('awp-'):
+                item_path = os.path.join(icons_dir, item)
+                if os.path.isdir(item_path):
+                    try:
+                        shutil.rmtree(item_path)
+                        removed.append(f"~/.icons/{item}")
+                    except Exception:
+                        pass
+    
+    return removed

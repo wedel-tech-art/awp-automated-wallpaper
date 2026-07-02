@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="512" height="512" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64">
   <defs>
     <linearGradient id="cuerpoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#a27ae4" />
-      <stop offset="100%" stop-color="#7240c3"/>
+      <stop offset="100%" stop-color="#7240c3" />
     </linearGradient>
     <linearGradient id="solapaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#7240c3" />
@@ -11,11 +11,11 @@
     </linearGradient>
   </defs>
 
-  <path d="M 12 18 H 24 L 32 23 H 52 C 54 23 56 25 56 27 V 34 H 8 V 22 C 8 20 10 18 12 18 Z" fill="url(#solapaGradient)" />
+  <g transform="translate(32.0000 32.0000) scale(1.133333) translate(-32.0000 -32.0000)"><path d="M 12 18 H 24 L 32 23 H 52 C 54 23 56 25 56 27 V 34 H 8 V 22 C 8 20 10 18 12 18 Z" fill="url(#solapaGradient)" />
   <path d="M 14 26 C 13 26 12 27 12 28 V 54 H 52 V 28 C 52 27 51 26 50 26 Z" fill="#dcdae8" />
   <path d="M 12 30 H 52 C 54 30 56 32 56 34 V 56 C 56 58 54 58 52 58 H 12 C 10 58 8 58 8 56 V 34 C 8 32 10 30 12 30 Z" fill="url(#cuerpoGradient)" />
 
   <g transform="translate(22 35) scale(0.42)" fill="#2c1e44" fill-rule="evenodd">
-    <path d="M24 0C10.7452 0 0 10.7452 0 24C0 37.2549 10.7452 48 24 48C37.2549 48 48 37.2549 48 24C48 10.7452 37.2549 0 24 0ZM9.15075 38.85C5 34.7487 3 29.8 3 24C3 18.2 5 13.2513 9.15075 9.15075C13.2513 5 18.2 3 24 3C29.8 3 34.7487 5 38.85 9.15075C42.95 13.2513 45 18.2 45 24C45 29.8 42.95 34.7487 38.85 38.85C34.7487 42.95 29.8 45 24 45C18.2 45 13.2513 42.95 9.15075 38.85ZM13.06 10.94L24 21.8773L31.1425 14.7335L31.94 13.94L34.06 16.06L24 26.12L10.94 13.06L12 12L13.06 10.94Z"/>
+    <path d="M24 0C10.7452 0 0 10.7452 0 24C0 37.2549 10.7452 48 24 48C37.2549 48 48 37.2549 48 24C48 10.7452 37.2549 0 24 0ZM9.15075 38.85C5 34.7487 3 29.8 3 24C3 18.2 5 13.2513 9.15075 9.15075C13.2513 5 18.2 3 24 3C29.8 3 34.7487 5 38.85 9.15075C42.95 13.2513 45 18.2 45 24C45 29.8 42.95 34.7487 38.85 38.85C34.7487 42.95 29.8 45 24 45C18.2 45 13.2513 42.95 9.15075 38.85ZM13.06 10.94L24 21.8773L31.1425 14.7335L31.94 13.94L34.06 16.06L24 26.12L10.94 13.06L12 12L13.06 10.94Z" />
   </g>
-</svg>
+</g></svg>

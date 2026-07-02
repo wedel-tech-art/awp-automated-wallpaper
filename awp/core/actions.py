@@ -17,6 +17,9 @@ from .config import AWPConfig
 from backends import get_backend
 from core.utils import load_images, sort_images
 from core.runtime import load_index_state, save_index_state
+from core.printer import get_printer
+
+_printer = get_printer()
 
 def get_ws_key(ws_num: int) -> str:
     """Get workspace key for state storage."""
@@ -100,4 +103,43 @@ def set_panel_icon(icon_path: str):
     func = get_backend_func("icon")
     if func:
         func(icon_path)
+        
 
+def run_awp_start(preset_name: str, awp_dir: str = None) -> bool:
+    """
+    Run awp_start.sh to recreate symlinks (non-blocking).
+    
+    Args:
+        preset_name: The preset to apply (e.g., 'qtile_xfce-debian')
+        awp_dir: Path to AWP directory (default: ~/awp)
+    
+    Returns:
+        True if started successfully, False otherwise
+    """
+
+    if awp_dir is None:
+        awp_dir = os.path.expanduser("~/awp")
+    
+    awp_start = os.path.join(awp_dir, "awp_start.sh")
+    
+    if not os.path.exists(awp_start):
+        _printer.warning(f"awp_start.sh not found at {awp_start}", backend="actions")
+        return False
+    
+    try:
+        # Start process without waiting
+        cmd = [awp_start, preset_name]
+        subprocess.Popen(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True
+        )
+        
+        _printer.info(f"Symlinks recreated for {preset_name}", backend="actions")
+        return True
+                
+    except Exception as e:
+        _printer.error(f"Failed to run awp_start.sh: {e}", backend="actions")
+        return False

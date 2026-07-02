@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 16 16">
+    <defs>
+        <linearGradient id="symlink-grad" gradientUnits="userSpaceOnUse" x1="0" y1="8" x2="16" y2="8">
+            <stop offset="0%" stop-color="#a27ae4" />
+            <stop offset="100%" stop-color="#7155a0" />
+        </linearGradient>
+    </defs>
+    <g transform="translate(8.0000 8.0000) scale(0.850000) translate(-8.0000 -8.0000)"><circle r="8" cx="8" cy="8" fill="url(#symlink-grad)" />
+    <g fill="none" stroke="#FFFFFF" stroke-width="1">
+        <path d="M5 4.5L11.5 4.5L11.5 11" />
+        <line x1="4" y1="12" x2="11" y2="5" />
+    </g>
+</g></svg>

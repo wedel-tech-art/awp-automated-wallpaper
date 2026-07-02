@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="512" height="512" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64">
   <defs>
     <linearGradient id="cuerpoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#a27ae4" />
-      <stop offset="100%" stop-color="#7240c3"/>
+      <stop offset="100%" stop-color="#7240c3" />
     </linearGradient>
     <linearGradient id="solapaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#7240c3" />
@@ -11,11 +11,11 @@
     </linearGradient>
   </defs>
 
-  <path d="M 12 18 H 24 L 32 23 H 52 C 54 23 56 25 56 27 V 34 H 8 V 22 C 8 20 10 18 12 18 Z" fill="url(#solapaGradient)" />
+  <g transform="translate(32.0000 32.0000) scale(1.133333) translate(-32.0000 -32.0000)"><path d="M 12 18 H 24 L 32 23 H 52 C 54 23 56 25 56 27 V 34 H 8 V 22 C 8 20 10 18 12 18 Z" fill="url(#solapaGradient)" />
   <path d="M 14 26 C 13 26 12 27 12 28 V 54 H 52 V 28 C 52 27 51 26 50 26 Z" fill="#dcdae8" />
   <path d="M 12 30 H 52 C 54 30 56 32 56 34 V 56 C 56 58 54 58 52 58 H 12 C 10 58 8 58 8 56 V 34 C 8 32 10 30 12 30 Z" fill="url(#cuerpoGradient)" />
 
   <g transform="translate(23 35) scale(0.42)" fill="#2c1e44">
-    <path d="M12 2.265e-05C12 2.265e-05 12 28.5 12 28.5C10.7465 27.558 9.18843 27 7.5 27C3.35787 27 0 30.358 0 34.5C0 38.6421 3.35787 42 7.5 42C11.642 42 15 38.642 15 34.5C15 34.5 15 9 15 9L39 9C39 9 39 28.5 39 28.5C37.7466 27.558 36.1884 27 34.5 27C30.358 27 27 30.358 27 34.5C27 38.642 30.358 42 34.5 42C38.642 42 42 38.642 42 34.5C42 34.5 42 0 42 0L12 2.265e-05Z"/>
+    <path d="M12 2.265e-05C12 2.265e-05 12 28.5 12 28.5C10.7465 27.558 9.18843 27 7.5 27C3.35787 27 0 30.358 0 34.5C0 38.6421 3.35787 42 7.5 42C11.642 42 15 38.642 15 34.5C15 34.5 15 9 15 9L39 9C39 9 39 28.5 39 28.5C37.7466 27.558 36.1884 27 34.5 27C30.358 27 27 30.358 27 34.5C27 38.642 30.358 42 34.5 42C38.642 42 42 38.642 42 34.5C42 34.5 42 0 42 0L12 2.265e-05Z" />
   </g>
-</svg>
+</g></svg>

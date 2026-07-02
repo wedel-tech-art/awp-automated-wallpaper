@@ -1,18 +1,15 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="isolation:isolate" viewBox="0 0 48 48" width="512" height="512">
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" style="isolation:isolate" viewBox="0 0 48 48" width="512" height="512">
   <defs>
     <linearGradient id="sweet_hollow_gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#a27ae4"/>
-      <stop offset="100%" stop-color="#7155a0"/>
+      <stop offset="0%" stop-color="#a27ae4" />
+      <stop offset="100%" stop-color="#7155a0" />
     </linearGradient>
   </defs>
   
-  <path d=" M 1.545 46.083 L 45.923 46.073 C 46.092 46.073 46.229 45.936 46.229 45.767 L 46.229 15.647 C 46.229 15.478 46.092 15.341 45.923 15.34 L 20.107 15.32 L 15.886 18.526 C 15.818 18.577 15.695 18.618 15.61 18.618 L 1.229 18.563 L 1.238 45.777 C 1.238 45.946 1.376 46.083 1.545 46.083 Z " 
-        fill="none" stroke="url(#sweet_hollow_gradient)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <g transform="translate(24.0000 24.0000) scale(0.850000) translate(-24.0000 -24.0000)"><path d=" M 1.545 46.083 L 45.923 46.073 C 46.092 46.073 46.229 45.936 46.229 45.767 L 46.229 15.647 C 46.229 15.478 46.092 15.341 45.923 15.34 L 20.107 15.32 L 15.886 18.526 C 15.818 18.577 15.695 18.618 15.61 18.618 L 1.229 18.563 L 1.238 45.777 C 1.238 45.946 1.376 46.083 1.545 46.083 Z " fill="none" stroke="url(#sweet_hollow_gradient)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" />
   
-  <path d=" M 20.116 15.581 L 15.887 12.425 C 15.819 12.374 15.695 12.333 15.61 12.333 L 1.554 12.333 C 1.385 12.333 1.247 12.471 1.247 12.64 L 1.243 18.808 L 15.8 18.868 L 20.116 15.581 Z " 
-        fill="none" stroke="url(#sweet_hollow_gradient)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d=" M 20.116 15.581 L 15.887 12.425 C 15.819 12.374 15.695 12.333 15.61 12.333 L 1.554 12.333 C 1.385 12.333 1.247 12.471 1.247 12.64 L 1.243 18.808 L 15.8 18.868 L 20.116 15.581 Z " fill="none" stroke="url(#sweet_hollow_gradient)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" />
   
-  <path d=" M 15.542 40 L 21.769 40 L 21.769 34 L 25.689 34 L 25.689 40 L 32 40 L 32 32 L 35 32 L 23.729 21 L 12 32 L 15.542 32 L 15.542 40 Z " 
-        fill="none" stroke="url(#sweet_hollow_gradient)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
-</svg>
+  <path d=" M 15.542 40 L 21.769 40 L 21.769 34 L 25.689 34 L 25.689 40 L 32 40 L 32 32 L 35 32 L 23.729 21 L 12 32 L 15.542 32 L 15.542 40 Z " fill="none" stroke="url(#sweet_hollow_gradient)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" />
+</g></svg>

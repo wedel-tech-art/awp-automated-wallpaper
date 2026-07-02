@@ -1,0 +1,1551 @@
+#!/usr/bin/env python3
+"""
+AWP Baker - Workspace Color Manager
+Generate GTK + Icon + Cursor themes and update workspace colors in INI.
+
+Features:
+- Read workspaces from AWP config
+- Select which preset to work with
+- Pick a color for a specific workspace
+- Update INI with new color and theme names
+- Bake themes with new color
+- Copy icon to preset folder
+- Recreate symlinks via awp_start.sh (only for current preset)
+- Fool Bake: Pure theme baking without workspace operations
+- Regenerate All: Rebuild ALL themes from INI
+- Clean Start: Remove old themes before regenerating
+- Smart checkbox interactions: Fool Bake disables everything, Clean auto-enables Regenerate
+
+Usage:
+    python3 awp_baker.py
+"""
+
+import os
+import sys
+import subprocess
+import tempfile
+import shutil
+import configparser
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QLineEdit, QPushButton, QComboBox, QMessageBox, QColorDialog,
+    QGroupBox, QFrame, QMainWindow, QCheckBox, QProgressBar
+)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor, QPalette, QAction, QPixmap
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from core.themes import bake_awp_theme, bake_awp_icon, bake_awp_cursor, clean_old_themes
+from core.constants import THEME_PRESETS, ICON_PRESETS, CURSOR_PRESETS, SVG_TEMPLATES
+from core.config import AWPConfig
+from core.actions import run_awp_start
+from core.printer import get_printer
+from core.utils import (
+    generate_icon_from_svg,
+    cleanup_temp_icon,
+    extract_preset_from_theme
+)
+
+_printer = get_printer()
+
+
+class AWPBaker(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("🎨 AWP Baker - Workspace Color Manager")
+        self.resize(620, 850)
+        self.setMinimumSize(540, 600)
+        self.current_hex = "#b3004c"
+        
+        # Load config
+        self.config = AWPConfig()
+        shm_preset = self._get_preset_from_shm()
+        self.current_preset = shm_preset or self.config.get('general', 'os_detected') or 'qtile_xfce-debian'
+        
+        # Get all available presets
+        self.presets_dir = os.path.expanduser("~/awp/presets")
+        self.available_presets = self._get_available_presets()
+        
+        self.preset_path = os.path.join(self.presets_dir, self.current_preset)
+        self.config_path = os.path.expanduser("~/awp/awp_config.ini")
+        
+        _printer.info(f"Current preset: {self.current_preset}", backend="baker")
+        _printer.info(f"Preset path: {self.preset_path}", backend="baker")
+        _printer.info(f"Available presets: {', '.join(self.available_presets)}", backend="baker")
+        
+        # Central widget
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QVBoxLayout(central)
+        layout.setSpacing(15)
+        layout.setContentsMargins(30, 20, 30, 0)
+        
+        # --- Header ---
+        header = QLabel("<h1 style='color: #ddd; font-weight: 300; font-size: 24px;'>🎨 AWP Baker</h1>")
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(header)
+        
+        sub = QLabel("Manage workspace colors, bake themes, and update icons")
+        sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sub.setStyleSheet("color: #888; font-size: 11px; margin-bottom: 3px;")
+        layout.addWidget(sub)
+        
+        # --- Line ---
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setStyleSheet("background: #444; max-height: 1px; margin: 3px 0 8px 0;")
+        layout.addWidget(line)
+        
+        # --- Preset Selection ---
+        preset_group = QGroupBox(" Preset Selection ")
+        preset_group.setStyleSheet("""
+            QGroupBox {
+                color: #ccc;
+                font-weight: bold;
+                font-size: 12px;
+                border: 1px solid #555;
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 6px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 8px 0 8px;
+            }
+        """)
+        preset_layout = QVBoxLayout()
+        preset_layout.setSpacing(8)
+        preset_layout.setContentsMargins(20, 12, 20, 12)
+        
+        # Preset selector row
+        preset_row = QHBoxLayout()
+        preset_row.setSpacing(12)
+        preset_label = QLabel("Target Preset:")
+        preset_label.setFixedWidth(100)
+        preset_label.setStyleSheet("color: #bbb; font-size: 12px;")
+        preset_row.addWidget(preset_label)
+        
+        self.preset_combo = QComboBox()
+        self.preset_combo.setMinimumWidth(250)
+        self.preset_combo.setStyleSheet(self._get_combo_style())
+        self.preset_combo.setFixedHeight(28)
+        
+        for preset in sorted(self.available_presets):
+            is_current = preset == self.current_preset
+            label = f"{preset} {'✓' if is_current else ''}"
+            self.preset_combo.addItem(label, preset)
+            if is_current:
+                self.preset_combo.setCurrentIndex(self.preset_combo.count() - 1)
+        
+        self.preset_combo.currentIndexChanged.connect(self.on_preset_changed)
+        preset_row.addWidget(self.preset_combo)
+        preset_row.addStretch()
+        preset_layout.addLayout(preset_row)
+        
+        # Current preset indicator
+        current_row = QHBoxLayout()
+        current_row.setSpacing(12)
+        current_row.addWidget(QLabel("Current DE Preset:"))
+        self.current_preset_label = QLabel(self.current_preset)
+        self.current_preset_label.setStyleSheet("color: #6a8cff; font-size: 12px; font-weight: bold;")
+        current_row.addWidget(self.current_preset_label)
+        current_row.addStretch()
+        preset_layout.addLayout(current_row)
+        
+        preset_group.setLayout(preset_layout)
+        layout.addWidget(preset_group)
+        
+        # --- Workspace Selection ---
+        ws_group = QGroupBox(" Workspace Selection ")
+        ws_group.setStyleSheet("""
+            QGroupBox {
+                color: #ccc;
+                font-weight: bold;
+                font-size: 12px;
+                border: 1px solid #555;
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 6px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 8px 0 8px;
+            }
+        """)
+        ws_layout = QVBoxLayout()
+        ws_layout.setSpacing(8)
+        ws_layout.setContentsMargins(20, 12, 20, 12)
+        
+        # Workspace selector row
+        ws_row = QHBoxLayout()
+        ws_row.setSpacing(12)
+        ws_label = QLabel("Workspace:")
+        ws_label.setFixedWidth(80)
+        ws_label.setStyleSheet("color: #bbb; font-size: 12px;")
+        ws_row.addWidget(ws_label)
+        
+        self.ws_combo = QComboBox()
+        self.ws_combo.setMinimumWidth(250)
+        self.ws_combo.setStyleSheet(self._get_combo_style())
+        self.ws_combo.setFixedHeight(28)
+        ws_row.addWidget(self.ws_combo)
+        ws_row.addStretch()
+        ws_layout.addLayout(ws_row)
+        
+        # Current color display
+        color_row = QHBoxLayout()
+        color_row.setSpacing(12)
+        color_row.addWidget(QLabel("Current Color:"))
+        
+        self.current_color_preview = QLabel()
+        self.current_color_preview.setFixedSize(32, 28)
+        self.current_color_preview.setStyleSheet("background: #888; border-radius: 4px; border: 2px solid #555;")
+        color_row.addWidget(self.current_color_preview)
+        
+        self.current_color_label = QLabel("Select a workspace")
+        self.current_color_label.setStyleSheet("color: #888; font-size: 11px;")
+        color_row.addWidget(self.current_color_label)
+        color_row.addStretch()
+        ws_layout.addLayout(color_row)
+        
+        # Connect workspace selection
+        self.ws_combo.currentIndexChanged.connect(self.on_ws_selected)
+        
+        ws_group.setLayout(ws_layout)
+        layout.addWidget(ws_group)
+        
+        # === NOW LOAD WORKSPACES ===
+        self.current_ini_path = self._get_preset_ini_path(self.current_preset)
+        self.workspaces, self.num_workspaces = self._get_workspaces_from_ini(self.current_ini_path)
+        self._update_workspace_combo()
+        
+        # --- Color Input ---
+        color_group = QGroupBox(" New Color ")
+        color_group.setStyleSheet("""
+            QGroupBox {
+                color: #ccc;
+                font-weight: bold;
+                font-size: 12px;
+                border: 1px solid #555;
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 6px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 8px 0 8px;
+            }
+        """)
+        color_layout = QHBoxLayout()
+        color_layout.setSpacing(10)
+        color_layout.setContentsMargins(20, 12, 20, 12)
+        
+        color_layout.addWidget(QLabel("Hex Color:"))
+        
+        self.hex_input = QLineEdit()
+        self.hex_input.setPlaceholderText("#b3004c")
+        self.hex_input.setMinimumWidth(160)
+        self.hex_input.setFixedHeight(28)
+        self.hex_input.textChanged.connect(self.on_hex_changed)
+        self.hex_input.setStyleSheet("""
+            QLineEdit {
+                background: #3c3c3c;
+                color: #ddd;
+                border: 2px solid #555;
+                border-radius: 6px;
+                padding: 4px 12px;
+                font-size: 13px;
+                font-family: monospace;
+            }
+            QLineEdit:focus {
+                border: 2px solid #6a8cff;
+                background: #404040;
+            }
+        """)
+        color_layout.addWidget(self.hex_input)
+        
+        self.new_color_preview = QLabel()
+        self.new_color_preview.setFixedSize(32, 28)
+        self.new_color_preview.setStyleSheet("background: #888; border-radius: 4px; border: 2px solid #555;")
+        color_layout.addWidget(self.new_color_preview)
+        
+        self.pick_btn = QPushButton("🎨 Pick")
+        self.pick_btn.setFixedWidth(80)
+        self.pick_btn.setFixedHeight(28)
+        self.pick_btn.setStyleSheet("""
+            QPushButton {
+                background: #4a4a4a;
+                color: #ddd;
+                border: 2px solid #555;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: bold;
+                padding: 4px 10px;
+            }
+            QPushButton:hover {
+                background: #5a5a5a;
+                border: 2px solid #6a8cff;
+            }
+        """)
+        self.pick_btn.clicked.connect(self.pick_color)
+        color_layout.addWidget(self.pick_btn)
+        
+        color_layout.addStretch()
+        color_group.setLayout(color_layout)
+        layout.addWidget(color_group)
+        
+        # --- Theme Presets ---
+        presets_group = QGroupBox(" Theme Presets ")
+        presets_group.setStyleSheet("""
+            QGroupBox {
+                color: #ccc;
+                font-weight: bold;
+                font-size: 12px;
+                border: 1px solid #555;
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 6px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 8px 0 8px;
+            }
+        """)
+        presets_layout = QVBoxLayout()
+        presets_layout.setSpacing(6)
+        presets_layout.setContentsMargins(20, 15, 20, 15)
+        
+        # SVG Template selector
+        template_row = QHBoxLayout()
+        template_row.setSpacing(12)
+        template_label = QLabel("Icon Template:")
+        template_label.setFixedWidth(110)
+        template_label.setStyleSheet("color: #bbb; font-size: 12px;")
+        template_row.addWidget(template_label)
+        
+        self.template_combo = QComboBox()
+        self.template_combo.setMinimumWidth(180)
+        self.template_combo.setStyleSheet(self._get_combo_style())
+        self.template_combo.setFixedHeight(28)
+        for name in sorted(SVG_TEMPLATES.keys()):
+            self.template_combo.addItem(name.title(), name)
+        self.template_combo.setCurrentIndex(0)
+        template_row.addWidget(self.template_combo)
+        template_row.addStretch()
+        presets_layout.addLayout(template_row)
+        
+        # GTK
+        gtk_row = QHBoxLayout()
+        gtk_row.setSpacing(12)
+        gtk_label = QLabel("GTK Theme:")
+        gtk_label.setFixedWidth(110)
+        gtk_label.setStyleSheet("color: #bbb; font-size: 12px;")
+        gtk_row.addWidget(gtk_label)
+        
+        self.gtk_combo = QComboBox()
+        self.gtk_combo.setMinimumWidth(180)
+        self.gtk_combo.setStyleSheet(self._get_combo_style())
+        self.gtk_combo.setFixedHeight(28)
+        for name in sorted(THEME_PRESETS.keys()):
+            self.gtk_combo.addItem(name.title())
+        self.gtk_combo.setCurrentText("Breeze")
+        gtk_row.addWidget(self.gtk_combo)
+        gtk_row.addStretch()
+        presets_layout.addLayout(gtk_row)
+        
+        # Icons
+        icon_row = QHBoxLayout()
+        icon_row.setSpacing(12)
+        icon_label = QLabel("Icon Theme:")
+        icon_label.setFixedWidth(110)
+        icon_label.setStyleSheet("color: #bbb; font-size: 12px;")
+        icon_row.addWidget(icon_label)
+        
+        self.icon_combo = QComboBox()
+        self.icon_combo.setMinimumWidth(180)
+        self.icon_combo.setStyleSheet(self._get_combo_style())
+        self.icon_combo.setFixedHeight(28)
+        for name in sorted(ICON_PRESETS.keys()):
+            self.icon_combo.addItem(name.title())
+        self.icon_combo.setCurrentText("Mint")
+        icon_row.addWidget(self.icon_combo)
+        icon_row.addStretch()
+        presets_layout.addLayout(icon_row)
+        
+        # Cursors
+        cursor_row = QHBoxLayout()
+        cursor_row.setSpacing(12)
+        cursor_label = QLabel("Cursor Theme:")
+        cursor_label.setFixedWidth(110)
+        cursor_label.setStyleSheet("color: #bbb; font-size: 12px;")
+        cursor_row.addWidget(cursor_label)
+        
+        self.cursor_combo = QComboBox()
+        self.cursor_combo.setMinimumWidth(180)
+        self.cursor_combo.setStyleSheet(self._get_combo_style())
+        self.cursor_combo.setFixedHeight(28)
+        for name in sorted(CURSOR_PRESETS.keys()):
+            self.cursor_combo.addItem(name.title())
+            if isinstance(CURSOR_PRESETS[name], dict):
+                desc = CURSOR_PRESETS[name].get('description', '')
+                if desc:
+                    index = self.cursor_combo.count() - 1
+                    self.cursor_combo.setItemData(index, desc, Qt.ItemDataRole.ToolTipRole)
+        self.cursor_combo.setCurrentText("Oxy")
+        cursor_row.addWidget(self.cursor_combo)
+        cursor_row.addStretch()
+        presets_layout.addLayout(cursor_row)
+        
+        # --- Options ---
+        options_layout = QVBoxLayout()
+        options_layout.setSpacing(6)
+                
+        # First row: Fool Bake mode
+        fool_row = QHBoxLayout()
+        self.fool_bake_cb = QCheckBox("🛠️ Fool Bake (Themes only, skip workspace updates)")
+        self.fool_bake_cb.setChecked(False)
+        self.fool_bake_cb.stateChanged.connect(self.update_checkbox_state)
+        self.fool_bake_cb.setStyleSheet("color: #bbb; font-size: 12px;")
+        self.fool_bake_cb.setToolTip("Bake themes WITHOUT updating workspace colors or copying to preset")
+        fool_row.addWidget(self.fool_bake_cb)
+        fool_row.addStretch()
+        options_layout.addLayout(fool_row)
+        
+        # Second row: Regenerate All Themes
+        regenerate_row = QHBoxLayout()
+        self.regenerate_cb = QCheckBox("🔄 Regenerate All Themes (from INI)")
+        self.regenerate_cb.setChecked(False)
+        self.regenerate_cb.stateChanged.connect(self.update_checkbox_state)
+        self.regenerate_cb.setStyleSheet("color: #bbb; font-size: 12px;")
+        self.regenerate_cb.setToolTip("Regenerate ALL themes for ALL workspaces using the INI file")
+        regenerate_row.addWidget(self.regenerate_cb)
+        regenerate_row.addStretch()
+        options_layout.addLayout(regenerate_row)
+        
+        # Third row: Clean Start
+        clean_row = QHBoxLayout()
+        self.clean_cb = QCheckBox("🧹 Clean Start (remove old themes before baking)")
+        self.clean_cb.setChecked(False)
+        self.clean_cb.stateChanged.connect(self.on_clean_toggled)
+        self.clean_cb.setStyleSheet("color: #bbb; font-size: 12px;")
+        self.clean_cb.setToolTip("Remove ALL existing awp themes before regenerating")
+        clean_row.addWidget(self.clean_cb)
+        clean_row.addStretch()
+        options_layout.addLayout(clean_row)
+        
+        # Fourth row: Recreate symlinks
+        symlink_row = QHBoxLayout()
+        self.symlink_cb = QCheckBox("Recreate symlinks after baking")
+        self.symlink_cb.setChecked(True)
+        self.symlink_cb.setStyleSheet("color: #bbb; font-size: 12px;")
+        self.symlink_cb.setToolTip("Run awp_start.sh to recreate symlinks (auto-disabled for non-current presets)")
+        symlink_row.addWidget(self.symlink_cb)
+        symlink_row.addStretch()
+        options_layout.addLayout(symlink_row)
+        
+        presets_layout.addLayout(options_layout)
+        
+        presets_group.setLayout(presets_layout)
+        layout.addWidget(presets_group)
+        
+        # --- Action Buttons ---
+        action_layout = QHBoxLayout()
+        action_layout.setSpacing(12)
+        action_layout.addStretch()
+        
+        self.bake_btn = QPushButton("🔥 Bake && Update")
+        self.bake_btn.setMinimumWidth(160)
+        self.bake_btn.setFixedHeight(38)
+        self.bake_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 14px;
+                background: #2d7d2d;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 20px;
+            }
+            QPushButton:hover {
+                background: #3d9d3d;
+            }
+            QPushButton:pressed {
+                background: #1d6d1d;
+            }
+            QPushButton:disabled {
+                background: #4a4a4a;
+                color: #888;
+            }
+        """)
+        self.bake_btn.clicked.connect(self.bake_and_update)
+        action_layout.addWidget(self.bake_btn)
+        
+        self.quit_btn = QPushButton("✕ Quit")
+        self.quit_btn.setMinimumWidth(80)
+        self.quit_btn.setFixedHeight(38)
+        self.quit_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 13px;
+                background: #5a2d2d;
+                color: #ddd;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 16px;
+            }
+            QPushButton:hover {
+                background: #7a3d3d;
+            }
+            QPushButton:pressed {
+                background: #4a1d1d;
+            }
+        """)
+        self.quit_btn.clicked.connect(self.close)
+        action_layout.addWidget(self.quit_btn)
+        
+        action_layout.addStretch()
+        layout.addLayout(action_layout)
+        
+        # --- Shortcuts hint ---
+        hint = QLabel("Ctrl+B (Bake)  |  Ctrl+Q (Quit)")
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hint.setStyleSheet("color: #555; font-size: 10px; padding: 1px;")
+        layout.addWidget(hint)
+        
+        # --- Progress Bar ---
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #555;
+                border-radius: 4px;
+                background: #3c3c3c;
+                color: #ddd;
+                text-align: center;
+                height: 22px;
+            }
+            QProgressBar::chunk {
+                background: #2d7d2d;
+                border-radius: 4px;
+            }
+        """)
+        layout.addWidget(self.progress_bar)
+        
+        # Initialize progress bar color with default hex
+        self._update_progress_style("#b3004c")
+        
+        # --- Status Bar ---
+        self.statusBar().showMessage("Ready")
+        
+        # --- Global style ---
+        self.setStyleSheet("""
+            QMainWindow {
+                background: #2a2a2a;
+            }
+            QLabel {
+                color: #ddd;
+            }
+        """)
+        
+        # Set default hex
+        self.hex_input.setText("#b3004c")
+        self.on_hex_changed()
+        
+        # Select first workspace (already done in _update_workspace_combo)
+        
+        # Initialize checkbox states
+        self.update_checkbox_state()
+        
+        # --- Keyboard Shortcuts ---
+        quit_action = QAction("Quit", self)
+        quit_action.setShortcut("Ctrl+Q")
+        quit_action.triggered.connect(self.close)
+        self.addAction(quit_action)
+        
+        bake_action = QAction("Bake", self)
+        bake_action.setShortcut("Ctrl+B")
+        bake_action.triggered.connect(self.bake_and_update)
+        self.addAction(bake_action)
+        
+        _printer.info("AWP Baker initialized", backend="baker")
+    
+    def _get_preset_from_shm(self):
+        """Read the current preset name from RAM-based session state."""
+        shm_path = "/dev/shm/awp_active_preset"
+        if os.path.exists(shm_path):
+            try:
+                with open(shm_path, 'r') as f:
+                    return f.read().strip()
+            except Exception as e:
+                _printer.warning(f"Failed to read preset from SHM: {e}", backend="baker")
+        return None
+    
+    def _get_available_presets(self):
+        """Get list of available presets from the presets directory."""
+        presets = []
+        if os.path.exists(self.presets_dir):
+            for item in os.listdir(self.presets_dir):
+                item_path = os.path.join(self.presets_dir, item)
+                if os.path.isdir(item_path) and not item.startswith('.'):
+                    if os.path.exists(os.path.join(item_path, f"{item}.ini")) or \
+                       any(f.startswith('ws') and f.endswith('.png') for f in os.listdir(item_path)):
+                        presets.append(item)
+        return sorted(presets)
+    
+    def _get_preset_ini_path(self, preset_name):
+        """Get the path to a preset's INI file."""
+        preset_path = os.path.join(self.presets_dir, preset_name)
+        ini_path = os.path.join(preset_path, f"{preset_name}.ini")
+        return ini_path
+    
+    def _get_workspaces_from_ini(self, ini_path):
+        """Get workspaces from a specific INI file."""
+        if not os.path.exists(ini_path):
+            _printer.warning(f"INI file not found: {ini_path}", backend="baker")
+            return [], 8
+        
+        config = configparser.ConfigParser()
+        config.read(ini_path)
+        
+        workspaces = []
+        num_workspaces = 8
+        
+        # Try to get workspaces count from general section
+        if config.has_section('general') and config.has_option('general', 'workspaces'):
+            try:
+                num_workspaces = int(config.get('general', 'workspaces'))
+            except:
+                pass
+        
+        for i in range(1, num_workspaces + 1):
+            section = f'ws{i}'
+            if config.has_section(section):
+                folder = config.get(section, 'folder', fallback=f'ws{i}')
+                color = config.get(section, 'icon_color', fallback='#888888')
+                
+                if folder:
+                    name = os.path.basename(os.path.normpath(folder))
+                    if not name or name == '.':
+                        name = f'ws{i}'
+                else:
+                    name = f'ws{i}'
+                
+                workspaces.append({
+                    'num': i,
+                    'name': name,
+                    'folder': folder,
+                    'color': color
+                })
+        
+        return workspaces, num_workspaces
+    
+    def _update_workspace_combo(self):
+        """Update the workspace combo box with current workspaces."""
+        self.ws_combo.clear()
+        for ws in self.workspaces:
+            color = ws.get('color', '#888888')
+            self.ws_combo.addItem(
+                f"WS{ws['num']}: {ws['name']} [{color}]", 
+                ws['num']
+            )
+        if self.ws_combo.count() > 0:
+            self.ws_combo.setCurrentIndex(0)
+            self.on_ws_selected(0)
+    
+    def on_preset_changed(self, index):
+        """Update when preset selection changes."""
+        if index < 0:
+            return
+        
+        selected_preset = self.preset_combo.currentData()
+        is_current = selected_preset == self.current_preset
+        
+        # Reload workspaces from the selected preset's INI
+        ini_path = self._get_preset_ini_path(selected_preset)
+        if os.path.exists(ini_path):
+            self.current_ini_path = ini_path
+            self.workspaces, self.num_workspaces = self._get_workspaces_from_ini(ini_path)
+            self._update_workspace_combo()
+            _printer.info(f"Loaded workspaces from: {ini_path}", backend="baker")
+            self.statusBar().showMessage(f"Loaded preset: {selected_preset}")
+        else:
+            _printer.warning(f"INI file not found: {ini_path}", backend="baker")
+            self.statusBar().showMessage(f"INI not found: {selected_preset}")
+        
+        self.update_symlink_state()
+        self.statusBar().showMessage(f"Selected preset: {selected_preset} {'(current)' if is_current else ''}")
+    
+    def update_symlink_state(self):
+        """Enable/disable symlink checkbox and style its text."""
+        selected_preset = self.preset_combo.currentData()
+        is_current = (selected_preset == self.current_preset)
+        is_fool_mode = self.fool_bake_cb.isChecked()
+        
+        # Only Fool Bake disables symlinks
+        can_use_symlinks = is_current and not is_fool_mode
+        
+        self.symlink_cb.setEnabled(can_use_symlinks)
+        
+        color = "#ddd" if can_use_symlinks else "#777"
+        self.symlink_cb.setStyleSheet(f"color: {color}; font-size: 12px;")
+            
+        if not can_use_symlinks:
+            self.symlink_cb.setChecked(False)
+            if is_fool_mode:
+                self.symlink_cb.setToolTip("Symlinks disabled during Fool Bake")
+            else:
+                self.symlink_cb.setToolTip("Symlinks can only be recreated for the current DE preset")
+        else:
+            self.symlink_cb.setToolTip("Run awp_start.sh to recreate symlinks")
+    
+    def update_checkbox_state(self):
+        """Update checkbox states and enable/disable based on combinations."""
+        
+        fool_bake = self.fool_bake_cb.isChecked()
+        regenerate = self.regenerate_cb.isChecked()
+        clean = self.clean_cb.isChecked()
+        
+        # --- Rule 1: Fool Bake overrides everything ---
+        if fool_bake:
+            self.regenerate_cb.setEnabled(False)
+            self.regenerate_cb.setChecked(False)
+            self.clean_cb.setEnabled(False)
+            self.clean_cb.setChecked(False)
+            self.symlink_cb.setEnabled(False)
+            self.symlink_cb.setChecked(False)
+            self.bake_btn.setText("🔥 Fool Bake")
+            self.statusBar().showMessage("Fool Bake mode: themes only")
+            return
+        
+        # --- Rule 2: Not Fool Bake - enable things normally ---
+        self.regenerate_cb.setEnabled(True)
+        self.symlink_cb.setEnabled(True)
+        
+        # Clean Start only works with Regenerate
+        self.clean_cb.setEnabled(regenerate)
+        if not regenerate:
+            self.clean_cb.setChecked(False)
+        
+        # --- Rule 3: Update button text ---
+        if regenerate:
+            if clean:
+                self.bake_btn.setText("🔥 Clean && Regenerate")
+                self.statusBar().showMessage("Clean Start + Regenerate All (fresh rebuild)")
+            else:
+                self.bake_btn.setText("🔥 Regenerate All")
+                self.statusBar().showMessage("Regenerate All (rebuild from INI)")
+        else:
+            self.bake_btn.setText("🔥 Bake && Update")
+            self.statusBar().showMessage("Ready")
+        
+        # --- Rule 4: Update symlink state ---
+        self.update_symlink_state()
+    
+    def on_clean_toggled(self, checked):
+        """Handle Clean Start checkbox toggling."""
+        if checked and not self.regenerate_cb.isChecked():
+            # Auto-enable Regenerate if Clean is checked
+            self.regenerate_cb.setChecked(True)
+            self.regenerate_cb.setEnabled(True)
+            self.statusBar().showMessage("Clean Start requires Regenerate - auto-enabled")
+        
+        # Update checkbox state
+        self.update_checkbox_state()
+    
+    def on_ws_selected(self, index):
+        """Update color preview when workspace is selected."""
+        if index < 0 or index >= len(self.workspaces):
+            return
+        
+        ws = self.workspaces[index]
+        
+        if ws and ws.get('color'):
+            color = ws['color']
+            self.current_color_preview.setStyleSheet(f"""
+                background: {color}; 
+                border-radius: 4px; 
+                border: 2px solid {color};
+            """)
+            self.current_color_label.setText(f"WS{ws['num']}: {color}")
+        else:
+            self.current_color_preview.setStyleSheet("background: #888; border-radius: 4px; border: 2px solid #555;")
+            self.current_color_label.setText("No color set")
+    
+    def _get_combo_style(self, hex_color=None):
+        """Generate combo box style with optional accent color."""
+        if hex_color and hex_color.startswith('#') and len(hex_color) == 7:
+            border_color = hex_color
+            border_width = "2px"
+        else:
+            border_color = "#555"
+            border_width = "2px"
+        
+        return f"""
+            QComboBox {{
+                background: #3c3c3c;
+                color: #ddd;
+                border: {border_width} solid {border_color};
+                border-radius: 6px;
+                padding: 2px 10px;
+                font-size: 12px;
+                min-height: 20px;
+                max-height: 28px;
+            }}
+            QComboBox::drop-down {{
+                border: none;
+                width: 20px;
+            }}
+            QComboBox::down-arrow {{
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid #888;
+                margin-right: 6px;
+            }}
+            QComboBox:hover {{
+                border: {border_width} solid {border_color};
+            }}
+            QComboBox QAbstractItemView {{
+                background: #3c3c3c;
+                color: #ddd;
+                selection-background-color: #4a4a4a;
+                border: 1px solid #555;
+                border-radius: 6px;
+                padding: 2px;
+            }}
+            QComboBox QAbstractItemView::item {{
+                padding: 4px 10px;
+                border-radius: 4px;
+            }}
+            QComboBox QAbstractItemView::item:hover {{
+                background: #4a4a4a;
+            }}
+            QComboBox QAbstractItemView::item:selected {{
+                background: {border_color};
+                color: white;
+            }}
+        """
+    
+    def _get_input_style(self, hex_color=None):
+        """Generate input field style with optional accent color."""
+        if hex_color and hex_color.startswith('#') and len(hex_color) == 7:
+            border_color = hex_color
+            border_width = "2px"
+        else:
+            border_color = "#555"
+            border_width = "2px"
+        
+        return f"""
+            QLineEdit {{
+                background: #3c3c3c;
+                color: #ddd;
+                border: {border_width} solid {border_color};
+                border-radius: 6px;
+                padding: 4px 12px;
+                font-size: 13px;
+                font-family: monospace;
+                min-height: 18px;
+            }}
+            QLineEdit:focus {{
+                border: {border_width} solid {border_color};
+                background: #404040;
+            }}
+        """
+    
+    def _get_pick_style(self, hex_color=None):
+        """Generate pick button style with optional accent color."""
+        if hex_color and hex_color.startswith('#') and len(hex_color) == 7:
+            border_color = hex_color
+            border_width = "2px"
+            hover_border = hex_color
+        else:
+            border_color = "#555"
+            border_width = "2px"
+            hover_border = "#6a8cff"
+        
+        return f"""
+            QPushButton {{
+                background: #4a4a4a;
+                color: #ddd;
+                border: {border_width} solid {border_color};
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: bold;
+                padding: 4px 10px;
+                min-height: 18px;
+            }}
+            QPushButton:hover {{
+                background: #5a5a5a;
+                border: {border_width} solid {hover_border};
+            }}
+        """
+    
+    def _get_preview_style(self, hex_color=None):
+        """Generate preview label style."""
+        if hex_color and hex_color.startswith('#') and len(hex_color) == 7:
+            border_width = "2px"
+            border_color = hex_color
+            bg = hex_color
+        else:
+            border_width = "2px"
+            border_color = "#555"
+            bg = "#888"
+        
+        return f"""
+            background: {bg}; 
+            border-radius: 4px; 
+            border: {border_width} solid {border_color};
+        """
+    
+    def _update_all_styles(self, hex_color):
+        """Update UI elements with the new accent color."""
+        combo_style = self._get_combo_style(hex_color)
+        self.gtk_combo.setStyleSheet(combo_style)
+        self.icon_combo.setStyleSheet(combo_style)
+        self.cursor_combo.setStyleSheet(combo_style)
+        self.template_combo.setStyleSheet(combo_style)
+        self.ws_combo.setStyleSheet(combo_style)
+        self.preset_combo.setStyleSheet(combo_style)
+        
+        self.hex_input.setStyleSheet(self._get_input_style(hex_color))
+        self.pick_btn.setStyleSheet(self._get_pick_style(hex_color))
+        self.new_color_preview.setStyleSheet(self._get_preview_style(hex_color))
+    
+    def _update_progress_style(self, hex_color):
+        """Update progress bar color to match the current active hex."""
+        if hex_color and hex_color.startswith('#') and len(hex_color) == 7:
+            self.progress_bar.setStyleSheet(f"""
+                QProgressBar {{
+                    border: 1px solid #555;
+                    border-radius: 4px;
+                    background: #3c3c3c;
+                    color: #ddd;
+                    text-align: center;
+                    height: 22px;
+                }}
+                QProgressBar::chunk {{
+                    background: {hex_color};
+                    border-radius: 4px;
+                }}
+            """)
+        else:
+            self.progress_bar.setStyleSheet("""
+                QProgressBar {
+                    border: 1px solid #555;
+                    border-radius: 4px;
+                    background: #3c3c3c;
+                    color: #ddd;
+                    text-align: center;
+                    height: 22px;
+                }
+                QProgressBar::chunk {
+                    background: #2d7d2d;
+                    border-radius: 4px;
+                }
+            """)
+    
+    def pick_color(self):
+        color = QColorDialog.getColor()
+        if color.isValid():
+            hex_val = color.name()
+            self.hex_input.setText(hex_val)
+    
+    def on_hex_changed(self):
+        hex_val = self.hex_input.text().strip()
+        
+        if hex_val.startswith('#') and len(hex_val) == 7:
+            self.current_hex = hex_val
+            self._update_all_styles(hex_val)
+            self._update_progress_style(hex_val)
+        else:
+            self.current_hex = None
+            self._update_all_styles(None)
+            self._update_progress_style(None)
+    
+    def _update_ini_color_direct(self, ini_path, ws_num, new_color):
+        """Update color in a specific INI file directly."""
+        if not os.path.exists(ini_path):
+            _printer.error(f"INI file not found: {ini_path}", backend="baker")
+            return False
+        
+        config = configparser.ConfigParser()
+        config.read(ini_path)
+        
+        section = f'ws{ws_num}'
+        if not config.has_section(section):
+            config.add_section(section)
+        
+        config.set(section, 'icon_color', new_color)
+        
+        if config.has_option(section, 'color_variable'):
+            clean_hex = new_color.lstrip('#')
+            config.set(section, 'color_variable', f'ws{ws_num}_color')
+        
+        with open(ini_path, 'w') as f:
+            config.write(f)
+        
+        _printer.info(f"Updated INI: {ini_path} ws{ws_num}.icon_color = {new_color}", backend="baker")
+        return True
+    
+    def _update_ini_themes_direct(self, ini_path, ws_num, hex_color, gtk_preset, icon_preset, cursor_preset):
+        """Update theme fields in a specific INI file directly."""
+        if not os.path.exists(ini_path):
+            _printer.error(f"INI file not found: {ini_path}", backend="baker")
+            return None
+        
+        config = configparser.ConfigParser()
+        config.read(ini_path)
+        
+        section = f'ws{ws_num}'
+        if not config.has_section(section):
+            config.add_section(section)
+        
+        clean_hex = hex_color.lstrip('#')
+        
+        new_gtk_theme = f"awp-gtk-{gtk_preset}-{clean_hex}"
+        new_icon_theme = f"awp-icons-{icon_preset}-{clean_hex}"
+        new_cursor_theme = f"awp-cursor-{cursor_preset}-{clean_hex}"
+        
+        config.set(section, 'gtk_theme', new_gtk_theme)
+        config.set(section, 'icon_theme', new_icon_theme)
+        config.set(section, 'cursor_theme', new_cursor_theme)
+        config.set(section, 'wm_theme', new_gtk_theme)
+        
+        with open(ini_path, 'w') as f:
+            config.write(f)
+        
+        _printer.info(f"Updated INI themes in {ini_path} for WS{ws_num}:", backend="baker")
+        _printer.info(f"  gtk_theme = {new_gtk_theme}", backend="baker")
+        _printer.info(f"  icon_theme = {new_icon_theme}", backend="baker")
+        _printer.info(f"  cursor_theme = {new_cursor_theme}", backend="baker")
+        _printer.info(f"  wm_theme = {new_gtk_theme}", backend="baker")
+        
+        return {
+            'gtk_theme': new_gtk_theme,
+            'icon_theme': new_icon_theme,
+            'cursor_theme': new_cursor_theme,
+            'wm_theme': new_gtk_theme
+        }
+    
+    def _copy_to_preset(self, icon_path, ws_num):
+        """Copy icon to preset folder as ws{N}.png."""
+        if not icon_path or not os.path.exists(icon_path):
+            return False
+        
+        selected_preset = self.preset_combo.currentData()
+        preset_path = os.path.join(self.presets_dir, selected_preset)
+        
+        os.makedirs(preset_path, exist_ok=True)
+        
+        target_path = os.path.join(preset_path, f"ws{ws_num}.png")
+        
+        try:
+            shutil.copy2(icon_path, target_path)
+            _printer.info(f"Copied to preset: {target_path}", backend="baker")
+            return True
+        except Exception as e:
+            _printer.error(f"Failed to copy to preset: {e}", backend="baker")
+            return False
+    
+    def _fool_bake(self):
+        """Fool Bake - Pure theme baking without workspace operations."""
+        hex_color = self.hex_input.text().strip()
+        if not hex_color.startswith('#') or len(hex_color) != 7:
+            QMessageBox.warning(self, "Invalid Color", 
+                "Please enter a valid hex color (e.g., #b3004c)")
+            return
+        
+        gtk_preset = self.gtk_combo.currentText().lower()
+        icon_preset = self.icon_combo.currentText().lower()
+        cursor_preset = self.cursor_combo.currentText().lower()
+        template_name = self.template_combo.currentData()
+        
+        self.bake_btn.setEnabled(False)
+        self.bake_btn.setText("⏳ Fool Baking...")
+        self.statusBar().showMessage("Fool Baking...")
+        QApplication.processEvents()
+        
+        try:
+            results = []
+            errors = []
+            
+            _printer.info(f"Fool Bake: Baking themes with color {hex_color}", backend="baker")
+            _printer.info(f"  GTK: {gtk_preset}, Icons: {icon_preset}, Cursors: {cursor_preset}", backend="baker")
+            
+            icon_path = generate_icon_from_svg(hex_color, template_name)
+            
+            if not icon_path:
+                errors.append("Failed to generate icon (rsvg-convert missing?)")
+                QMessageBox.warning(self, "Error", "Failed to generate icon. Make sure rsvg-convert is installed.")
+                return
+            
+            if gtk_preset:
+                try:
+                    theme = bake_awp_theme(hex_color, icon=icon_path, preset=gtk_preset)
+                    if theme:
+                        results.append(f"✅ GTK Theme: {theme}")
+                except Exception as e:
+                    errors.append(f"GTK Theme: {e}")
+            
+            if icon_preset:
+                try:
+                    icon_result = bake_awp_icon(hex_color, icon=icon_path, preset=icon_preset)
+                    if icon_result:
+                        results.append(f"✅ Icon Theme: {icon_result}")
+                except Exception as e:
+                    errors.append(f"Icon Theme: {e}")
+            
+            if cursor_preset:
+                try:
+                    cursor_result = bake_awp_cursor(hex_color, icon=icon_path, preset=cursor_preset)
+                    if cursor_result:
+                        results.append(f"✅ Cursor Theme: {cursor_result}")
+                except Exception as e:
+                    errors.append(f"Cursor Theme: {e}")
+            
+            cleanup_temp_icon(icon_path)
+            
+            if self.symlink_cb.isChecked() and self.symlink_cb.isEnabled():
+                _printer.info("Recreating symlinks...", backend="baker")
+                if run_awp_start(self.current_preset):
+                    results.append("✅ Symlinks recreated")
+                else:
+                    errors.append("Failed to recreate symlinks")
+            
+            msg = "🛠️ Fool Bake Complete!\n\n"
+            msg += "Themes baked with folder.png (workspace icon)\n"
+            msg += "No INI updates, no preset copies, no workspace changes.\n\n"
+            msg += "\n".join(results)
+            
+            if errors:
+                msg += "\n\n⚠️ Errors:\n" + "\n".join(errors)
+            
+            self.statusBar().showMessage("Fool Bake Complete!")
+            QMessageBox.information(self, "Fool Bake Complete", msg)
+            
+        except Exception as e:
+            self.statusBar().showMessage("Fool Bake Failed!")
+            QMessageBox.critical(self, "Error", f"Fool Bake failed:\n\n{str(e)}")
+        
+        finally:
+            self.bake_btn.setEnabled(True)
+            self.bake_btn.setText("🔥 Bake && Update")
+    
+    def _regenerate_all_themes(self):
+        """Regenerate ALL themes from the INI file."""
+        selected_preset = self.preset_combo.currentData()
+        ini_path = self._get_preset_ini_path(selected_preset)
+        
+        if not os.path.exists(ini_path):
+            QMessageBox.warning(self, "Error", f"INI not found: {ini_path}")
+            return
+        
+        # Build confirmation message
+        confirm_msg = f"This will regenerate ALL themes for ALL workspaces in:\n\n"
+        confirm_msg += f"{selected_preset}\n\n"
+        confirm_msg += f"This includes:\n"
+        confirm_msg += f"• GTK themes (with XFWM if applicable)\n"
+        confirm_msg += f"• Icon themes\n"
+        confirm_msg += f"• Cursor themes\n"
+        confirm_msg += f"• Workspace icons (ws*.png)\n\n"
+        
+        if self.clean_cb.isChecked():
+            confirm_msg += f"🧹 Clean Start is ENABLED:\n"
+            confirm_msg += f"   • All existing awp themes will be REMOVED\n"
+            confirm_msg += f"   • Then regenerated fresh\n\n"
+        else:
+            confirm_msg += f"🧹 Clean Start is DISABLED:\n"
+            confirm_msg += f"   • Existing themes will be OVERWRITTEN\n"
+            confirm_msg += f"   • (Cleaner to enable Clean Start)\n\n"
+        
+        confirm_msg += f"Proceed?"
+        
+        reply = QMessageBox.question(
+            self,
+            "Regenerate All Themes",
+            confirm_msg,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes
+        )
+        
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        
+        self.bake_btn.setEnabled(False)
+        self.bake_btn.setText("⏳ Regenerating...")
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setFormat("Regenerating... %p%")
+        self.statusBar().showMessage(f"Regenerating all themes for {selected_preset}...")
+        QApplication.processEvents()
+        
+        try:
+            config = configparser.ConfigParser()
+            config.read(ini_path)
+            
+            results = []
+            errors = []
+            
+            # Step 1: Clean old themes if requested
+            if self.clean_cb.isChecked():
+                _printer.info("🧹 Cleaning old themes...", backend="baker")
+                removed = clean_old_themes()
+                if removed:
+                    results.append(f"🧹 Removed {len(removed)} old themes")
+                    for item in removed[:5]:  # Show first 5
+                        results.append(f"   - {item}")
+                    if len(removed) > 5:
+                        results.append(f"   ... and {len(removed) - 5} more")
+                else:
+                    results.append("🧹 No old themes found to remove")
+            
+            # Get workspace count
+            num_workspaces = 8
+            if config.has_section('general') and config.has_option('general', 'workspaces'):
+                try:
+                    num_workspaces = int(config.get('general', 'workspaces'))
+                except:
+                    pass
+            
+            # Summary counters
+            total_gtk = 0
+            total_icons = 0
+            total_cursors = 0
+            total_ws_icons = 0
+            total_steps = num_workspaces * 3  # GTK + Icons + Cursors per workspace
+            processed = 0
+            
+            for i in range(1, num_workspaces + 1):
+                section = f'ws{i}'
+                if not config.has_section(section):
+                    continue
+                
+                hex_color = config.get(section, 'icon_color', fallback='')
+                if not hex_color or not hex_color.startswith('#'):
+                    _printer.warning(f"WS{i}: No valid color, skipping", backend="baker")
+                    continue
+                
+                # Get themes from INI
+                gtk_theme = config.get(section, 'gtk_theme', fallback='awp-gtk-breeze-000000')
+                icon_theme = config.get(section, 'icon_theme', fallback='awp-icons-mint-000000')
+                cursor_theme = config.get(section, 'cursor_theme', fallback='awp-cursor-oxy-000000')
+                
+                # Extract presets using utility function
+                gtk_preset = extract_preset_from_theme(gtk_theme, 'awp-gtk-')
+                icon_preset = extract_preset_from_theme(icon_theme, 'awp-icons-')
+                cursor_preset = extract_preset_from_theme(cursor_theme, 'awp-cursor-')
+                
+                # Fallbacks
+                if not gtk_preset or gtk_preset not in THEME_PRESETS:
+                    gtk_preset = 'breeze'
+                if not icon_preset or icon_preset not in ICON_PRESETS:
+                    icon_preset = 'mint'
+                if not cursor_preset or cursor_preset not in CURSOR_PRESETS:
+                    cursor_preset = 'oxy'
+                
+                _printer.info(f"Regenerating WS{i}: {hex_color} (GTK:{gtk_preset}, Icons:{icon_preset}, Cursors:{cursor_preset})", backend="baker")
+                
+                # Generate icon
+                icon_path = generate_icon_from_svg(hex_color, 'awp')
+                
+                if not icon_path:
+                    errors.append(f"WS{i}: Failed to generate icon")
+                    continue
+                
+                # Bake themes
+                try:
+                    theme_result = bake_awp_theme(hex_color, icon_path, gtk_preset)
+                    if theme_result:
+                        total_gtk += 1
+                except Exception as e:
+                    errors.append(f"WS{i}: GTK/XFWM theme failed - {e}")
+                processed += 1
+                self.progress_bar.setValue(int((processed / total_steps) * 100))
+                QApplication.processEvents()
+                
+                try:
+                    icon_result = bake_awp_icon(hex_color, icon_path, icon_preset)
+                    if icon_result:
+                        total_icons += 1
+                except Exception as e:
+                    errors.append(f"WS{i}: Icon theme failed - {e}")
+                processed += 1
+                self.progress_bar.setValue(int((processed / total_steps) * 100))
+                QApplication.processEvents()
+                
+                try:
+                    cursor_result = bake_awp_cursor(hex_color, icon_path, cursor_preset)
+                    if cursor_result:
+                        total_cursors += 1
+                except Exception as e:
+                    errors.append(f"WS{i}: Cursor theme failed - {e}")
+                processed += 1
+                self.progress_bar.setValue(int((processed / total_steps) * 100))
+                QApplication.processEvents()
+                
+                # Copy to preset
+                if self._copy_to_preset(icon_path, i):
+                    total_ws_icons += 1
+                else:
+                    errors.append(f"WS{i}: Failed to copy icon to preset")
+                
+                # Clean up
+                cleanup_temp_icon(icon_path)
+                
+                # Add workspace summary
+                results.append(f"WS{i}: {hex_color} → GTK+WM: {gtk_preset}, Icons: {icon_preset}, Cursors: {cursor_preset}")
+            
+            # Recreate symlinks if requested
+            if self.symlink_cb.isChecked() and self.symlink_cb.isEnabled():
+                _printer.info("Recreating symlinks...", backend="baker")
+                if run_awp_start(self.current_preset):
+                    results.append("✅ Symlinks recreated")
+                else:
+                    errors.append("Failed to recreate symlinks")
+            
+            self.progress_bar.setVisible(False)
+            
+            # Build summary message
+            msg = "🔄 Regeneration Complete!\n\n"
+            msg += f"📁 Preset: {selected_preset}\n"
+            msg += f"📊 Summary:\n"
+            msg += f"   • GTK themes (with XFWM): {total_gtk}\n"
+            msg += f"   • Icon themes: {total_icons}\n"
+            msg += f"   • Cursor themes: {total_cursors}\n"
+            msg += f"   • Workspace icons: {total_ws_icons}\n\n"
+            msg += "📋 Details:\n"
+            msg += "\n".join(results)
+            
+            if errors:
+                msg += "\n\n⚠️ Errors:\n" + "\n".join(errors)
+            
+            self.statusBar().showMessage("Regeneration complete!")
+            QMessageBox.information(self, "Regeneration Complete", msg)
+            
+        except Exception as e:
+            self.progress_bar.setVisible(False)
+            self.statusBar().showMessage("Regeneration failed!")
+            QMessageBox.critical(self, "Error", f"Regeneration failed:\n\n{str(e)}")
+        
+        finally:
+            self.bake_btn.setEnabled(True)
+            self.bake_btn.setText("🔥 Bake && Update")
+    
+    def bake_and_update(self):
+        """Main bake and update function."""
+        
+        # Check if Regenerate is enabled
+        if self.regenerate_cb.isChecked():
+            self._regenerate_all_themes()
+            return
+        
+        # Check if Fool Bake is enabled
+        if self.fool_bake_cb.isChecked():
+            self._fool_bake()
+            return
+        
+        hex_color = self.hex_input.text().strip()
+        if not hex_color.startswith('#') or len(hex_color) != 7:
+            QMessageBox.warning(self, "Invalid Color", 
+                "Please enter a valid hex color (e.g., #b3004c)")
+            return
+        
+        # Get selected workspace
+        ws_index = self.ws_combo.currentIndex()
+        if ws_index < 0 or ws_index >= len(self.workspaces):
+            QMessageBox.warning(self, "Error", "No workspace selected.")
+            return
+        
+        ws = self.workspaces[ws_index]
+        ws_num = ws['num']
+        ws_name = ws['name']
+        
+        selected_preset = self.preset_combo.currentData()
+        is_current_preset = selected_preset == self.current_preset
+        ini_path = self._get_preset_ini_path(selected_preset)
+        
+        # Confirm with user
+        confirm_msg = (
+            f"Update workspace {ws_num} ({ws_name})?\n\n"
+            f"Target Preset: {selected_preset} {'✓ Current' if is_current_preset else ''}\n"
+            f"Current color: {ws.get('color', 'None')}\n"
+            f"New color: {hex_color}\n\n"
+            f"This will:\n"
+            f"• Update the INI file (color + theme names)\n"
+            f"• Bake GTK, Icon, and Cursor themes\n"
+            f"• Copy ws{ws_num}.png to {selected_preset}/\n"
+        )
+        
+        if is_current_preset and self.symlink_cb.isChecked():
+            confirm_msg += f"• Recreate symlinks via awp_start.sh\n"
+        elif not is_current_preset:
+            confirm_msg += f"⚠️ Symlinks will NOT be recreated (different preset)\n"
+        
+        confirm_msg += f"\nProceed?"
+        
+        reply = QMessageBox.question(
+            self,
+            "Confirm Update",
+            confirm_msg,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes
+        )
+        
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        
+        self.bake_btn.setEnabled(False)
+        self.bake_btn.setText("⏳ Working...")
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setFormat("Baking... %p%")
+        self.statusBar().showMessage(f"Baking WS{ws_num} to {selected_preset}...")
+        QApplication.processEvents()
+        
+        try:
+            results = []
+            errors = []
+            
+            gtk_preset = self.gtk_combo.currentText().lower()
+            icon_preset = self.icon_combo.currentText().lower()
+            cursor_preset = self.cursor_combo.currentText().lower()
+            template_name = self.template_combo.currentData()
+            
+            # Step 1: Update color in the target preset's INI
+            self.progress_bar.setValue(10)
+            QApplication.processEvents()
+            _printer.info(f"Updating INI for WS{ws_num} in {selected_preset}", backend="baker")
+            if self._update_ini_color_direct(ini_path, ws_num, hex_color):
+                results.append(f"✅ INI color updated: {selected_preset}/ws{ws_num}.icon_color = {hex_color}")
+            else:
+                errors.append("Failed to update INI color")
+            
+            # Step 2: Generate icon
+            self.progress_bar.setValue(20)
+            QApplication.processEvents()
+            icon_path = generate_icon_from_svg(hex_color, template_name)
+            
+            if not icon_path:
+                errors.append("Failed to generate icon (rsvg-convert missing?)")
+                QMessageBox.warning(self, "Error", "Failed to generate icon. Make sure rsvg-convert is installed.")
+                return
+            
+            # Step 3: Bake themes
+            self.progress_bar.setValue(40)
+            QApplication.processEvents()
+            _printer.info(f"Baking themes for WS{ws_num} with color {hex_color}", backend="baker")
+            
+            if gtk_preset:
+                try:
+                    theme = bake_awp_theme(hex_color, icon=icon_path, preset=gtk_preset)
+                    if theme:
+                        results.append(f"✅ GTK Theme: {theme}")
+                except Exception as e:
+                    errors.append(f"GTK Theme: {e}")
+            
+            self.progress_bar.setValue(60)
+            QApplication.processEvents()
+            
+            if icon_preset:
+                try:
+                    icon_result = bake_awp_icon(hex_color, icon=icon_path, preset=icon_preset)
+                    if icon_result:
+                        results.append(f"✅ Icon Theme: {icon_result}")
+                except Exception as e:
+                    errors.append(f"Icon Theme: {e}")
+            
+            self.progress_bar.setValue(80)
+            QApplication.processEvents()
+            
+            if cursor_preset:
+                try:
+                    cursor_result = bake_awp_cursor(hex_color, icon=icon_path, preset=cursor_preset)
+                    if cursor_result:
+                        results.append(f"✅ Cursor Theme: {cursor_result}")
+                except Exception as e:
+                    errors.append(f"Cursor Theme: {e}")
+            
+            # Step 4: Update theme fields in the target preset's INI
+            self.progress_bar.setValue(90)
+            QApplication.processEvents()
+            theme_updates = self._update_ini_themes_direct(ini_path, ws_num, hex_color, gtk_preset, icon_preset, cursor_preset)
+            if theme_updates:
+                results.append(f"✅ INI themes updated in {selected_preset}:")
+                results.append(f"   gtk_theme = {theme_updates['gtk_theme']}")
+                results.append(f"   icon_theme = {theme_updates['icon_theme']}")
+                results.append(f"   cursor_theme = {theme_updates['cursor_theme']}")
+                results.append(f"   wm_theme = {theme_updates['wm_theme']}")
+            else:
+                errors.append("Failed to update INI themes")
+            
+            # Step 5: Copy to preset folder
+            if icon_path and os.path.exists(icon_path):
+                if self._copy_to_preset(icon_path, ws_num):
+                    results.append(f"✅ Preset icon: {selected_preset}/ws{ws_num}.png")
+                else:
+                    errors.append("Failed to copy icon to preset")
+            
+            # Step 6: Clean up temp icon
+            cleanup_temp_icon(icon_path)
+            
+            # Step 7: Recreate symlinks (only if selected preset is current)
+            self.progress_bar.setValue(100)
+            QApplication.processEvents()
+            if is_current_preset and self.symlink_cb.isChecked():
+                _printer.info("Recreating symlinks...", backend="baker")
+                if run_awp_start(self.current_preset):
+                    results.append("✅ Symlinks recreated")
+                else:
+                    errors.append("Failed to recreate symlinks")
+            elif not is_current_preset:
+                results.append("ℹ️ Skipped symlinks (target preset is not current)")
+            
+            self.progress_bar.setVisible(False)
+            
+            # Step 8: Reload workspaces from the updated INI
+            self.workspaces, self.num_workspaces = self._get_workspaces_from_ini(ini_path)
+            self._update_workspace_combo()
+            
+            # Show results
+            msg = f"✅ Workspace {ws_num} ({ws_name}) updated successfully!\n\n"
+            msg += "\n".join(results)
+            
+            if errors:
+                msg += "\n\n⚠️ Warnings/Errors:\n" + "\n".join(errors)
+            
+            self.statusBar().showMessage(f"WS{ws_num} updated to {selected_preset}!")
+            QMessageBox.information(self, "Success", msg)
+            
+        except Exception as e:
+            self.progress_bar.setVisible(False)
+            self.statusBar().showMessage("Update failed!")
+            QMessageBox.critical(self, "Error", f"Failed to update workspace:\n\n{str(e)}")
+        
+        finally:
+            self.bake_btn.setEnabled(True)
+            self.bake_btn.setText("🔥 Bake && Update")
+
+
+if __name__ == "__main__":
+    app = QApplication([])
+    
+    palette = QPalette()
+    palette.setColor(QPalette.ColorRole.Window, QColor(42, 42, 42))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.Base, QColor(60, 60, 60))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(46, 46, 46))
+    palette.setColor(QPalette.ColorRole.Text, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.Button, QColor(68, 68, 68))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(60, 120, 220))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+    app.setPalette(palette)
+    
+    window = AWPBaker()
+    window.show()
+    sys.exit(app.exec())

@@ -1,5 +1,6 @@
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 16 16" id="svg73">
-  <g transform="translate(-465,-187)" id="g7" style="fill:#a27ae4">
-    <path style="fill:#a27ae4" class="ColorScheme-Text" d="m466.5 195h1.5v6h4v-4h3v4h4v-6h1.5l-7-7z" id="path5"/>
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 16 16" id="svg73">
+  <g transform="translate(8.0000 8.0000) scale(0.971429) translate(-8.0000 -8.0000)"><g transform="translate(-465,-187)" id="g7" style="fill:#a27ae4">
+    <path style="fill:#a27ae4" class="ColorScheme-Text" d="m466.5 195h1.5v6h4v-4h3v4h4v-6h1.5l-7-7z" id="path5" />
   </g>
-</svg>
+</g></svg>

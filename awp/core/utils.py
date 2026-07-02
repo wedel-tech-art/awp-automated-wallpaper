@@ -5,11 +5,15 @@ Shared helper functions used by multiple AWP modules.
 """
 
 import os
+import re
+import shutil
 import subprocess
 import colorsys
 from PIL import Image
 from pathlib import Path
 from typing import List, Tuple, Optional
+from collections import Counter
+from core.constants import SVG_TEMPLATES
 
 from core.printer import get_printer
 
@@ -149,37 +153,30 @@ def x11_blanking(timeout_seconds: int):
     except Exception as e:
         _printer.error(f"Blanking Error: {e}", backend="utils")
 
+
 def get_icon_color(image_path: str) -> str:
-    """Extract dominant color by sampling multiple pixels."""
     try:
         with Image.open(image_path) as img:
-            rgba = img.convert("RGBA")
+            # 1. Ensure we have an alpha channel to work with
+            img = img.convert("RGBA")
             
-            # Sample 100 pixels across the image (10x10 grid)
-            width, height = rgba.size
-            samples = []
+            # 2. Get the raw data
+            data = img.getdata()
             
-            for i in range(10):
-                for j in range(10):
-                    x = int(width * i / 10)
-                    y = int(height * j / 10)
-                    if x < width and y < height:
-                        r, g, b, a = rgba.getpixel((x, y))
-                        if a > 0:  # Only use non-transparent pixels
-                            samples.append((r, g, b))
+            # 3. Filter: Keep only pixels that are not fully transparent
+            # We check if alpha (data[3]) > 0
+            visible_pixels = [pix[:3] for pix in data if pix[3] > 0]
             
-            if not samples:
-                return ""
+            if not visible_pixels:
+                return "" # Icon is entirely transparent
             
-            # Average the samples
-            avg_r = sum(c[0] for c in samples) // len(samples)
-            avg_g = sum(c[1] for c in samples) // len(samples)
-            avg_b = sum(c[2] for c in samples) // len(samples)
+            # 4. Find the most common among visible pixels
+            most_common = Counter(visible_pixels).most_common(1)[0][0]
             
-            return f'#{avg_r:02x}{avg_g:02x}{avg_b:02x}'
-            
-    except Exception as e:
+            return f'#{most_common[0]:02x}{most_common[1]:02x}{most_common[2]:02x}'
+    except Exception:
         return ""
+
 
 def get_dynamic_mount_labels(target_mounts=None):
     """
@@ -338,3 +335,107 @@ def sort_images(images: List[Path], order_key: str) -> List[Path]:
         return sorted(images, key=lambda f: f.name.lower(), reverse=True)
 
     return images
+
+
+# =============================================================================
+# SVG ICON GENERATION & UTILITIES
+# =============================================================================
+
+def generate_icon_from_svg(hex_color, template_name='awp', size=512):
+    """
+    Generate a PNG icon from an SVG template using rsvg-convert.
+    
+    Args:
+        hex_color: Hex color string (e.g., '#b3004c')
+        template_name: SVG template name (default: 'awp')
+        size: Output size in pixels (default: 512)
+    
+    Returns:
+        Path to the generated PNG file, or None if failed
+    """
+    import tempfile
+    import time
+    
+    if not shutil.which('rsvg-convert'):
+        return None
+    
+    # Use /dev/shm for temp files (RAM disk) if available
+    if os.path.exists('/dev/shm'):
+        unique_id = f"awp_icon_{int(time.time())}_{os.getpid()}"
+        temp_dir = os.path.join('/dev/shm', unique_id)
+        os.makedirs(temp_dir, exist_ok=True)
+    else:
+        temp_dir = tempfile.mkdtemp(prefix='awp_icon_')
+    
+    png_path = os.path.join(temp_dir, 'folder.png')
+    
+    try:
+        svg_template = SVG_TEMPLATES.get(template_name, SVG_TEMPLATES.get('awp'))
+        svg_content = svg_template.replace('{{COLOR}}', hex_color)
+        
+        temp_svg = os.path.join(temp_dir, 'folder.svg')
+        with open(temp_svg, 'w') as f:
+            f.write(svg_content)
+        
+        cmd = ['rsvg-convert', '-w', str(size), '-h', str(size), '-o', png_path, temp_svg]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        if result.returncode != 0 or not os.path.exists(png_path):
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            return None
+        
+        return png_path
+        
+    except Exception:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        return None
+
+
+def cleanup_temp_icon(icon_path):
+    """
+    Clean up temporary icon files and directory.
+    
+    Args:
+        icon_path: Path to the temporary icon file
+    """
+    if not icon_path:
+        return
+    
+    temp_dir = os.path.dirname(icon_path)
+    try:
+        if os.path.exists(icon_path):
+            os.remove(icon_path)
+        svg_path = os.path.join(temp_dir, 'folder.svg')
+        if os.path.exists(svg_path):
+            os.remove(svg_path)
+        if os.path.exists(temp_dir) and not os.listdir(temp_dir):
+            os.rmdir(temp_dir)
+    except OSError:
+        pass
+
+
+def extract_preset_from_theme(theme_name, prefix):
+    """
+    Extract the preset name from a theme string.
+    
+    Examples:
+        "awp-gtk-breeze-ff0000" → "breeze"
+        "awp-icons-mint-ff0000" → "mint"
+        "awp-cursor-oxy-ff0000" → "oxy"
+    
+    Args:
+        theme_name: The full theme name (e.g., 'awp-gtk-breeze-ff0000')
+        prefix: The prefix to remove (e.g., 'awp-gtk-')
+    
+    Returns:
+        The preset name (e.g., 'breeze'), or None if not found
+    """
+    if not theme_name:
+        return None
+    
+    if theme_name.startswith(prefix):
+        theme_name = theme_name.replace(prefix, '')
+    
+    # Remove color suffix: "breeze-ff0000" → "breeze"
+    parts = theme_name.rsplit('-', 1)
+    return parts[0] if parts else theme_name

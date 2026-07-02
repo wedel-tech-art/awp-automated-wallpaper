@@ -1,16 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 128 128">
-<g id="sheet" stroke="#1bb2fb" stroke-width="2" stroke-linejoin="round" transform="translate(19 7)">
-<path id="paper" fill="#1bb2fb" d="M61.5 0L90 28.5L90 105C90 109.97 85.97 114 81 114L9 114C4.02876 114 0 109.97 0 105L0 9C0 4.02876 4.02876 0 9 0Z"/>
-<path id="corner" fill="#fff" d="M0 0L28 28L0 28Z" transform="translate(62 0)"/>
-</g><g id="text" fill="#fff" transform="translate(36 48)">
-<rect width="26" height="2" x="30"/>
-<rect width="26" height="2" x="30" y="8"/>
-<rect width="26" height="2" x="30" y="16"/>
-<rect width="26" height="2" x="30" y="24"/>
-<rect width="56" height="2" y="32"/>
-<rect width="56" height="2" y="40"/>
-<rect width="56" height="2" y="48"/>
-<rect width="28" height="2" y="56"/>
-</g>
-<path id="A" d="M8 19L18 19L21 26L26 26L16 0L10 0L0 26L5 26L8 19ZM9 15L13 5L17 15L17 15L9 15Z" fill="#116EBB" fill-rule="evenodd" transform="translate(36 48)"/>
-</svg>
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">
+  <defs>
+    
+    <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#26C6DA" />
+      <stop offset="100%" stop-color="#0D6B8A" />
+    </linearGradient>
+    
+    
+    <linearGradient id="foldGrad" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#0A5A75" />
+      <stop offset="100%" stop-color="#063A4F" />
+    </linearGradient>
+    
+    <linearGradient id="b" x1="0" y1="60.774" x2="0" y2="2.345" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff" stop-opacity="0" />
+      <stop offset="1" stop-color="#fff" stop-opacity=".2" />
+    </linearGradient>
+    <linearGradient id="c" x1="41.616" y1="17.475" x2="54" y2="31" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#060606" />
+      <stop offset="1" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  
+  <g transform="translate(32.0000 32.0000) scale(0.937931) translate(-32.0000 -32.0000)"><path d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 17 Z" fill="url(#bodyGrad)" />
+  
+  
+  <path d="m 21,22 v 1 h 22 v -1 z m 0,3 v 1 h 22 v -1 z m 0,3 v 1 h 11 v -1 z m 0,4 v 1 h 22 v -1 z m 0,3 v 1 h 9 v -1 z m 13,0 v 9 h 9 v -9 z m 1,1 h 7 v 7 h -7 z m -14,1 v 1 h 5 v -1 z m 0,3 v 1 h 10 v -1 z m 0,3 v 1 h 6 v -1 z" opacity=".9" fill="#ffffff" />
+  
+  <path d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 17 Z" fill="url(#b)" />
+  
+  
+  <path d="M 40,3 H 15 C 12.23,3 10,5.23 10,8 V 9.014 A 5.005,5.005 0 0 1 11.46,5.474 4.989,4.989 0 0 1 15,4.015 H 40 V 4 Z" opacity=".5" fill="#80DEEA" />
+  
+  
+  <path d="M 54,54.86 A 5.004,5.004 0 0 1 52.54,58.398 4.989,4.989 0 0 1 49,59.86 H 15 A 5.005,5.005 0 0 1 11.46,58.4 4.989,4.989 0 0 1 10,54.86 V 56 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 z" opacity=".25" />
+  
+  
+  <path d="M 40,3 V 14.535 A 2.456,2.456 0 0 0 42.465,17 H 54 Z" opacity=".8" fill="url(#foldGrad)" fill-rule="evenodd" />
+  
+  <path d="M 40.73,16.283 54,31 V 17 H 42.465 c -0.68,0 -1.29,-0.276 -1.735,-0.717 z" opacity=".2" fill="url(#c)" fill-rule="evenodd" />
+</g></svg>

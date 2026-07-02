@@ -1,11 +1,12 @@
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" id="svg73">
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" id="svg73">
   <defs id="defs14">
     <clipPath clipPathUnits="userSpaceOnUse" id="clipPath162">
-      <circle style="display:none;fill:#909295;stroke-width:1" cx="24" cy="24" r="20" id="circle164" d="M 44,24 A 20,20 0 0 1 24,44 20,20 0 0 1 4,24 20,20 0 0 1 24,4 20,20 0 0 1 44,24 Z"/>
-      <path id="lpe_path-effect166" style="fill:#909295;stroke-width:1" class="powerclip" d="M -5,-5 H 53 V 53 H -5 Z M 44,24 A 20,20 0 0 0 24,4 20,20 0 0 0 4,24 20,20 0 0 0 24,44 20,20 0 0 0 44,24 Z"/>
+      <circle style="display:none;fill:#909295;stroke-width:1" cx="24" cy="24" r="20" id="circle164" d="M 44,24 A 20,20 0 0 1 24,44 20,20 0 0 1 4,24 20,20 0 0 1 24,4 20,20 0 0 1 44,24 Z" />
+      <path id="lpe_path-effect166" style="fill:#909295;stroke-width:1" class="powerclip" d="M -5,-5 H 53 V 53 H -5 Z M 44,24 A 20,20 0 0 0 24,4 20,20 0 0 0 4,24 20,20 0 0 0 24,44 20,20 0 0 0 44,24 Z" />
     </clipPath>
     </defs>
-  <circle style="fill:#333333" cx="12" cy="12" r="10" id="circle2"/>
-  <path style="fill:#a27ae4;stroke-width:1.2" id="circle2-6" clip-path="url(#clipPath162)" transform="scale(0.5)" d="M 48,24 A 24,24 0 0 1 24,48 24,24 0 0 1 0,24 24,24 0 0 1 24,0 24,24 0 0 1 48,24 Z"/>
-  <path style="fill:#a27ae4;fill-rule:evenodd" d="M 13,7 V 9 H 9.8398462 c -1.371845,8e-5 -2.6394518,0.7735688 -3.3253743,1.953268 -0.6859627,1.179767 -0.6859627,2.969738 0,4.149506 C 7.1674503,16.222129 8.3474229,16.93642 9.6485932,17 8.6670891,16.902435 7.9999107,16.382474 8,15.403 8.0000002,14.35005 8.7794398,14 9.8398462,14 H 13 v 1.579409 L 18,11.5 Z" id="path4"/>
-</svg>
+  <g transform="translate(12.0000 12.0000) scale(0.850000) translate(-12.0000 -12.0000)"><circle style="fill:#333333" cx="12" cy="12" r="10" id="circle2" />
+  <path style="fill:#a27ae4;stroke-width:1.2" id="circle2-6" clip-path="url(#clipPath162)" transform="scale(0.5)" d="M 48,24 A 24,24 0 0 1 24,48 24,24 0 0 1 0,24 24,24 0 0 1 24,0 24,24 0 0 1 48,24 Z" />
+  <path style="fill:#a27ae4;fill-rule:evenodd" d="M 13,7 V 9 H 9.8398462 c -1.371845,8e-5 -2.6394518,0.7735688 -3.3253743,1.953268 -0.6859627,1.179767 -0.6859627,2.969738 0,4.149506 C 7.1674503,16.222129 8.3474229,16.93642 9.6485932,17 8.6670891,16.902435 7.9999107,16.382474 8,15.403 8.0000002,14.35005 8.7794398,14 9.8398462,14 H 13 v 1.579409 L 18,11.5 Z" id="path4" />
+</g></svg>

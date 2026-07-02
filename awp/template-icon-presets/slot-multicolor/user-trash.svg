@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bodyShade" cx="-40.55" cy="28.68" r="25.71" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1,0,0,1.0493,71.91,-1.56)">
+      <stop offset="0" stop-color="#bec4db" stop-opacity="0" />
+      <stop offset="1" stop-color="#fff" stop-opacity="0.478" />
+    </radialGradient>
+    <linearGradient id="topHighlight" x1="-34.62" y1="5.90" x2="-34.62" y2="8.59" gradientUnits="userSpaceOnUse" gradientTransform="translate(71.91,2.30)">
+      <stop offset="0" stop-color="#fff" />
+      <stop offset="1" stop-color="#bfc6dc" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(32.0000 32.0000) scale(1.041148) translate(-32.0000 -32.0000)"><path fill="#bdc5db" fill-opacity="0.808" d="m 7.351031,7.309404 c -0.942537,0 -1.701172,0.7586351 -1.701172,1.7011719 L 12.565875,52.62581 c 0,3.721927 2.996823,6.716797 6.71875,6.716797 H 31.356891 43.43111 c 3.721927,0 6.718749,-2.99487 6.71875,-6.716797 L 57.065875,9.0105759 c 0,-0.9425368 -0.758635,-1.7011719 -1.701172,-1.7011719 H 31.356891 Z" />
+
+  <path fill="url(#bodyShade)" d="m 7.351031,7.309404 c -0.942537,0 -1.701172,0.7586351 -1.701172,1.7011719 L 12.565875,52.62581 c 0,3.721927 2.996823,6.716797 6.71875,6.716797 H 31.356891 43.43111 c 3.721927,0 6.718749,-2.99487 6.71875,-6.716797 L 57.065875,9.0105759 c 0,-0.9425368 -0.758635,-1.7011719 -1.701172,-1.7011719 H 31.356891 Z" />
+
+  <path fill="url(#topHighlight)" opacity="0.57" d="m 7.351031,7.3094035 c -0.94254,0 -1.70117,0.7586351 -1.70117,1.7011724 l 6.91601,43.6152341 c 0,3.721927 2.996827,6.716797 6.718754,6.716797 H 31.356891 43.43111 c 3.721927,0 6.718749,-2.99487 6.71875,-6.716797 L 57.065875,9.0105759 c 0,-0.9425373 -0.758635,-1.7011724 -1.701172,-1.7011724 H 31.356891 Z" />
+  </g></svg>

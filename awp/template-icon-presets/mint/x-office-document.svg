@@ -1,20 +1,43 @@
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64" id="svg29">
-  <defs id="defs13">
-    <linearGradient xlink:href="#a" id="b" gradientUnits="userSpaceOnUse" x1="0" y1="60.774" x2="0" y2="2.345"/>
-    <linearGradient id="a" y1="392.36" y2="336.36" x2="0" gradientUnits="userSpaceOnUse" gradientTransform="translate(254 -254)">
-      <stop stop-color="#fff" stop-opacity="0" id="stop3"/>
-      <stop offset="1" stop-color="#fff" stop-opacity=".2" id="stop5"/>
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">
+  <defs>
+    
+    <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#2699DA" />
+      <stop offset="100%" stop-color="#0D4C8A" />
     </linearGradient>
-    <linearGradient id="c" y1="17.475" y2="31" x1="41.616" x2="54" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#060606" id="stop8"/>
-      <stop offset="1" stop-opacity="0" id="stop10"/>
+    
+    
+    <linearGradient id="foldGrad" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#0A3F75" />
+      <stop offset="100%" stop-color="#06284F" />
+    </linearGradient>
+    
+    <linearGradient id="b" x1="0" y1="60.774" x2="0" y2="2.345" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff" stop-opacity="0" />
+      <stop offset="1" stop-color="#fff" stop-opacity=".2" />
+    </linearGradient>
+    <linearGradient id="c" x1="41.616" y1="17.475" x2="54" y2="31" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#060606" />
+      <stop offset="1" stop-opacity="0" />
     </linearGradient>
   </defs>
-  <path d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 17 Z" id="path15" style="fill:#1bb2fb"/>
-  <path d="m 21,22 v 1 h 22 v -1 z m 0,3 v 1 h 22 v -1 z m 0,3 v 1 h 11 v -1 z m 0,4 v 1 h 22 v -1 z m 0,3 v 1 h 9 v -1 z m 13,0 v 9 h 9 v -9 z m 1,1 h 7 v 7 h -7 z m -14,1 v 1 h 5 v -1 z m 0,3 v 1 h 10 v -1 z m 0,3 v 1 h 6 v -1 z" id="path17" style="color:#000000;opacity:0.9;fill:#ffffff"/>
-  <path d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 17 Z" id="path19" style="fill:url(#b)"/>
-  <path d="M 40,3 H 15 C 12.23,3 10,5.23 10,8 V 9.014 A 5.005,5.005 0 0 1 11.46,5.474 4.989,4.989 0 0 1 15,4.015 H 40 V 4 Z" id="path21" style="opacity:0.5;fill:#ffffff"/>
-  <path d="M 54,54.86 A 5.004,5.004 0 0 1 52.54,58.398 4.989,4.989 0 0 1 49,59.86 H 15 A 5.005,5.005 0 0 1 11.46,58.4 4.989,4.989 0 0 1 10,54.86 V 56 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 z" id="path23" style="opacity:0.25;fill-opacity:0.99199997"/>
-  <path d="M 40,3 V 14.535 A 2.456,2.456 0 0 0 42.465,17 H 54 Z" id="path25" style="opacity:0.5;fill:#ffffff;fill-rule:evenodd"/>
-  <path d="M 40.73,16.283 54,31 V 17 H 42.465 c -0.68,0 -1.29,-0.276 -1.735,-0.717 z" id="path27" style="opacity:0.2;fill:url(#c);fill-rule:evenodd"/>
-</svg>
+  
+  <g transform="translate(32.0000 32.0000) scale(0.937931) translate(-32.0000 -32.0000)"><path d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 17 Z" fill="url(#bodyGrad)" />
+  
+  
+  <path d="m 21,22 v 1 h 22 v -1 z m 0,3 v 1 h 22 v -1 z m 0,3 v 1 h 11 v -1 z m 0,4 v 1 h 22 v -1 z m 0,3 v 1 h 9 v -1 z m 13,0 v 9 h 9 v -9 z m 1,1 h 7 v 7 h -7 z m -14,1 v 1 h 5 v -1 z m 0,3 v 1 h 10 v -1 z m 0,3 v 1 h 6 v -1 z" opacity=".9" fill="#ffffff" />
+  
+  <path d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 17 Z" fill="url(#b)" />
+  
+  
+  <path d="M 40,3 H 15 C 12.23,3 10,5.23 10,8 V 9.014 A 5.005,5.005 0 0 1 11.46,5.474 4.989,4.989 0 0 1 15,4.015 H 40 V 4 Z" opacity=".5" fill="#80C3EA" />
+  
+  
+  <path d="M 54,54.86 A 5.004,5.004 0 0 1 52.54,58.398 4.989,4.989 0 0 1 49,59.86 H 15 A 5.005,5.005 0 0 1 11.46,58.4 4.989,4.989 0 0 1 10,54.86 V 56 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 z" opacity=".25" />
+  
+  
+  <path d="M 40,3 V 14.535 A 2.456,2.456 0 0 0 42.465,17 H 54 Z" opacity=".8" fill="url(#foldGrad)" fill-rule="evenodd" />
+  
+  <path d="M 40.73,16.283 54,31 V 17 H 42.465 c -0.68,0 -1.29,-0.276 -1.735,-0.717 z" opacity=".2" fill="url(#c)" fill-rule="evenodd" />
+</g></svg>

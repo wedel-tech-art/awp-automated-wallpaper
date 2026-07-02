@@ -57,6 +57,9 @@ if [ -n "$PRESET_NAME" ]; then
         done
         echo -e "${CLR_GREEN}[SUCCESS] Symlinks updated.${CLR_RESET}"
     fi
+    
+    echo "$PRESET_NAME" > /dev/shm/awp_active_preset
+
 fi
 
 # --- 3. System Environment Setup ---
@@ -125,6 +128,54 @@ disabled_colors=#ff808080, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a
 EOF
         echo -e "${CLR_GREEN}[QT6] Initial color scheme created.${CLR_RESET}"
     fi
+fi
+
+# --- 3.6 KDE THEMING INFRASTRUCTURE (AWP Feature) ---
+echo -e "${CLR_CYAN}[KDE] Setting up KDE theming infrastructure...${CLR_RESET}"
+
+# Create KDE color schemes directory
+KDE_COLORS_DIR="$HOME/.local/share/color-schemes"
+KDE_COLOR_FILE="$KDE_COLORS_DIR/Awp.colors"
+SHM_KDE_FILE="/dev/shm/awp-kde-color.colors"
+
+mkdir -p "$KDE_COLORS_DIR"
+
+# Create initial KDE color scheme in RAM if it doesn't exist
+if [ ! -f "$SHM_KDE_FILE" ]; then
+    echo -e "${CLR_CYAN}[KDE] Creating initial color scheme in RAM...${CLR_RESET}"
+    cat > "$SHM_KDE_FILE" << 'EOF'
+[General]
+Name=AWP_Dynamic
+ReferenceColorScheme=BreezeDark
+
+[Background:Normal]
+Color=#2e2e2e
+[Foreground:Normal]
+Color=#cfcfc2
+[Background:Selection]
+Color=#3daee9
+[Colors:Selection]
+BackgroundNormal=#3daee9
+ForegroundNormal=#ffffff
+[Colors:Window]
+BackgroundNormal=#2e2e2e
+ForegroundNormal=#cfcfc2
+[Colors:View]
+BackgroundNormal=#242424
+ForegroundNormal=#cfcfc2
+[Colors:Button]
+BackgroundNormal=#3a3a3a
+ForegroundNormal=#cfcfc2
+EOF
+    echo -e "${CLR_GREEN}[KDE] Initial color scheme created.${CLR_RESET}"
+fi
+
+# Ensure the symlink exists
+if [ ! -L "$KDE_COLOR_FILE" ] || [ "$(readlink "$KDE_COLOR_FILE")" != "$SHM_KDE_FILE" ]; then
+    echo -e "${CLR_CYAN}[KDE] Creating symlink: $KDE_COLOR_FILE -> $SHM_KDE_FILE${CLR_RESET}"
+    rm -f "$KDE_COLOR_FILE"
+    ln -sf "$SHM_KDE_FILE" "$KDE_COLOR_FILE"
+    echo -e "${CLR_GREEN}[KDE] Symlink created.${CLR_RESET}"
 fi
 
 # --- 4. Logic: Daemon Selection & Lifecycle ---

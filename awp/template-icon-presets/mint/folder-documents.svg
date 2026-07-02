@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="512" height="512" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64">
   <defs>
     <linearGradient id="cuerpoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#a27ae4" />
-      <stop offset="100%" stop-color="#7240c3"/>
+      <stop offset="100%" stop-color="#7240c3" />
     </linearGradient>
     <linearGradient id="solapaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#7240c3" />
@@ -11,13 +11,13 @@
     </linearGradient>
   </defs>
 
-  <path d="M 12 18 H 24 L 32 23 H 52 C 54 23 56 25 56 27 V 34 H 8 V 22 C 8 20 10 18 12 18 Z" fill="url(#solapaGradient)" />
+  <g transform="translate(32.0000 32.0000) scale(1.133333) translate(-32.0000 -32.0000)"><path d="M 12 18 H 24 L 32 23 H 52 C 54 23 56 25 56 27 V 34 H 8 V 22 C 8 20 10 18 12 18 Z" fill="url(#solapaGradient)" />
   <path d="M 14 26 C 13 26 12 27 12 28 V 54 H 52 V 28 C 52 27 51 26 50 26 Z" fill="#dcdae8" />
   <path d="M 12 30 H 52 C 54 30 56 32 56 34 V 56 C 56 58 54 58 52 58 H 12 C 10 58 8 58 8 56 V 34 C 8 32 10 30 12 30 Z" fill="url(#cuerpoGradient)" />
 
-  <!-- Emblema documento, escalado 0.5 (128->64), centrado en el cuerpo -->
+  
   <g transform="translate(23 34) scale(0.42)" fill="#2c1e44">
-    <path d="M29.25 0C29.25 0 7.5 0 7.5 0C3.3573 0 0 3.3573 0 7.5C0 7.5 0 40.5 0 40.5C0 44.6427 3.3573 48 7.5 48C7.5 48 34.5 48 34.5 48C38.6427 48 42 44.6427 42 40.5C42 40.5 42 12.75 42 12.75L29.25 0ZM27 15L39 15L39 40.5C39 42.99 36.99 45 34.5 45L7.5 45C5.01 45 3 42.99 3 40.5L3 7.5C3 5.01 5.01 3 7.5 3L27 3L27 15Z" fill-rule="evenodd" transform="translate(3 0)"/>
-    <path d="M0 21L0 18L12 18L12 21ZM0 15L0 12L24 12L24 15ZM0 9L0 6L24 6L24 9ZM0 3L0 0L24 0L24 3Z" transform="translate(12 18)"/>
+    <path d="M29.25 0C29.25 0 7.5 0 7.5 0C3.3573 0 0 3.3573 0 7.5C0 7.5 0 40.5 0 40.5C0 44.6427 3.3573 48 7.5 48C7.5 48 34.5 48 34.5 48C38.6427 48 42 44.6427 42 40.5C42 40.5 42 12.75 42 12.75L29.25 0ZM27 15L39 15L39 40.5C39 42.99 36.99 45 34.5 45L7.5 45C5.01 45 3 42.99 3 40.5L3 7.5C3 5.01 5.01 3 7.5 3L27 3L27 15Z" fill-rule="evenodd" transform="translate(3 0)" />
+    <path d="M0 21L0 18L12 18L12 21ZM0 15L0 12L24 12L24 15ZM0 9L0 6L24 6L24 9ZM0 3L0 0L24 0L24 3Z" transform="translate(12 18)" />
   </g>
-</svg>
+</g></svg>

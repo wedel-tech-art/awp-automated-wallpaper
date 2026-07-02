@@ -1,13 +1,13 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">
   
-  <!-- Main Document Body (Darker Purple) -->
-  <path fill="#7155a0" d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 17 Z" />
   
-  <!-- Internal Text Lines (White) -->
+  <g transform="translate(32.0000 32.0000) scale(0.937931) translate(-32.0000 -32.0000)"><path fill="#7155a0" d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 17 Z" />
+  
+  
   <path fill="#ffffff" d="m 21,22 v 1 h 22 v -1 z m 0,3 v 1 h 22 v -1 z m 0,3 v 1 h 11 v -1 z m 0,4 v 1 h 22 v -1 z m 0,3 v 1 h 19 v -1 z m 0,2 v 1 h 11 v -1 z m 0,3 v 1 h 22 v -1 z m 0,3 v 1 h 16 v -1 z" />
   
-  <!-- Folded Corner (Lighter Purple) -->
+  
   <path fill="#a27ae4" fill-rule="evenodd" d="M 40,3 V 14.535 A 2.456,2.456 0 0 0 42.465,17 H 54 Z" />
 
-</svg>
+</g></svg>
