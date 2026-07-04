@@ -541,6 +541,14 @@ ICON_PRESETS = {
             ('a27ae4', 'hex'),
             ('dbcbfa', 'lightest'),
             ('7155a0', 'dark_shade'),
+            ('6c763f', 'trash_dark_base'),
+            
+            ('adbc6a', 'trash_light_leaf'),
+            ('86a10c', 'trash_mid_dark'),
+            ('98b710', 'trash_mid_bright'),
+            ('9aab4d', 'trash_muted_mid'),
+            ('839341', 'trash_olive_shade'),
+            ('b2d226', 'trash_bright_pop'),            
         ],
         'family_ratios': {
             # Pure: (0.0, 0.29, 1.10)  → 266°, 19%, 98%
@@ -548,6 +556,14 @@ ICON_PRESETS = {
             
             # Pure: (-5.0, 0.71, 0.71)  → 261°, 47%, 63%
             'dark_shade': (-2.0, 0.95, 0.65),  # 264°, 63%, 58% (richer shadow)
+
+            'trash_dark_base':   (0, 0.47, 0.46),
+            'trash_light_leaf':  (0, 0.44, 0.74),
+            'trash_mid_dark':    (0, 0.93, 0.63),
+            'trash_mid_bright':  (0, 0.91, 0.72),
+            'trash_muted_mid':   (0, 0.55, 0.67),
+            'trash_olive_shade': (0, 0.56, 0.58),
+            'trash_bright_pop':  (0, 0.82, 0.82),
         },
     },
     'slot-multicolor': {

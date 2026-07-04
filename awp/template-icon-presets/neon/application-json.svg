@@ -1,10 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64" id="svg73">
   <defs id="defs47">
-    <linearGradient id="linearGradient6261">
-      <stop offset="0" id="stop3" />
-      <stop stop-opacity="0" offset="1" id="stop5" />
-    </linearGradient>
     <linearGradient id="linearGradient6761-7" x1="21.039" x2="21.039" y1="2" y2="62" gradientTransform="matrix(.26458 0 0 .26458 0 -.26458)" gradientUnits="userSpaceOnUse">
       <stop stop-color="#ff5b59" offset="0" id="stop27" />
       <stop stop-color="#ff983d" offset="1" id="stop29" />

@@ -27,8 +27,18 @@ AWP Baker (`baker`) is a **standalone, surgical theme generation tool** that cha
 - **Fool Bake Mode:** Pure theme baking without touching your config — perfect for testing.
 - **Regenerate All:** Rebuild ALL themes from the INI file in one operation.
 - **Clean Start:** Remove ALL old themes before regenerating for a fresh start.
+- **Clean Workspace:** Remove ONLY the current workspace's themes before baking — surgical cleanup.
 - **Progress Bar:** Visual feedback with dynamic accent color matching.
 - **Dark Theme with Dynamic Accents:** The UI adapts to your selected hex color in real-time.
+- **INI Theme Labels:** Shows what themes are currently configured in the INI for full context.
+
+### 🆕 Recent Enhancements
+
+- **Clean Workspace Mode:** New checkbox to remove ONLY the current workspace's themes before baking — surgical cleanup without affecting other workspaces.
+- **INI Theme Labels:** Theme presets now show what's currently configured in the INI file, giving you full context before making changes.
+- **Adwaitaru Redesign:** The Adwaitaru icon preset has been updated with a more AWP-style aesthetic, maintaining its clean look while fitting the AWP design language.
+- **Neon Preset Fixes:** All neon icons now have consistent color and opacity across the entire set for a more polished look.
+- **Progress Bar Accent Color:** The progress bar now dynamically matches your selected hex color for a cohesive visual experience.
 
 ### 🎨 SVG Templates
 

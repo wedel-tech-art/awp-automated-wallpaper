@@ -13,8 +13,10 @@ Features:
 - Recreate symlinks via awp_start.sh (only for current preset)
 - Fool Bake: Pure theme baking without workspace operations
 - Regenerate All: Rebuild ALL themes from INI
-- Clean Start: Remove old themes before regenerating
+- Clean Start: Remove ALL old themes before regenerating
+- Clean Workspace: Remove ONLY this workspace's themes before baking
 - Smart checkbox interactions: Fool Bake disables everything, Clean auto-enables Regenerate
+- INI Theme Labels: Shows what themes are currently configured in the INI
 
 Usage:
     python3 awp_baker.py
@@ -35,7 +37,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QPalette, QAction, QPixmap
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from core.themes import bake_awp_theme, bake_awp_icon, bake_awp_cursor, clean_old_themes
+from core.themes import bake_awp_theme, bake_awp_icon, bake_awp_cursor, clean_themes
 from core.constants import THEME_PRESETS, ICON_PRESETS, CURSOR_PRESETS, SVG_TEMPLATES
 from core.config import AWPConfig
 from core.actions import run_awp_start
@@ -53,8 +55,8 @@ class AWPBaker(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("🎨 AWP Baker - Workspace Color Manager")
-        self.resize(620, 850)
-        self.setMinimumSize(540, 600)
+        self.resize(600, 830)
+        self.setMinimumSize(540, 700)
         self.current_hex = "#b3004c"
         
         # Load config
@@ -89,12 +91,6 @@ class AWPBaker(QMainWindow):
         sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
         sub.setStyleSheet("color: #888; font-size: 11px; margin-bottom: 3px;")
         layout.addWidget(sub)
-        
-        # --- Line ---
-        line = QFrame()
-        line.setFrameShape(QFrame.Shape.HLine)
-        line.setStyleSheet("background: #444; max-height: 1px; margin: 3px 0 8px 0;")
-        layout.addWidget(line)
         
         # --- Preset Selection ---
         preset_group = QGroupBox(" Preset Selection ")
@@ -215,11 +211,6 @@ class AWPBaker(QMainWindow):
         
         ws_group.setLayout(ws_layout)
         layout.addWidget(ws_group)
-        
-        # === NOW LOAD WORKSPACES ===
-        self.current_ini_path = self._get_preset_ini_path(self.current_preset)
-        self.workspaces, self.num_workspaces = self._get_workspaces_from_ini(self.current_ini_path)
-        self._update_workspace_combo()
         
         # --- Color Input ---
         color_group = QGroupBox(" New Color ")
@@ -354,6 +345,13 @@ class AWPBaker(QMainWindow):
             self.gtk_combo.addItem(name.title())
         self.gtk_combo.setCurrentText("Breeze")
         gtk_row.addWidget(self.gtk_combo)
+        
+        # GTK INI label
+        self.gtk_ini_label = QLabel("INI: None")
+        self.gtk_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+        self.gtk_ini_label.setMinimumWidth(120)
+        gtk_row.addWidget(self.gtk_ini_label)
+        
         gtk_row.addStretch()
         presets_layout.addLayout(gtk_row)
         
@@ -373,6 +371,13 @@ class AWPBaker(QMainWindow):
             self.icon_combo.addItem(name.title())
         self.icon_combo.setCurrentText("Mint")
         icon_row.addWidget(self.icon_combo)
+        
+        # Icons INI label
+        self.icon_ini_label = QLabel("INI: None")
+        self.icon_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+        self.icon_ini_label.setMinimumWidth(120)
+        icon_row.addWidget(self.icon_ini_label)
+        
         icon_row.addStretch()
         presets_layout.addLayout(icon_row)
         
@@ -397,6 +402,13 @@ class AWPBaker(QMainWindow):
                     self.cursor_combo.setItemData(index, desc, Qt.ItemDataRole.ToolTipRole)
         self.cursor_combo.setCurrentText("Oxy")
         cursor_row.addWidget(self.cursor_combo)
+        
+        # Cursors INI label
+        self.cursor_ini_label = QLabel("INI: None")
+        self.cursor_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+        self.cursor_ini_label.setMinimumWidth(120)
+        cursor_row.addWidget(self.cursor_ini_label)
+        
         cursor_row.addStretch()
         presets_layout.addLayout(cursor_row)
         
@@ -426,9 +438,9 @@ class AWPBaker(QMainWindow):
         regenerate_row.addStretch()
         options_layout.addLayout(regenerate_row)
         
-        # Third row: Clean Start
+        # Third row: Clean Start (only with Regenerate)
         clean_row = QHBoxLayout()
-        self.clean_cb = QCheckBox("🧹 Clean Start (remove old themes before baking)")
+        self.clean_cb = QCheckBox("🧹 Clean Start (remove ALL old themes)")
         self.clean_cb.setChecked(False)
         self.clean_cb.stateChanged.connect(self.on_clean_toggled)
         self.clean_cb.setStyleSheet("color: #bbb; font-size: 12px;")
@@ -437,7 +449,18 @@ class AWPBaker(QMainWindow):
         clean_row.addStretch()
         options_layout.addLayout(clean_row)
         
-        # Fourth row: Recreate symlinks
+        # Fourth row: Clean Workspace (with Normal Bake)
+        clean_ws_row = QHBoxLayout()
+        self.clean_workspace_cb = QCheckBox("🧹 Clean Workspace (remove old themes for this workspace)")
+        self.clean_workspace_cb.setChecked(False)
+        self.clean_workspace_cb.stateChanged.connect(self.update_checkbox_state)
+        self.clean_workspace_cb.setStyleSheet("color: #bbb; font-size: 12px;")
+        self.clean_workspace_cb.setToolTip("Remove existing themes for this workspace before baking (works with Normal Bake)")
+        clean_ws_row.addWidget(self.clean_workspace_cb)
+        clean_ws_row.addStretch()
+        options_layout.addLayout(clean_ws_row)
+        
+        # Fifth row: Recreate symlinks
         symlink_row = QHBoxLayout()
         self.symlink_cb = QCheckBox("Recreate symlinks after baking")
         self.symlink_cb.setChecked(True)
@@ -554,7 +577,10 @@ class AWPBaker(QMainWindow):
         self.hex_input.setText("#b3004c")
         self.on_hex_changed()
         
-        # Select first workspace (already done in _update_workspace_combo)
+        # === NOW LOAD WORKSPACES ===
+        self.current_ini_path = self._get_preset_ini_path(self.current_preset)
+        self.workspaces, self.num_workspaces = self._get_workspaces_from_ini(self.current_ini_path)
+        self._update_workspace_combo()
         
         # Initialize checkbox states
         self.update_checkbox_state()
@@ -637,7 +663,10 @@ class AWPBaker(QMainWindow):
                     'num': i,
                     'name': name,
                     'folder': folder,
-                    'color': color
+                    'color': color,
+                    'gtk_theme': config.get(section, 'gtk_theme', fallback=''),
+                    'icon_theme': config.get(section, 'icon_theme', fallback=''),
+                    'cursor_theme': config.get(section, 'cursor_theme', fallback=''),
                 })
         
         return workspaces, num_workspaces
@@ -677,6 +706,11 @@ class AWPBaker(QMainWindow):
         
         self.update_symlink_state()
         self.statusBar().showMessage(f"Selected preset: {selected_preset} {'(current)' if is_current else ''}")
+        
+        # Update INI labels for the currently selected workspace
+        ws_index = self.ws_combo.currentIndex()
+        if ws_index >= 0 and ws_index < len(self.workspaces):
+            self._update_ini_labels(self.workspaces[ws_index])
     
     def update_symlink_state(self):
         """Enable/disable symlink checkbox and style its text."""
@@ -707,6 +741,7 @@ class AWPBaker(QMainWindow):
         fool_bake = self.fool_bake_cb.isChecked()
         regenerate = self.regenerate_cb.isChecked()
         clean = self.clean_cb.isChecked()
+        clean_workspace = self.clean_workspace_cb.isChecked()
         
         # --- Rule 1: Fool Bake overrides everything ---
         if fool_bake:
@@ -714,6 +749,8 @@ class AWPBaker(QMainWindow):
             self.regenerate_cb.setChecked(False)
             self.clean_cb.setEnabled(False)
             self.clean_cb.setChecked(False)
+            self.clean_workspace_cb.setEnabled(False)
+            self.clean_workspace_cb.setChecked(False)
             self.symlink_cb.setEnabled(False)
             self.symlink_cb.setChecked(False)
             self.bake_btn.setText("🔥 Fool Bake")
@@ -729,6 +766,11 @@ class AWPBaker(QMainWindow):
         if not regenerate:
             self.clean_cb.setChecked(False)
         
+        # Clean Workspace only works with Normal Bake (NOT Regenerate)
+        self.clean_workspace_cb.setEnabled(not regenerate)
+        if regenerate:
+            self.clean_workspace_cb.setChecked(False)
+        
         # --- Rule 3: Update button text ---
         if regenerate:
             if clean:
@@ -738,11 +780,90 @@ class AWPBaker(QMainWindow):
                 self.bake_btn.setText("🔥 Regenerate All")
                 self.statusBar().showMessage("Regenerate All (rebuild from INI)")
         else:
-            self.bake_btn.setText("🔥 Bake && Update")
-            self.statusBar().showMessage("Ready")
+            if clean_workspace:
+                self.bake_btn.setText("🔥 Clean && Bake")
+                self.statusBar().showMessage("Clean Workspace + Normal Bake")
+            else:
+                self.bake_btn.setText("🔥 Bake && Update")
+                self.statusBar().showMessage("Ready")
         
         # --- Rule 4: Update symlink state ---
         self.update_symlink_state()
+    
+    def _update_progress_style(self, hex_color):
+        """Update progress bar color to match the current active hex."""
+        if hex_color and hex_color.startswith('#') and len(hex_color) == 7:
+            self.progress_bar.setStyleSheet(f"""
+                QProgressBar {{
+                    border: 1px solid #555;
+                    border-radius: 4px;
+                    background: #3c3c3c;
+                    color: #ddd;
+                    text-align: center;
+                    height: 22px;
+                }}
+                QProgressBar::chunk {{
+                    background: {hex_color};
+                    border-radius: 4px;
+                }}
+            """)
+        else:
+            self.progress_bar.setStyleSheet("""
+                QProgressBar {
+                    border: 1px solid #555;
+                    border-radius: 4px;
+                    background: #3c3c3c;
+                    color: #ddd;
+                    text-align: center;
+                    height: 22px;
+                }
+                QProgressBar::chunk {
+                    background: #2d7d2d;
+                    border-radius: 4px;
+                }
+            """)
+    
+    def _update_ini_labels(self, ws):
+        """Update the INI theme labels based on the selected workspace."""
+        if ws:
+            gtk = ws.get('gtk_theme', '')
+            icon = ws.get('icon_theme', '')
+            cursor = ws.get('cursor_theme', '')
+            
+            # Extract preset names from theme strings
+            gtk_preset = extract_preset_from_theme(gtk, 'awp-gtk-') if gtk else None
+            icon_preset = extract_preset_from_theme(icon, 'awp-icons-') if icon else None
+            cursor_preset = extract_preset_from_theme(cursor, 'awp-cursor-') if cursor else None
+            
+            # Update labels with colors
+            if gtk_preset:
+                self.gtk_ini_label.setText(f"INI: {gtk_preset.title()}")
+                self.gtk_ini_label.setStyleSheet("color: #888; font-size: 11px;")
+            else:
+                self.gtk_ini_label.setText("INI: None")
+                self.gtk_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+            
+            if icon_preset:
+                self.icon_ini_label.setText(f"INI: {icon_preset.title()}")
+                self.icon_ini_label.setStyleSheet("color: #888; font-size: 11px;")
+            else:
+                self.icon_ini_label.setText("INI: None")
+                self.icon_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+            
+            if cursor_preset:
+                self.cursor_ini_label.setText(f"INI: {cursor_preset.title()}")
+                self.cursor_ini_label.setStyleSheet("color: #888; font-size: 11px;")
+            else:
+                self.cursor_ini_label.setText("INI: None")
+                self.cursor_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+        else:
+            # No workspace selected - reset labels
+            self.gtk_ini_label.setText("INI: None")
+            self.gtk_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+            self.icon_ini_label.setText("INI: None")
+            self.icon_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+            self.cursor_ini_label.setText("INI: None")
+            self.cursor_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
     
     def on_clean_toggled(self, checked):
         """Handle Clean Start checkbox toggling."""
@@ -756,8 +877,9 @@ class AWPBaker(QMainWindow):
         self.update_checkbox_state()
     
     def on_ws_selected(self, index):
-        """Update color preview when workspace is selected."""
+        """Update color preview and INI theme labels when workspace is selected."""
         if index < 0 or index >= len(self.workspaces):
+            self._update_ini_labels(None)
             return
         
         ws = self.workspaces[index]
@@ -770,9 +892,14 @@ class AWPBaker(QMainWindow):
                 border: 2px solid {color};
             """)
             self.current_color_label.setText(f"WS{ws['num']}: {color}")
+            self._update_progress_style(color)
         else:
             self.current_color_preview.setStyleSheet("background: #888; border-radius: 4px; border: 2px solid #555;")
             self.current_color_label.setText("No color set")
+            self._update_progress_style(None)
+        
+        # Update INI labels
+        self._update_ini_labels(ws)
     
     def _get_combo_style(self, hex_color=None):
         """Generate combo box style with optional accent color."""
@@ -914,39 +1041,6 @@ class AWPBaker(QMainWindow):
         self.pick_btn.setStyleSheet(self._get_pick_style(hex_color))
         self.new_color_preview.setStyleSheet(self._get_preview_style(hex_color))
     
-    def _update_progress_style(self, hex_color):
-        """Update progress bar color to match the current active hex."""
-        if hex_color and hex_color.startswith('#') and len(hex_color) == 7:
-            self.progress_bar.setStyleSheet(f"""
-                QProgressBar {{
-                    border: 1px solid #555;
-                    border-radius: 4px;
-                    background: #3c3c3c;
-                    color: #ddd;
-                    text-align: center;
-                    height: 22px;
-                }}
-                QProgressBar::chunk {{
-                    background: {hex_color};
-                    border-radius: 4px;
-                }}
-            """)
-        else:
-            self.progress_bar.setStyleSheet("""
-                QProgressBar {
-                    border: 1px solid #555;
-                    border-radius: 4px;
-                    background: #3c3c3c;
-                    color: #ddd;
-                    text-align: center;
-                    height: 22px;
-                }
-                QProgressBar::chunk {
-                    background: #2d7d2d;
-                    border-radius: 4px;
-                }
-            """)
-    
     def pick_color(self):
         color = QColorDialog.getColor()
         if color.isValid():
@@ -964,6 +1058,21 @@ class AWPBaker(QMainWindow):
             self.current_hex = None
             self._update_all_styles(None)
             self._update_progress_style(None)
+    
+    def _clean_workspace_themes(self, ws_num, gtk_theme, icon_theme, cursor_theme):
+        """Remove old themes for a specific workspace using the unified clean_themes()."""
+        theme_names = []
+        if gtk_theme:
+            theme_names.append(gtk_theme)
+        if icon_theme:
+            theme_names.append(icon_theme)
+        if cursor_theme:
+            theme_names.append(cursor_theme)
+        
+        if not theme_names:
+            return []
+        
+        return clean_themes(theme_names)
     
     def _update_ini_color_direct(self, ini_path, ws_num, new_color):
         """Update color in a specific INI file directly."""
@@ -1193,7 +1302,7 @@ class AWPBaker(QMainWindow):
             # Step 1: Clean old themes if requested
             if self.clean_cb.isChecked():
                 _printer.info("🧹 Cleaning old themes...", backend="baker")
-                removed = clean_old_themes()
+                removed = clean_themes()  # No args = remove ALL awp-* themes
                 if removed:
                     results.append(f"🧹 Removed {len(removed)} old themes")
                     for item in removed[:5]:  # Show first 5
@@ -1348,6 +1457,7 @@ class AWPBaker(QMainWindow):
             self._fool_bake()
             return
         
+        # --- Normal Bake ---
         hex_color = self.hex_input.text().strip()
         if not hex_color.startswith('#') or len(hex_color) != 7:
             QMessageBox.warning(self, "Invalid Color", 
@@ -1379,6 +1489,10 @@ class AWPBaker(QMainWindow):
             f"• Bake GTK, Icon, and Cursor themes\n"
             f"• Copy ws{ws_num}.png to {selected_preset}/\n"
         )
+        
+        if self.clean_workspace_cb.isChecked():
+            confirm_msg += f"🧹 Clean Workspace is ENABLED:\n"
+            confirm_msg += f"   • Old themes will be REMOVED before baking\n\n"
         
         if is_current_preset and self.symlink_cb.isChecked():
             confirm_msg += f"• Recreate symlinks via awp_start.sh\n"
@@ -1415,6 +1529,21 @@ class AWPBaker(QMainWindow):
             icon_preset = self.icon_combo.currentText().lower()
             cursor_preset = self.cursor_combo.currentText().lower()
             template_name = self.template_combo.currentData()
+            
+            # --- Step 0: Clean Workspace (if enabled) ---
+            if self.clean_workspace_cb.isChecked():
+                self.progress_bar.setValue(5)
+                QApplication.processEvents()
+                
+                old_gtk = ws.get('gtk_theme', '')
+                old_icon = ws.get('icon_theme', '')
+                old_cursor = ws.get('cursor_theme', '')
+                
+                removed = self._clean_workspace_themes(ws_num, old_gtk, old_icon, old_cursor)
+                if removed:
+                    results.append(f"🧹 Removed: {', '.join(removed)}")
+                else:
+                    results.append("🧹 No old themes found to remove")
             
             # Step 1: Update color in the target preset's INI
             self.progress_bar.setValue(10)

@@ -745,23 +745,31 @@ def get_available_themes() -> dict:
     return themes
 
 
-def clean_old_themes():
+def clean_themes(theme_names: list = None):
     """
-    Remove all existing AWP themes from ~/.themes and ~/.icons.
+    Remove AWP themes from ~/.themes and ~/.icons.
+    
+    Args:
+        theme_names: List of specific theme names to remove.
+                     If None, removes ALL awp-* themes.
     
     Returns:
         List of removed item paths
     """
-    import os
-    import shutil
-    
     removed = []
+    
+    # Helper to check if a theme should be removed
+    def should_remove(name):
+        if theme_names is None:
+            return name.startswith('awp-')
+        else:
+            return name in theme_names
     
     # Clean ~/.themes
     themes_dir = os.path.expanduser("~/.themes")
     if os.path.exists(themes_dir):
         for item in os.listdir(themes_dir):
-            if item.startswith('awp-'):
+            if should_remove(item):
                 item_path = os.path.join(themes_dir, item)
                 if os.path.isdir(item_path):
                     try:
@@ -774,7 +782,7 @@ def clean_old_themes():
     icons_dir = os.path.expanduser("~/.icons")
     if os.path.exists(icons_dir):
         for item in os.listdir(icons_dir):
-            if item.startswith('awp-'):
+            if should_remove(item):
                 item_path = os.path.join(icons_dir, item)
                 if os.path.isdir(item_path):
                     try:
