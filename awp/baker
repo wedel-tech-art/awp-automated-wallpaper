@@ -1060,7 +1060,7 @@ class AWPBaker(QMainWindow):
             self._update_progress_style(None)
     
     def _clean_workspace_themes(self, ws_num, gtk_theme, icon_theme, cursor_theme):
-        """Remove old themes for a specific workspace using the unified clean_themes()."""
+        """Remove old themes for a specific workspace from both global and preset locations."""
         theme_names = []
         if gtk_theme:
             theme_names.append(gtk_theme)
@@ -1072,7 +1072,40 @@ class AWPBaker(QMainWindow):
         if not theme_names:
             return []
         
-        return clean_themes(theme_names)
+        removed = []
+        
+        # 1. Remove from global locations (~/.themes/ and ~/.icons/)
+        removed_global = clean_themes(theme_names)
+        removed.extend(removed_global)
+        
+        # 2. Remove from preset/themes/
+        selected_preset = self.preset_combo.currentData()
+        themes_dir = os.path.join(self.presets_dir, selected_preset, 'themes')
+        
+        if os.path.exists(themes_dir):
+            for theme_name in theme_names:
+                # Check GTK
+                gtk_path = os.path.join(themes_dir, 'gtk', theme_name)
+                if os.path.exists(gtk_path):
+                    shutil.rmtree(gtk_path)
+                    removed.append(f"GTK: {theme_name} (preset)")
+                    _printer.info(f"Removed from preset: {gtk_path}", backend="baker")
+                
+                # Check Icons
+                icon_path = os.path.join(themes_dir, 'icons', theme_name)
+                if os.path.exists(icon_path):
+                    shutil.rmtree(icon_path)
+                    removed.append(f"Icons: {theme_name} (preset)")
+                    _printer.info(f"Removed from preset: {icon_path}", backend="baker")
+                
+                # Check Cursors
+                cursor_path = os.path.join(themes_dir, 'cursors', theme_name)
+                if os.path.exists(cursor_path):
+                    shutil.rmtree(cursor_path)
+                    removed.append(f"Cursors: {theme_name} (preset)")
+                    _printer.info(f"Removed from preset: {cursor_path}", backend="baker")
+        
+        return removed
     
     def _update_ini_color_direct(self, ini_path, ws_num, new_color):
         """Update color in a specific INI file directly."""
@@ -1302,15 +1335,29 @@ class AWPBaker(QMainWindow):
             # Step 1: Clean old themes if requested
             if self.clean_cb.isChecked():
                 _printer.info("🧹 Cleaning old themes...", backend="baker")
-                removed = clean_themes()  # No args = remove ALL awp-* themes
+                
+                # 1a. Remove global themes
+                removed_global = clean_themes()  # No args = remove ALL awp-* themes
+                
+                # 1b. Remove preset themes
+                removed_preset = []
+                themes_dir = os.path.join(self.presets_dir, selected_preset, 'themes')
+                if os.path.exists(themes_dir):
+                    import shutil
+                    shutil.rmtree(themes_dir)
+                    removed_preset.append(f"preset/{selected_preset}/themes/")
+                    _printer.info(f"Removed preset themes: {themes_dir}", backend="baker")
+                
+                removed = removed_global + removed_preset
+                
                 if removed:
-                    results.append(f"🧹 Removed {len(removed)} old themes")
+                    results.append(f"🧹 Removed {len(removed)} old themes (global + preset)")
                     for item in removed[:5]:  # Show first 5
                         results.append(f"   - {item}")
                     if len(removed) > 5:
                         results.append(f"   ... and {len(removed) - 5} more")
                 else:
-                    results.append("🧹 No old themes found to remove")
+                    results.append("🧹 No old themes found to remove")            
             
             # Get workspace count
             num_workspaces = 8
@@ -1367,7 +1414,7 @@ class AWPBaker(QMainWindow):
                 
                 # Bake themes
                 try:
-                    theme_result = bake_awp_theme(hex_color, icon_path, gtk_preset)
+                    theme_result = bake_awp_theme(hex_color, icon_path, gtk_preset, preset_name=selected_preset)
                     if theme_result:
                         total_gtk += 1
                 except Exception as e:
@@ -1377,7 +1424,7 @@ class AWPBaker(QMainWindow):
                 QApplication.processEvents()
                 
                 try:
-                    icon_result = bake_awp_icon(hex_color, icon_path, icon_preset)
+                    icon_result = bake_awp_icon(hex_color, icon_path, icon_preset, preset_name=selected_preset)
                     if icon_result:
                         total_icons += 1
                 except Exception as e:
@@ -1387,7 +1434,7 @@ class AWPBaker(QMainWindow):
                 QApplication.processEvents()
                 
                 try:
-                    cursor_result = bake_awp_cursor(hex_color, icon_path, cursor_preset)
+                    cursor_result = bake_awp_cursor(hex_color, icon_path, cursor_preset, preset_name=selected_preset)
                     if cursor_result:
                         total_cursors += 1
                 except Exception as e:
@@ -1564,36 +1611,39 @@ class AWPBaker(QMainWindow):
                 QMessageBox.warning(self, "Error", "Failed to generate icon. Make sure rsvg-convert is installed.")
                 return
             
+            # Get the selected preset name for theme storage
+            preset_name = self.preset_combo.currentData()
+
             # Step 3: Bake themes
             self.progress_bar.setValue(40)
             QApplication.processEvents()
-            _printer.info(f"Baking themes for WS{ws_num} with color {hex_color}", backend="baker")
-            
+            _printer.info(f"Baking themes for WS{ws_num} with color {hex_color} to preset {preset_name}", backend="baker")
+
             if gtk_preset:
                 try:
-                    theme = bake_awp_theme(hex_color, icon=icon_path, preset=gtk_preset)
+                    theme = bake_awp_theme(hex_color, icon=icon_path, preset=gtk_preset, preset_name=preset_name)
                     if theme:
                         results.append(f"✅ GTK Theme: {theme}")
                 except Exception as e:
                     errors.append(f"GTK Theme: {e}")
-            
+
             self.progress_bar.setValue(60)
             QApplication.processEvents()
-            
+
             if icon_preset:
                 try:
-                    icon_result = bake_awp_icon(hex_color, icon=icon_path, preset=icon_preset)
+                    icon_result = bake_awp_icon(hex_color, icon=icon_path, preset=icon_preset, preset_name=preset_name)
                     if icon_result:
                         results.append(f"✅ Icon Theme: {icon_result}")
                 except Exception as e:
                     errors.append(f"Icon Theme: {e}")
-            
+
             self.progress_bar.setValue(80)
             QApplication.processEvents()
-            
+
             if cursor_preset:
                 try:
-                    cursor_result = bake_awp_cursor(hex_color, icon=icon_path, preset=cursor_preset)
+                    cursor_result = bake_awp_cursor(hex_color, icon=icon_path, preset=cursor_preset, preset_name=preset_name)
                     if cursor_result:
                         results.append(f"✅ Cursor Theme: {cursor_result}")
                 except Exception as e:

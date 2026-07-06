@@ -56,10 +56,91 @@ if [ -n "$PRESET_NAME" ]; then
             [ -e "$icon" ] && ln -sfn "$icon" "$LOGOS_DIR/$(basename "$icon")"
         done
         echo -e "${CLR_GREEN}[SUCCESS] Symlinks updated.${CLR_RESET}"
+        
+        # ======================================================================
+        # 2.5 THEME SYMLINKING (NEW!)
+        # ======================================================================
+        echo -e "${CLR_CYAN}[THEMES] Linking themes for $PRESET_NAME...${CLR_RESET}"
+        
+        THEMES_DIR="$TARGET_PRESET/themes"
+        
+        # Clean up old theme symlinks (but keep non-awp themes!)
+        echo -e "${CLR_CYAN}[THEMES] Cleaning old symlinks...${CLR_RESET}"
+        find "$HOME/.themes" -maxdepth 1 -type l -name "awp-*" -exec rm -f {} \; 2>/dev/null
+        find "$HOME/.icons" -maxdepth 1 -type l -name "awp-*" -exec rm -f {} \; 2>/dev/null
+        
+        # Link GTK themes
+        if [ -d "$THEMES_DIR/gtk" ]; then
+            for theme in "$THEMES_DIR/gtk"/*; do
+                if [ -d "$theme" ]; then
+                    name=$(basename "$theme")
+                    ln -sfn "$theme" "$HOME/.themes/$name"
+                    echo -e "${CLR_GREEN}[THEMES] Linked GTK: $name${CLR_RESET}"
+                fi
+            done
+        fi
+        
+        # Link Icon themes
+        if [ -d "$THEMES_DIR/icons" ]; then
+            for theme in "$THEMES_DIR/icons"/*; do
+                if [ -d "$theme" ]; then
+                    name=$(basename "$theme")
+                    ln -sfn "$theme" "$HOME/.icons/$name"
+                    echo -e "${CLR_GREEN}[THEMES] Linked Icons: $name${CLR_RESET}"
+                fi
+            done
+        fi
+        
+        # Link Cursor themes
+        if [ -d "$THEMES_DIR/cursors" ]; then
+            for theme in "$THEMES_DIR/cursors"/*; do
+                if [ -d "$theme" ]; then
+                    name=$(basename "$theme")
+                    ln -sfn "$theme" "$HOME/.icons/$name"
+                    echo -e "${CLR_GREEN}[THEMES] Linked Cursors: $name${CLR_RESET}"
+                fi
+            done
+        fi
+        
+        # If no themes were linked, show a message
+        if [ ! -d "$THEMES_DIR/gtk" ] && [ ! -d "$THEMES_DIR/icons" ] && [ ! -d "$THEMES_DIR/cursors" ]; then
+            echo -e "${CLR_YELLOW}[THEMES] No themes found in preset. Themes may not be baked yet.${CLR_RESET}"
+        fi
+        
+        echo "$PRESET_NAME" > /dev/shm/awp_active_preset
+        
+    else
+        # ❌ Preset not found!
+        echo -e "${CLR_RED}[ERROR] Preset '$PRESET_NAME' not found in $PRESETS_DIR${CLR_RESET}"
+        echo -e "${CLR_RED}[ERROR] Available presets:${CLR_RESET}"
+        ls -1 "$PRESETS_DIR" 2>/dev/null | grep -v "TEMPLATE" | sed 's/^/  - /'
+        
+        # Don't write invalid preset to /dev/shm
+        # Optionally: exit or fallback to TEMPLATE
+        echo -e "${CLR_YELLOW}[INFO] Falling back to TEMPLATE preset${CLR_RESET}"
+        PRESET_NAME="TEMPLATE"
+        
+        # Fallback to TEMPLATE
+        TARGET_PRESET="$PRESETS_DIR/TEMPLATE"
+        TARGET_INI="$TARGET_PRESET/TEMPLATE.ini"
+        
+        if [ -d "$TARGET_PRESET" ] && [ -f "$TARGET_INI" ]; then
+            echo -e "${CLR_CYAN}[ACTION] Switching to TEMPLATE${CLR_RESET}"
+            sed -i "s|/home/[^/]*|$HOME|g" "$TARGET_INI"
+            ln -sfn "$TARGET_INI" "$CONFIG_FILE"
+            echo "TEMPLATE" > /dev/shm/awp_active_preset
+            echo -e "${CLR_GREEN}[SUCCESS] TEMPLATE preset activated.${CLR_RESET}"
+        else
+            echo -e "${CLR_RED}[CRITICAL] TEMPLATE preset not found! Cannot continue.${CLR_RESET}"
+            exit 1
+        fi
     fi
-    
-    echo "$PRESET_NAME" > /dev/shm/awp_active_preset
-
+else
+    # No preset specified → show usage
+    echo -e "${CLR_YELLOW}[USAGE] awp_start.sh [PRESET_NAME]${CLR_RESET}"
+    echo -e "${CLR_YELLOW}Available presets:${CLR_RESET}"
+    ls -1 "$PRESETS_DIR" 2>/dev/null | grep -v "TEMPLATE" | sed 's/^/  - /'
+    exit 1
 fi
 
 # --- 3. System Environment Setup ---

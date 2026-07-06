@@ -14,6 +14,35 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 ## 🚀 Key Features
 
+## 🎨 Preset-Based Themes (V3.12)
+
+**Themes now live inside presets** - each preset is completely self-contained.
+
+### How It Works
+
+- **Themes stored in** `presets/PRESET/themes/` (GTK, Icons, Cursors)
+- **Activation via symlinks** - `awp_start.sh` links to `~/.themes` and `~/.icons`
+- **Clean separation** - Baked themes never conflict with system themes
+- **Portable presets** - Share entire presets with baked themes included
+
+### TEMPLATE Showcase
+
+TEMPLATE now demonstrates AWP's full power with **4 workspaces, 4 different themes**:
+
+| Workspace | Color | GTK | Icons | Cursors |
+|-----------|-------|-----|-------|---------|
+| ws1 | `#00a3b3` | Breeze | Mint | Oxy |
+| ws2 | `#b39b00` | Flat-Remix | Adwaitaru | Oxy |
+| ws3 | `#b3004c` | Breeze | Besgnulinux | Oxy |
+| ws4 | `#8300b3` | Breeze | Sweet | Oxy |
+
+### Benefits
+
+- No cluttering `~/.themes` and `~/.icons`
+- Clean symlink management
+- Presets are portable and shareable
+- Surgical updates - bake one workspace at a time
+
 ## 🧁 AWP Baker — The Ultimate Theme Generation Tool (V3.11)
 
 AWP Baker (`baker`) is a **standalone, surgical theme generation tool** that changes how you manage workspace colors forever.
@@ -234,6 +263,9 @@ mv ~/awp/presets/xfce_light-debian/xfce-debian.ini \
 In ~/awp do "./baker" for surgical theme generation and color management.
 ```
 
+> 💡 **Pro Tip:** For the full AWP experience, use **Baker** for theme generation and **DAB** for basic configuration (wallpaper folders, rotation timing, and workspace count). Baker handles the heavy lifting of theme creation, while DAB keeps things simple and clean.
+
+
 ### Dashboard Qt6
 ```
 In ~/awp you do "python3 dab.py" for editing all default values and make AWP really "your own".
@@ -326,8 +358,24 @@ awp-automated-wallpaper/
 │   │   ├── mate.py                 # MATE backend
 │   │   └── generic.py              # Generic WM fallback
 │   ├── presets/                    # Identity Robbery Presets 🎭
-│   │   ├── TEMPLATE/               # Generic self-healing baseline
-│   │   └── [preset_name]/          # Custom user-defined identities
+│   │   └── TEMPLATE/               # Self-contained showcase preset
+│   │       ├── TEMPLATE.ini        # Workspace configuration
+│   │       ├── themes/             # 🎨 Baked themes (self-contained)
+│   │       │   ├── gtk/            # GTK themes (Breeze, Flat-Remix, etc.)
+│   │       │   ├── icons/          # Icon themes (Mint, Sweet, etc.)
+│   │       │   └── cursors/        # Cursor themes (Oxy)
+│   │       ├── ws1/                # Workspace 1 wallpapers
+│   │       │   └── Debian--*.png
+│   │       ├── ws1.png             # Workspace 1 icon
+│   │       ├── ws2/                # Workspace 2 wallpapers
+│   │       │   └── Debian--*.png
+│   │       ├── ws2.png             # Workspace 2 icon
+│   │       ├── ws3/                # Workspace 3 wallpapers
+│   │       │   └── Debian--*.png
+│   │       ├── ws3.png             # Workspace 3 icon
+│   │       ├── ws4/                # Workspace 4 wallpapers
+│   │       │   └── Debian--*.png
+│   │       └── ws4.png             # Workspace 4 icon
 │   ├── presets-backup/             # Pre-flight safety mirror 🛡️
 │   ├── template-theme-presets/     # GTK
 │   ├── template-icon-presets/      # PNG's + scalable SVG's
@@ -352,6 +400,7 @@ awp-automated-wallpaper/
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
+| **V3.12** | Jul 2026 | 🎨 Preset-Based Themes — Self-contained presets with baked themes, symlink activation, TEMPLATE showcase |
 | **V3.11** | Jul 2026 | 🧁 AWP Baker — Standalone color & theme generator with SVG templates, multi-preset support, surgical operations, and progress bar |
 | **V3.10** | Jun 2026 | 🧬 Color Engine Evolution — Refactored color math, independent icon presets, SVG-based Mint rebuild, Sweet-Hollow preset, standardized 3-value ratios |
 | **V3.9** | Jun 2026 | 🔆 Light Daemon Mode — `_light` preset suffix for no-rotation operation, shared backends, zero duplication |

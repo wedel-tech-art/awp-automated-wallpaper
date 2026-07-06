@@ -789,13 +789,35 @@ class AWPDashboard(QWidget):
         """
         Genetic Synchronization: Physically creates ~/.themes and ~/.icons folders
         based on the 'icon_color' key in the .ini.
-        Now supports per-workspace icon, gtk, and cursor presets (non-persistent, UI-based).
+        Now cleans up old themes before baking new ones.
         """
         baked_themes_count = 0
         baked_icons_count = 0
         baked_cursors_count = 0
         
         _printer.info("Starting genetic themes sync...", backend="dab")
+        
+        # Helper function to safely remove old themes
+        def remove_theme_safe(path, theme_name, theme_type):
+            """Safely remove a theme (handle symlinks and directories)."""
+            if not os.path.exists(path):
+                return False
+            
+            try:
+                if os.path.islink(path):
+                    os.unlink(path)
+                    _printer.info(f"Removed old symlink: {theme_name} ({theme_type})", backend="dab")
+                    return True
+                elif os.path.isdir(path):
+                    shutil.rmtree(path)
+                    _printer.info(f"Removed old directory: {theme_name} ({theme_type})", backend="dab")
+                    return True
+                else:
+                    _printer.warning(f"Unknown file type: {path}", backend="dab")
+                    return False
+            except Exception as e:
+                _printer.warning(f"Failed to remove {path}: {e}", backend="dab")
+                return False
         
         # Iterate through workspace tabs
         for i in range(1, self.tab_widget.count()):
@@ -829,32 +851,64 @@ class AWPDashboard(QWidget):
 
             _printer.info(f"WS{i}: color={hex_color} presets[icon={preset}, gtk={gtk_preset}, cursor={cursor_preset}]", backend="dab")
             
-            # Define expected paths
-            theme_name = f"awp-gtk-{gtk_preset}-{clean_hex}"
-            icon_name = f"awp-icons-{preset}-{clean_hex}"
-            cursor_name = f"awp-cursor-{cursor_preset}-{clean_hex}"
+            # Define new theme names
+            new_gtk_theme = f"awp-gtk-{gtk_preset}-{clean_hex}"
+            new_icon_theme = f"awp-icons-{preset}-{clean_hex}"
+            new_cursor_theme = f"awp-cursor-{cursor_preset}-{clean_hex}"
             
-            theme_path = os.path.expanduser(f"~/.themes/{theme_name}")
-            icon_path = os.path.expanduser(f"~/.icons/{icon_name}")
-            cursor_path = os.path.expanduser(f"~/.icons/{cursor_name}")
+            # Get OLD theme names from config
+            old_gtk_theme = self.config.get(section, 'gtk_theme', default='')
+            old_icon_theme = self.config.get(section, 'icon_theme', default='')
+            old_cursor_theme = self.config.get(section, 'cursor_theme', default='')
+            
+            # Define paths
+            theme_path = os.path.expanduser(f"~/.themes/{new_gtk_theme}")
+            icon_path = os.path.expanduser(f"~/.icons/{new_icon_theme}")
+            cursor_path = os.path.expanduser(f"~/.icons/{new_cursor_theme}")
             
             # --- Check & Bake GTK Theme ---
             if not os.path.exists(theme_path):
-                _printer.info(f"Syncing: Theme {theme_name} missing. Initiating bake...", backend="dab")
+                _printer.info(f"Syncing: GTK theme {new_gtk_theme} missing. Initiating bake...", backend="dab")
+                
+                # Clean old GTK theme if it exists
+                if old_gtk_theme and old_gtk_theme != new_gtk_theme:
+                    old_path = os.path.expanduser(f"~/.themes/{old_gtk_theme}")
+                    remove_theme_safe(old_path, old_gtk_theme, "GTK")
+                
                 bake_awp_theme(hex_color, icon, gtk_preset)
                 baked_themes_count += 1
 
-            # --- Check & Bake Icons ---
+            # --- Check & Bake Icon Theme ---
             if not os.path.exists(icon_path):
-                _printer.info(f"Syncing: Icons {icon_name} missing. Initiating bake...", backend="dab")
+                _printer.info(f"Syncing: Icon theme {new_icon_theme} missing. Initiating bake...", backend="dab")
+                
+                # Clean old Icon theme if it exists
+                if old_icon_theme and old_icon_theme != new_icon_theme:
+                    old_path = os.path.expanduser(f"~/.icons/{old_icon_theme}")
+                    remove_theme_safe(old_path, old_icon_theme, "Icon")
+                
                 bake_awp_icon(hex_color, icon, preset)
                 baked_icons_count += 1
 
-            # --- Check & Bake Cursors ---
+            # --- Check & Bake Cursor Theme ---
             if not os.path.exists(cursor_path):
-                _printer.info(f"Syncing: Cursors {cursor_name} missing. Initiating bake...", backend="dab")
+                _printer.info(f"Syncing: Cursor theme {new_cursor_theme} missing. Initiating bake...", backend="dab")
+                
+                # Clean old Cursor theme if it exists
+                if old_cursor_theme and old_cursor_theme != new_cursor_theme:
+                    old_path = os.path.expanduser(f"~/.icons/{old_cursor_theme}")
+                    remove_theme_safe(old_path, old_cursor_theme, "Cursor")
+                
                 bake_awp_cursor(hex_color, icon, cursor_preset)
                 baked_cursors_count += 1
+            
+            # Update the config with new theme names (so old themes are tracked)
+            self.config.set(section, 'gtk_theme', new_gtk_theme)
+            self.config.set(section, 'icon_theme', new_icon_theme)
+            self.config.set(section, 'cursor_theme', new_cursor_theme)
+        
+        # Save config
+        self.config.save()
         
         # Refresh the UI dropdowns/lists
         self.refresh_theme_lists()
@@ -868,7 +922,8 @@ class AWPDashboard(QWidget):
         else:
             _printer.info("Sync complete: Everything is already up to date.", backend="dab")
             QMessageBox.information(self, "Sync Complete", "Everything is already up to date.")
-
+        
+        
     def refresh_theme_lists(self):
         """Universal Refresh: Updates data but respects the UI's visual state."""
         all_themes_dict = get_available_themes()

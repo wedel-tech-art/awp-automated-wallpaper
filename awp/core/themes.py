@@ -9,7 +9,7 @@ import os
 import shutil
 import subprocess
 import colorsys
-from core.constants import ICON_PRESETS, THEME_PRESETS, CURSOR_PRESETS, TARGET_ASSETS, ICON_SIZES, ICON_REGISTRY
+from core.constants import ICON_PRESETS, THEME_PRESETS, CURSOR_PRESETS, TARGET_ASSETS, ICON_SIZES, ICON_REGISTRY, AWP_DIR
 from core.utils import (
     hex_to_hsv, 
     hsv_to_hex, 
@@ -174,7 +174,7 @@ def _modulate_assets(config, target_path, clean_hex):
                 ], check=True)
 
 
-def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze'):
+def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze', preset_name: str = None):
     """Dynamic Theme Synthesis Engine (AWP-G2) - Multi-Preset Edition"""
     if not hex_color or hex_color == "":
         return None
@@ -185,11 +185,18 @@ def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze'):
     theme_name = f"awp-gtk-{preset}-{clean_hex}"
     home = os.path.expanduser("~")
     template_path = os.path.join(home, "awp", config['path'])
-    target_path = os.path.join(home, ".themes", theme_name)
+    
+    # === CHANGE HERE ===
+    if preset_name:
+        # Per-preset path: ~/awp/presets/{preset_name}/themes/gtk/{theme_name}
+        target_path = os.path.join(AWP_DIR, 'presets', preset_name, 'themes', 'gtk', theme_name)
+    else:
+        # Global path: ~/.themes/{theme_name} (for Fool Bake and backward compatibility)
+        target_path = os.path.join(home, ".themes", theme_name)
 
     if not os.path.exists(target_path):
         try:
-            _printer.info(f"Baking Theme: {theme_name}", backend="themes")
+            _printer.info(f"Baking Theme: {theme_name} -> {target_path}", backend="themes")
             shutil.copytree(template_path, target_path)
 
             # --- 1. Icon Handling ---
@@ -243,7 +250,6 @@ def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze'):
             return None
 
     return theme_name
-
 
 def _build_manifests(registry, preset_name=None):
     """
@@ -312,7 +318,7 @@ def _build_icon_replacements(config, clean_hex, new_rgb):
     return replacements
     
 
-def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
+def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint", preset_name: str = None):
     """
     AWP Dynamic Icon Engine
     - Generates index.theme dynamically based on ICON_REGISTRY and ICON_SIZES.
@@ -335,11 +341,18 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
     theme_name = f"awp-icons-{preset}-{clean_hex}"
     home = os.path.expanduser("~")
     template_path = os.path.join(home, "awp", template_folder)
-    target_path = os.path.join(home, ".icons", theme_name)
+    
+    # === CHANGE HERE ===
+    if preset_name:
+        # Per-preset path: ~/awp/presets/{preset_name}/themes/icons/{theme_name}
+        target_path = os.path.join(AWP_DIR, 'presets', preset_name, 'themes', 'icons', theme_name)
+    else:
+        # Global path: ~/.icons/{theme_name} (for Fool Bake and backward compatibility)
+        target_path = os.path.join(home, ".icons", theme_name)
 
     if not os.path.exists(target_path):
         try:
-            _printer.info(f"Baking Icons: {theme_name}", backend="themes")
+            _printer.info(f"Baking Icons: {theme_name} -> {target_path}", backend="themes")
 
             # --- STEP 1: RAM-Disk Workshop & Dynamic index.theme ---
             shm_workspace = os.path.join("/dev/shm", f"awp_masters_{clean_hex}")
@@ -557,7 +570,7 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint"):
 
     return theme_name
 
-def bake_awp_cursor(hex_color: str, icon: str = None, preset: str = "oxy"):
+def bake_awp_cursor(hex_color: str, icon: str = None, preset: str = "oxy", preset_name: str = None):
     """
     AWP Dynamic Cursor Compiling Engine
     - Reads raw multi-frame X11 binary blobs from preset templates.
@@ -581,14 +594,21 @@ def bake_awp_cursor(hex_color: str, icon: str = None, preset: str = "oxy"):
         template_folder = preset_config
     
     template_path = os.path.join(home, "awp", template_folder)
-    target_path = os.path.join(home, ".icons", theme_name)
+    
+    # === CHANGE HERE ===
+    if preset_name:
+        # Per-preset path: ~/awp/presets/{preset_name}/themes/cursors/{theme_name}
+        target_path = os.path.join(AWP_DIR, 'presets', preset_name, 'themes', 'cursors', theme_name)
+    else:
+        # Global path: ~/.icons/{theme_name} (for Fool Bake and backward compatibility)
+        target_path = os.path.join(home, ".icons", theme_name)
 
     # Skip heavy work if this color iteration has already been compiled
     if os.path.exists(target_path):
         return theme_name
 
     try:
-        _printer.info(f"Baking Cursors: {theme_name}", backend="themes")
+        _printer.info(f"Baking Cursors: {theme_name} -> {target_path}", backend="themes")
 
         # Extract targeted target RGB channels out of workspace hex
         target_r = int(clean_hex[0:2], 16)

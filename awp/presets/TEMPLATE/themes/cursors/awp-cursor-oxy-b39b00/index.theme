@@ -1,0 +1,14 @@
+# ==============================================================================
+# AWP HYBRID ARCHITECTURE MANIFEST
+# ==============================================================================
+# BASE FRAMEWORK: Oxygen Cursors (OXY Core Mutation)
+# COMPLIANCE: X11 Mouse Cursor Specification Blob Matrix
+# UPSTREAM HERITAGE: oxy-red-argentina (Debian Package: oxygencursors)
+# TARGET COMPATIBILITY: X11 / XFCE 4.18+ Pointer State Machine Unification
+# ==============================================================================
+
+[Icon Theme]
+Name=awp-cursor-oxy-b39b00
+Comment=AWP Hybrid Engine • Dynamic BGRA Pixel Matrix (Upstream: oxy-red-argentina)
+Inherits=core
+Encoding=UTF-8
