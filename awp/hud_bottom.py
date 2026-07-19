@@ -1,10 +1,11 @@
+#!/usr/bin/env python3
 import sys, json, os
 from datetime import datetime
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor, QPainter, QBrush
 from core.constants import RUNTIME_STATE_PATH, AWP_CONFIG_RAM, THEME_CAPABILITIES
-from core.utils import get_ram_info, get_swap_info, get_mounts_info, get_dynamic_mount_labels
+from core.runtime import get_ram_info, get_swap_info, get_mounts_info, get_dynamic_mount_labels
 
 class StudioBar(QWidget):
     def __init__(self):

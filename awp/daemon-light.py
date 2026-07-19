@@ -21,7 +21,7 @@ os.environ['NO_AT_BRIDGE'] = '1'
 from backends import get_backend
 from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH, AWP_CONFIG_RAM
 from core.config import AWPConfig, ConfigError
-from core.utils import x11_blanking, load_images, sort_images
+from core.utils import load_images, sort_images
 from core.runtime import update_runtime_state, load_index_state, save_index_state, update_ram_config
 from core.actions import (
     get_ws_key,
@@ -29,7 +29,8 @@ from core.actions import (
     parse_timing,
     set_backend,
     set_wallpaper,
-    set_panel_icon
+    set_panel_icon,
+    x11_blanking
 )
 from core.printer import get_printer
 
@@ -69,7 +70,6 @@ class Workspace:
         self.num = num
         self.key = get_ws_key(num)
         self.config = config
-
         self.reload_images_and_index()
 
     def reload_images_and_index(self):
@@ -90,14 +90,14 @@ class Workspace:
         else:
             self.images = sort_images(self.images, 'name_az')
 
-        # Load index
+        # Load index from state
         state = load_index_state()
         self.index = int(state.get(self.key, 0) or 0)
 
         if not self.images or self.index >= len(self.images):
             self.index = 0
 
-        # Track folder mtime (for change detection)
+        # Track folder mtime
         try:
             self._last_folder_mtime = os.path.getmtime(self.folder)
         except Exception:
@@ -117,7 +117,15 @@ class Workspace:
         return False
 
     def apply_current_wallpaper(self):
-        """Apply the current wallpaper (no rotation, just set it)."""
+        """Apply the current wallpaper, ALWAYS syncing with state."""
+        # 🔥 Always sync with state file before applying
+        state = load_index_state()
+        state_index = int(state.get(self.key, 0) or 0)
+        
+        if state_index != self.index:
+            _printer.info(f"WS{self.num+1}: Synced {self.index} → {state_index}", backend="daemon")
+            self.index = state_index
+        
         if not self.images:
             return
         

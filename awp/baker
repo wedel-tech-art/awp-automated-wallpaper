@@ -37,16 +37,19 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QPalette, QAction, QPixmap
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from core.themes import bake_awp_theme, bake_awp_icon, bake_awp_cursor, clean_themes
-from core.constants import THEME_PRESETS, ICON_PRESETS, CURSOR_PRESETS, SVG_TEMPLATES
-from core.config import AWPConfig
-from core.actions import run_awp_start
-from core.printer import get_printer
-from core.utils import (
+from core.themes import (
+    bake_awp_theme,
+    bake_awp_icon,
+    bake_awp_cursor,
+    clean_themes,
     generate_icon_from_svg,
     cleanup_temp_icon,
     extract_preset_from_theme
 )
+from core.constants import THEME_PRESETS, ICON_PRESETS, CURSOR_PRESETS, SVG_TEMPLATES
+from core.config import AWPConfig
+from core.actions import run_awp_start, get_preset_from_shm
+from core.printer import get_printer
 
 _printer = get_printer()
 
@@ -61,7 +64,7 @@ class AWPBaker(QMainWindow):
         
         # Load config
         self.config = AWPConfig()
-        shm_preset = self._get_preset_from_shm()
+        shm_preset = get_preset_from_shm()
         self.current_preset = shm_preset or self.config.get('general', 'os_detected') or 'qtile_xfce-debian'
         
         # Get all available presets
@@ -598,16 +601,145 @@ class AWPBaker(QMainWindow):
         
         _printer.info("AWP Baker initialized", backend="baker")
     
-    def _get_preset_from_shm(self):
-        """Read the current preset name from RAM-based session state."""
-        shm_path = "/dev/shm/awp_active_preset"
-        if os.path.exists(shm_path):
-            try:
-                with open(shm_path, 'r') as f:
-                    return f.read().strip()
-            except Exception as e:
-                _printer.warning(f"Failed to read preset from SHM: {e}", backend="baker")
-        return None
+    def show_accent_message(self, title, message, icon_type=QMessageBox.Icon.Information):
+        """Show a QMessageBox with a styled OK button matching the accent color."""
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        msg_box.setIcon(icon_type)
+        
+        # Create OK button with accent glow effect (Breeze style)
+        ok_button = QPushButton("OK")
+        hex_color = self.hex_input.text().strip()
+        if hex_color.startswith('#') and len(hex_color) == 7:
+            ok_button.setStyleSheet(f"""
+                QPushButton {{
+                    background: transparent;
+                    color: #ddd;
+                    border: 2px solid {hex_color};
+                    border-radius: 6px;
+                    padding: 6px 24px;
+                    font-weight: bold;
+                    font-size: 12px;
+                    min-width: 80px;
+                }}
+                QPushButton:hover {{
+                    background: {hex_color};
+                    color: white;
+                    border: 2px solid {hex_color};
+                }}
+                QPushButton:pressed {{
+                    background: {hex_color};
+                    color: white;
+                    border: 2px solid {hex_color};
+                    opacity: 0.7;
+                }}
+            """)
+        else:
+            ok_button.setStyleSheet("""
+                QPushButton {
+                    background: transparent;
+                    color: #ddd;
+                    border: 2px solid #555;
+                    border-radius: 6px;
+                    padding: 6px 24px;
+                    font-weight: bold;
+                    font-size: 12px;
+                    min-width: 80px;
+                }
+                QPushButton:hover {
+                    background: #4a4a4a;
+                    border: 2px solid #6a8cff;
+                }
+                QPushButton:pressed {
+                    background: #4a4a4a;
+                    border: 2px solid #6a8cff;
+                    opacity: 0.7;
+                }
+            """)
+        
+        msg_box.addButton(ok_button, QMessageBox.ButtonRole.AcceptRole)
+        msg_box.exec()
+    
+    def show_question_dialog(self, title, message):
+        """Show a question dialog with styled Yes/No buttons."""
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        msg_box.setIcon(QMessageBox.Icon.Question)
+        
+        # Create Yes button with accent
+        yes_button = QPushButton("Yes")
+        hex_color = self.hex_input.text().strip()
+        if hex_color.startswith('#') and len(hex_color) == 7:
+            yes_button.setStyleSheet(f"""
+                QPushButton {{
+                    background: transparent;
+                    color: #ddd;
+                    border: 2px solid {hex_color};
+                    border-radius: 6px;
+                    padding: 6px 24px;
+                    font-weight: bold;
+                    font-size: 12px;
+                    min-width: 80px;
+                }}
+                QPushButton:hover {{
+                    background: {hex_color};
+                    color: white;
+                    border: 2px solid {hex_color};
+                }}
+            """)
+        else:
+            yes_button.setStyleSheet("""
+                QPushButton {
+                    background: transparent;
+                    color: #ddd;
+                    border: 2px solid #555;
+                    border-radius: 6px;
+                    padding: 6px 24px;
+                    font-weight: bold;
+                    font-size: 12px;
+                    min-width: 80px;
+                }
+                QPushButton:hover {
+                    background: #4a4a4a;
+                    border: 2px solid #6a8cff;
+                }
+            """)
+        
+        # No button (keep simple)
+        no_button = QPushButton("No")
+        no_button.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                color: #888;
+                border: 2px solid #555;
+                border-radius: 6px;
+                padding: 6px 24px;
+                font-weight: bold;
+                font-size: 12px;
+                min-width: 80px;
+            }
+            QPushButton:hover {
+                background: #4a4a4a;
+                color: #ddd;
+                border: 2px solid #6a8cff;
+            }
+        """)
+        
+        # Add buttons with custom roles
+        msg_box.addButton(yes_button, QMessageBox.ButtonRole.YesRole)
+        msg_box.addButton(no_button, QMessageBox.ButtonRole.NoRole)
+        
+        # Execute and check which button was clicked by role
+        result = msg_box.exec()
+        
+        # Find which button was clicked
+        clicked_button = msg_box.clickedButton()
+        if clicked_button == yes_button:
+            return True
+        else:
+            return False
     
     def _get_available_presets(self):
         """Get list of available presets from the presets directory."""
@@ -1196,8 +1328,8 @@ class AWPBaker(QMainWindow):
         """Fool Bake - Pure theme baking without workspace operations."""
         hex_color = self.hex_input.text().strip()
         if not hex_color.startswith('#') or len(hex_color) != 7:
-            QMessageBox.warning(self, "Invalid Color", 
-                "Please enter a valid hex color (e.g., #b3004c)")
+            self.show_accent_message("Invalid Color", 
+                "Please enter a valid hex color (e.g., #b3004c)", QMessageBox.Icon.Warning)
             return
         
         gtk_preset = self.gtk_combo.currentText().lower()
@@ -1221,7 +1353,7 @@ class AWPBaker(QMainWindow):
             
             if not icon_path:
                 errors.append("Failed to generate icon (rsvg-convert missing?)")
-                QMessageBox.warning(self, "Error", "Failed to generate icon. Make sure rsvg-convert is installed.")
+                self.show_accent_message("Error", "Failed to generate icon. Make sure rsvg-convert is installed.", QMessageBox.Icon.Warning)
                 return
             
             if gtk_preset:
@@ -1266,11 +1398,11 @@ class AWPBaker(QMainWindow):
                 msg += "\n\n⚠️ Errors:\n" + "\n".join(errors)
             
             self.statusBar().showMessage("Fool Bake Complete!")
-            QMessageBox.information(self, "Fool Bake Complete", msg)
+            self.show_accent_message("Fool Bake Complete", msg)
             
         except Exception as e:
             self.statusBar().showMessage("Fool Bake Failed!")
-            QMessageBox.critical(self, "Error", f"Fool Bake failed:\n\n{str(e)}")
+            self.show_accent_message("Error", f"Fool Bake failed:\n\n{str(e)}", QMessageBox.Icon.Critical)
         
         finally:
             self.bake_btn.setEnabled(True)
@@ -1282,7 +1414,7 @@ class AWPBaker(QMainWindow):
         ini_path = self._get_preset_ini_path(selected_preset)
         
         if not os.path.exists(ini_path):
-            QMessageBox.warning(self, "Error", f"INI not found: {ini_path}")
+            self.show_accent_message("Error", f"INI not found: {ini_path}", QMessageBox.Icon.Warning)
             return
         
         # Build confirmation message
@@ -1305,15 +1437,8 @@ class AWPBaker(QMainWindow):
         
         confirm_msg += f"Proceed?"
         
-        reply = QMessageBox.question(
-            self,
-            "Regenerate All Themes",
-            confirm_msg,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes
-        )
-        
-        if reply != QMessageBox.StandardButton.Yes:
+        # Use custom question dialog
+        if not self.show_question_dialog("Regenerate All Themes", confirm_msg):
             return
         
         self.bake_btn.setEnabled(False)
@@ -1480,12 +1605,12 @@ class AWPBaker(QMainWindow):
                 msg += "\n\n⚠️ Errors:\n" + "\n".join(errors)
             
             self.statusBar().showMessage("Regeneration complete!")
-            QMessageBox.information(self, "Regeneration Complete", msg)
+            self.show_accent_message("Regeneration Complete", msg)
             
         except Exception as e:
             self.progress_bar.setVisible(False)
             self.statusBar().showMessage("Regeneration failed!")
-            QMessageBox.critical(self, "Error", f"Regeneration failed:\n\n{str(e)}")
+            self.show_accent_message("Error", f"Regeneration failed:\n\n{str(e)}", QMessageBox.Icon.Critical)
         
         finally:
             self.bake_btn.setEnabled(True)
@@ -1507,14 +1632,14 @@ class AWPBaker(QMainWindow):
         # --- Normal Bake ---
         hex_color = self.hex_input.text().strip()
         if not hex_color.startswith('#') or len(hex_color) != 7:
-            QMessageBox.warning(self, "Invalid Color", 
-                "Please enter a valid hex color (e.g., #b3004c)")
+            self.show_accent_message("Invalid Color", 
+                "Please enter a valid hex color (e.g., #b3004c)", QMessageBox.Icon.Warning)
             return
         
         # Get selected workspace
         ws_index = self.ws_combo.currentIndex()
         if ws_index < 0 or ws_index >= len(self.workspaces):
-            QMessageBox.warning(self, "Error", "No workspace selected.")
+            self.show_accent_message("Error", "No workspace selected.", QMessageBox.Icon.Warning)
             return
         
         ws = self.workspaces[ws_index]
@@ -1525,7 +1650,7 @@ class AWPBaker(QMainWindow):
         is_current_preset = selected_preset == self.current_preset
         ini_path = self._get_preset_ini_path(selected_preset)
         
-        # Confirm with user
+        # Confirm with user using custom question dialog
         confirm_msg = (
             f"Update workspace {ws_num} ({ws_name})?\n\n"
             f"Target Preset: {selected_preset} {'✓ Current' if is_current_preset else ''}\n"
@@ -1548,15 +1673,8 @@ class AWPBaker(QMainWindow):
         
         confirm_msg += f"\nProceed?"
         
-        reply = QMessageBox.question(
-            self,
-            "Confirm Update",
-            confirm_msg,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes
-        )
-        
-        if reply != QMessageBox.StandardButton.Yes:
+        # Use custom question dialog
+        if not self.show_question_dialog("Confirm Update", confirm_msg):
             return
         
         self.bake_btn.setEnabled(False)
@@ -1608,7 +1726,7 @@ class AWPBaker(QMainWindow):
             
             if not icon_path:
                 errors.append("Failed to generate icon (rsvg-convert missing?)")
-                QMessageBox.warning(self, "Error", "Failed to generate icon. Make sure rsvg-convert is installed.")
+                self.show_accent_message("Error", "Failed to generate icon. Make sure rsvg-convert is installed.", QMessageBox.Icon.Warning)
                 return
             
             # Get the selected preset name for theme storage
@@ -1698,12 +1816,12 @@ class AWPBaker(QMainWindow):
                 msg += "\n\n⚠️ Warnings/Errors:\n" + "\n".join(errors)
             
             self.statusBar().showMessage(f"WS{ws_num} updated to {selected_preset}!")
-            QMessageBox.information(self, "Success", msg)
+            self.show_accent_message("Success", msg)
             
         except Exception as e:
             self.progress_bar.setVisible(False)
             self.statusBar().showMessage("Update failed!")
-            QMessageBox.critical(self, "Error", f"Failed to update workspace:\n\n{str(e)}")
+            self.show_accent_message("Error", f"Failed to update workspace:\n\n{str(e)}", QMessageBox.Icon.Critical)
         
         finally:
             self.bake_btn.setEnabled(True)

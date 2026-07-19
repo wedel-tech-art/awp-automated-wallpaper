@@ -14,6 +14,29 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 ## 🚀 Key Features
 
+## 🔧 DAB Pure Configurator & NEW TOOLS!!! preset_cloner.sh, awp_rotate.sh (V3.13)
+
+**DAB is now exclusively a configuration tool** — no baking, no color detection.
+
+### What Changed
+
+- **DAB Pure Configurator:** Handles only wallpaper folders, timing, scaling, blanking, and system themes. All theme baking is now handled by **Baker**.
+- **preset_cloner.sh:** Clone your current preset to ALL or a specific preset with one command.
+- **awp_rotate.sh:** Toggle wallpaper rotation on/off (full ↔ light daemon).
+- **Icon Path Enforcement:** All workspace icons consistently point to `~/awp/logos/` — presets are now fully portable and clonable.
+- **New GTK Preset:** `mint` GTK theme based on Mint-Y-Dark-Aqua.
+- **New SVG Template:** `awp-firma` — AWP signature stroke with transparent background.
+- **Daemon Sync Fix:** Daemons now correctly capture wallpaper index changes from `nav.py`.
+
+### Why This Matters
+
+- **Clean separation:** DAB configures, Baker bakes.
+- **Consistency:** All presets share the same icon path structure.
+- **Portability:** Clone presets without modifying paths.
+- **Flexibility:** Toggle rotation on the fly.
+
+> 💡 **Recommended Workflow:** Use **DAB** for configuration (folders, timing, themes) and **Baker** for theme generation. They complement each other perfectly.
+
 ## 🎨 Preset-Based Themes (V3.12)
 
 **Themes now live inside presets** - each preset is completely self-contained.
@@ -74,6 +97,7 @@ AWP Baker (`baker`) is a **standalone, surgical theme generation tool** that cha
 | Template | Description |
 |----------|-------------|
 | **awp** | Custom AWP logo (stylized "AWP" in one stroke) |
+| **awp-firma** | AWP signature stroke with transparent background |
 | **debian** | Debian swirl, classical |
 | **swirldeb** | Debian swirl + "debian" text (balanced design) |
 | **ubuntu** | Ubuntu circle of friends logo |
@@ -244,15 +268,12 @@ The format is ./awp_start.sh [PRESET_NAME] so you can have your own presets all 
 ```
 ### Creating a Light Preset (No Wallpaper Rotation)
 
-```bash
+Manually clone and rename an existing preset:
+```
 # Clone an existing preset
 cp -r ~/awp/presets/xfce-debian ~/awp/presets/xfce_light-debian
-
-# Rename the INI file to match
 mv ~/awp/presets/xfce_light-debian/xfce-debian.ini \
    ~/awp/presets/xfce_light-debian/xfce_light-debian.ini
-
-# Use it with the light daemon
 ./awp_start.sh xfce_light-debian
 ```
 
@@ -266,10 +287,41 @@ In ~/awp do "./baker" for surgical theme generation and color management.
 > 💡 **Pro Tip:** For the full AWP experience, use **Baker** for theme generation and **DAB** for basic configuration (wallpaper folders, rotation timing, and workspace count). Baker handles the heavy lifting of theme creation, while DAB keeps things simple and clean.
 
 
-### Dashboard Qt6
+### Dashboard Qt6 (Pure Configurator)
+
+DAB is now a **pure configuration tool** — no baking, no color detection. It handles:
+- Wallpaper folders, timing, scaling
+- System themes (GTK, Icons, Cursors, Desktop, WM)
+- Screen blanking control
+
+All theme baking is handled exclusively by **Baker**. DAB and Baker complement each other perfectly.
+
 ```
-In ~/awp you do "python3 dab.py" for editing all default values and make AWP really "your own".
+python3 dab.py
 ```
+
+### Preset Cloner Tool
+
+Clone your current preset configuration to all other presets with one command:
+
+```
+# Clone to ALL presets (except TEMPLATE and current)
+./preset_cloner.sh
+
+# Clone to a specific preset
+./preset_cloner.sh xfce-debian
+```
+This tool ensures all your presets share the same themes, wallpapers, and configuration while keeping their individual identities (os_detected, etc.).
+
+### Rotation Control
+
+Toggle wallpaper rotation on/off with awp_rotate.sh:
+
+```
+# Toggle rotation (switches between full and light daemon)
+./awp_rotate.sh
+```
+Works from terminal or as a keybinding. For Qtile, it functions as rotation on/off.
 
 ## Manual Navigation
 
@@ -310,11 +362,6 @@ python3 nav.py black
 > [!TIP]
 > **Non-Destructive Editing:** Last 3 effects are applied to a temporary copy in the `awp/` folder. The original wallpaper remains untouched. If you love a modified version (e.g., a sharpened or B&W version), you can manually replace the original file in your library with the processed one from the `awp/` directory.
 
-## 🛠️ Configuration
-```
-Use the dashboard:
-python3 dab.py
-```
 
 ## Screenshots
 
@@ -389,7 +436,8 @@ awp-automated-wallpaper/
 │   ├── nav.py                      # Navigation controller
 │   ├── hud_vertical.py             # Sidebar system monitor
 │   ├── hud_bottom.py               # Bottom dock monitor
-│   ├── awp_setup.py                # Setup wizard (Legacy fallback)
+│   ├── awp_rotate.sh               # Rotation toggle (full ↔ light daemon)
+│   ├── preset_cloner.sh            # Clone current preset to all others
 │   └── awp_start.sh                # Identity manager & startup script
 ├── screenshots/                    # GitHub previews
 ├── .gitignore
@@ -400,6 +448,7 @@ awp-automated-wallpaper/
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
+| **V3.13** | Jul 2026 | 🔧 DAB Pure Configurator — Baking/color detection removed from DAB. New preset_cloner.sh and awp_rotate.sh utilities. Icon path enforcement to logos/. Daemon wallpaper index sync fixed. New GTK preset (mint) and SVG template (awp-firma). |
 | **V3.12** | Jul 2026 | 🎨 Preset-Based Themes — Self-contained presets with baked themes, symlink activation, TEMPLATE showcase |
 | **V3.11** | Jul 2026 | 🧁 AWP Baker — Standalone color & theme generator with SVG templates, multi-preset support, surgical operations, and progress bar |
 | **V3.10** | Jun 2026 | 🧬 Color Engine Evolution — Refactored color math, independent icon presets, SVG-based Mint rebuild, Sweet-Hollow preset, standardized 3-value ratios |
@@ -435,14 +484,23 @@ If you see `[AWP]` instead of `[AWP-xfce]` or similar, ensure:
 - Backend functions pass `backend="name"` parameter
 
 ### Themes Not Applying?
-- Run `dab.py` and click **Sync Themes** to bake missing themes
-- Check `~/.themes/` and `~/.icons/` for generated folders
+- Run **Baker** (`./baker`) to generate missing themes for the current workspace
+- Check that `~/.themes/` and `~/.icons/` contain symlinks to your preset's themes
 - Ensure your DE is correctly detected in `awp_config.ini`
+- Run `./awp_start.sh [PRESET_NAME]` to recreate all symlinks
 
 ### Dashboard Shows Greyed Out Options?
 That's normal! The UI intelligently disables options your DE doesn't support:
 - **Window Theme**: Only for XFCE, MATE, Cinnamon
 - **Desktop Theme**: Only for Cinnamon
+
+### Icon Path Issues?
+
+AWP now enforces that all workspace icons point to `~/awp/logos/` (symlinks to presets). If you see broken icons:
+
+1. Run `./awp_start.sh [PRESET_NAME]` to recreate symlinks
+2. Check that `~/awp/logos/ws{N}.png` exists and points to the preset
+3. If paths are incorrect, `awp_start.sh` will automatically fix them
 
 ## 🤝 Contributing
 
@@ -490,7 +548,7 @@ The SVG templates in AWP Baker are a tribute to the open-source community:
 
 - **Debian** — For the philosophy of freedom
 - **Ubuntu** — For making Linux accessible to millions
-- **Linux Mint** — For the elegant Mint-Y theme
+- **Linux Mint** — For the elegant Mint-Y GTK and Icon themes
 - **KDE** — For the Plasma desktop and Breeze theme
 - **GNOME** — For the clean, minimalist design philosophy
 
@@ -515,6 +573,7 @@ AWP includes modified and adapted visual presets derived from the following open
 | colloid | GTK | Colloid GTK Theme | vinceliuice | GPLv3 | [GitHub](https://github.com/vinceliuice/Colloid-gtk-theme) |
 | flat-remix | GTK | Flat Remix GTK | daniruiz | GPLv3 | [GitHub](https://github.com/daniruiz/flat-remix-gtk) |
 | graphite | GTK | Graphite GTK | vinceliuice | GPLv3 | [GitHub](https://github.com/vinceliuice/Graphite-gtk-theme) |
+| mint | GTK | Mint-Y-Dark-Aqua | Linux Mint Team | GPLv3 | [Website](https://linuxmint.com) |
 | oxy | Cursor | Oxygen Cursors | KDE Community | LGPL / GPL | [Website](https://kde.org) |
 
 > ℹ️ **Mint Icon Preset (AWP Original):** The `mint` preset included in AWP is **not** a direct copy of Mint-Y-Purple. It is a **completely original SVG-based rebuild** created from scratch and made to resemble Mint-Y-Purple but using svg folder structures inspired by `slot-multicolor` and label/emblem design language from `adwaitaru`. While the name pays homage to the Linux Mint aesthetic, the artwork, gradients, and color relationships are original AWP creations.
@@ -534,6 +593,8 @@ AWP does not claim ownership of bundled visual assets. Icon, GTK and cursor pres
 - Theme, cursor and visual preset workflows are inspired by the excellent work of the KDE, Linux Mint, XFCE, GNOME and wider Linux desktop communities.
 - **Visual Preset Credits:** slot-multicolor (L4ki), breeze (L4ki/KDE), sweet & sweet-hollow (EliverLara), adwaitaru (ricardoherreramx), neon (SethStormR), rami (Rami author), **besgnulinux (besgnulinux)**, **deepmacos (mirabellalorenzo03)**, colloid (vinceliuice), flat-remix (daniruiz), graphite (vinceliuice), and Oxygen Cursors (KDE Community). See the License section for full attribution details.
 - **Special Credit:** The AWP `mint` icon preset is an **original AWP creation** — rebuilt from scratch with most assets converted to original SVG artwork. Distributed under the MIT License as part of AWP.
+- **GTK Mint Theme Credit:** The AWP `mint` GTK theme is based on Mint-Y-Dark-Aqua from the Linux Mint project. Modified and enhanced for AWP's color-driven baking engine. Distributed under GPLv3.
+- **AWP-Firma SVG Template:** Original AWP creation — the signature stroke design with transparent background. Available as an SVG template in Baker.
 - **AWP Logo Designs:** The 3 AWP logo designs in `awp-logos.tar.gz` are original creations. Available in SVG and PNG formats across 360 colors.
 - **SVG Templates:** The AWP Baker SVG templates (awp, debian, swirldeb, ubuntu, mint, kde, gnome, plasma) are artistic reinterpretations created as tributes to the open-source projects that inspire us.
 - Special thanks to the open-source community and all AWP users.

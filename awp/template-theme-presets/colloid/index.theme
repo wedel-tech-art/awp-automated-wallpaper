@@ -16,6 +16,6 @@ Encoding=UTF-8
 [X-GNOME-Metatheme]
 GtkTheme=Colloid-Orange-Dark-Gruvbox
 MetacityTheme=Colloid-Orange-Dark-Gruvbox
-IconTheme=Colloid-Orange-Gruvbox-Dark
+IconTheme=Adwaita
 CursorTheme=Colloid-cursors
 ButtonLayout=close,minimize,maximize:menu

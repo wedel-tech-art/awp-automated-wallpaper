@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 import json
 import os
@@ -6,7 +7,8 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor, QPainter, QBrush, QPixmap
 from core.constants import RUNTIME_STATE_PATH, AWP_CONFIG_RAM, THEME_CAPABILITIES
-from core.utils import get_ram_info, get_swap_info, get_mounts_info, get_dynamic_mount_labels
+from core.runtime import get_ram_info, get_swap_info, get_mounts_info, get_dynamic_mount_labels
+from core.utils import hex_to_hsv
 
 class StudioHUD(QWidget):
     def __init__(self):
@@ -67,6 +69,9 @@ class StudioHUD(QWidget):
                 data = json.load(f)
 
             color = data.get('icon_color', '#ffffff')
+            h, s, v = hex_to_hsv(data.get('icon_color', 'ffffff').lstrip('#'))
+            hsv_display = f"H:{h*360:.0f}° S:{s*100:.0f}% V:{v*100:.0f}%"
+            
             ws = data.get('workspace_name', '??').upper()
             wall_name = os.path.basename(data.get('wallpaper_path', 'None'))
 
@@ -161,7 +166,7 @@ class StudioHUD(QWidget):
                 f'{fmt("VIEW", data.get("view", "??"))}'
                 f'{fmt("FLOW", data.get("flow", "??"))}'
                 f'{fmt("SORT", data.get("sort", "??"))}'
-                f'{fmt("COLR", data.get("icon_color", "??"))}'
+                f'{fmt("COLR", f"{color} | {hsv_display}")}'
                 f'{fmt("INTV", data.get("intv", "??"))}'
                 f'{theme_section}'
                 f'</div>'

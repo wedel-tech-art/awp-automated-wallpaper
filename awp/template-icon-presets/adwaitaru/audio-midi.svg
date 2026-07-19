@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">
+  <defs>
+    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#fff" stop-opacity="0.3" />
+    </linearGradient>
+
+    <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#a27ae4" />
+      <stop offset="100%" stop-color="#7240c3" />
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(32.0000 32.0000) scale(0.937931) translate(-32.0000 -32.0000)"><path d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 8 c 0,-2.77 -2.23,-5 -5,-5 Z" fill="#ccc" />
+
+  <g transform="translate(16,13) scale(0.0072)" opacity="1">
+    <path fill-rule="nonzero" fill="url(#purpleGradient)" d="M 1366.101562 833 L 1366.101562 2738 C 1285.699219 2683.398438 1185.5 2651 1076.898438 2651 C 813.5 2651 599.898438 2841.199219 599.898438 3075.800781 C 599.898438 3309.800781 813.5 3500 1076.898438 3500 C 1340.300781 3500 1553.898438 3309.800781 1553.898438 3075.800781 L 1553.898438 1479.800781 L 3212.300781 1208 L 3212.300781 2426 C 3131.898438 2371.398438 3031.699219 2339 2923.101562 2339 C 2659.699219 2339 2446.101562 2529.199219 2446.101562 2763.199219 C 2446.101562 2997.199219 2659.699219 3187.398438 2923.101562 3187.398438 C 3186.5 3187.398438 3400.101562 2997.199219 3400.101562 2763.199219 L 3400.101562 500 Z M 1366.101562 833 " />
+  </g>
+
+  <path d="M 40,3 H 15 c -2.77,0 -5,2.23 -5,5 v 48 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 V 8 c 0,-2.77 -2.23,-5 -5,-5 Z" fill="url(#bodyGradient)" />
+
+  <path d="M 15,3 c -2.77,0 -5,2.23 -5,5 v 1 a 5,5 0 0 1 5,-5 h 34 a 5,5 0 0 1 5,5 V 8 c 0,-2.77 -2.23,-5 -5,-5 H 15 Z" opacity=".5" fill="#fff" />
+
+  <path d="M 54,54.86 A 5.004,5.004 0 0 1 52.54,58.398 4.989,4.989 0 0 1 49,59.86 H 15 A 5.005,5.005 0 0 1 11.46,58.4 4.989,4.989 0 0 1 10,54.86 V 56 c 0,2.77 2.23,5 5,5 h 34 c 2.77,0 5,-2.23 5,-5 z" opacity=".25" />
+
+  <text x="32" y="52" font-family="Source Code Pro, Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="url(#purpleGradient)" opacity="1">MIDI</text>
+</g></svg>

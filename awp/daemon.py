@@ -17,7 +17,7 @@ os.environ['NO_AT_BRIDGE'] = '1'
 from backends import get_backend
 from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH, AWP_CONFIG_RAM
 from core.config import AWPConfig, ConfigError
-from core.utils import x11_blanking, load_images, sort_images
+from core.utils import load_images, sort_images
 from core.runtime import update_runtime_state, load_index_state, save_index_state, update_ram_config
 from core.actions import (
     get_ws_key,
@@ -25,7 +25,8 @@ from core.actions import (
     parse_timing,
     set_backend,
     set_wallpaper,
-    set_panel_icon
+    set_panel_icon,
+    x11_blanking
 )
 from core.printer import get_printer
 
@@ -148,12 +149,23 @@ class Workspace:
         self.next_index = next_idx
 
     def get_next_index(self) -> int:
-        """Return preloaded index if available, else compute."""
+        """Return next index, ALWAYS checking fresh state."""
+        # 🔥 Load fresh state EVERY TIME
+        state = load_index_state()
+        current_state_index = int(state.get(self.key, 0) or 0)
+        
+        # If nav changed the index, sync our memory
+        if current_state_index != self.index:
+            _printer.info(f"WS{self.num+1}: State sync {self.index} → {current_state_index}", backend="daemon")
+            self.index = current_state_index
+            self.next_index = None  # Clear preloaded index
+        
+        # Now use our (synced) index
         if self.next_index is not None:
             idx = self.next_index
             self.next_index = None
             return idx
-
+        
         return self.pick_next_index()
 
     def apply_index(self, new_index: int):

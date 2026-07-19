@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
 """
 AWP - Automated Wallpaper Program (Qt6 Version)
-Configuration Dashboard - PyQt6 Edition
+Configuration Dashboard - Pure Configurator Edition
 
-Direct conversion from PyQt5 to PyQt6.
-Changes mainly involve enum naming conventions and QApplication initialization.
+DAB is now a PURE configuration tool:
+- Configure wallpaper folders, timing, scaling
+- Configure system themes (GTK, Icons, Cursors, Desktop, WM)
+- Configure screen blanking
+- Icon preview with tooltip info (read-only, from INI)
+- NO baking, NO color detection, NO icon copying, NO icon saving
+
+All theme baking is handled by Baker.
 """
+
 import os
 import sys
 import shutil
 
 # QT6 IMPORTS
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QFileDialog, QComboBox, QMessageBox, QTabWidget, QCheckBox
 )
 from PyQt6.QtCore import Qt, QStandardPaths
@@ -22,8 +29,8 @@ from PyQt6.QtGui import QPixmap
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.constants import AWP_DIR, CONFIG_PATH, ICON_DIR, DEFAULT_ICON, THEME_CAPABILITIES
 from core.config import AWPConfig
-from core.utils import get_icon_color, hex_to_hsv
-from core.themes import get_available_themes, bake_awp_theme, bake_awp_icon, bake_awp_cursor
+from core.themes import get_available_themes
+from core.utils import hex_to_hsv
 from backends import BACKEND_NAMES
 from core.printer import get_printer
 
@@ -43,10 +50,10 @@ class WorkspaceTab(QWidget):
     Configuration tab for individual workspace settings.
     
     Provides interface for configuring:
-    - Wallpaper folder and custom icons
-    - Rotation timing and behavior
+    - Wallpaper folder and rotation settings
     - Theme customization per workspace
-    - Real-time icon preview
+    - System theme selection (no baking)
+    - Icon preview with tooltip info (read-only)
     
     Attributes:
         index (int): Workspace number (1-based)
@@ -66,7 +73,7 @@ class WorkspaceTab(QWidget):
         self.parent_window = parent_window
 
         layout = QVBoxLayout()
-        layout.setSpacing(10)
+        layout.setSpacing(15)
 
         # --- Helper to create consistent combo boxes ---
         def create_theme_like_combo(items):
@@ -104,33 +111,35 @@ class WorkspaceTab(QWidget):
         row.addStretch(1)
         layout.addLayout(row)
 
-        # Icon selection row
+        # Icon path (read-only, shows logos/ symlink)
         row = QHBoxLayout()
         row.setSpacing(10)
         lbl = QLabel("Icon:")
         lbl.setFixedWidth(60)
-        lbl.setToolTip("Custom icon for this workspace (appears in desktop menu)")
+        lbl.setToolTip("Workspace icon (read-only - managed by AWP)")
         row.addWidget(lbl)
+
         self.icon_edit = QLineEdit()
-        self.icon_edit.setMaximumWidth(300)
-        self.icon_edit.setPlaceholderText("Path to icon file...")
-        self.icon_edit.setToolTip("Path to custom icon image (PNG, JPG, SVG)")
-        self.icon_edit.textChanged.connect(self.update_icon_preview)
+        self.icon_edit.setMinimumWidth(232)
+        self.icon_edit.setPlaceholderText("Icon path...")
+        self.icon_edit.setToolTip("Icon path (read-only)")
+        self.icon_edit.setReadOnly(True)
         row.addWidget(self.icon_edit)
-        self.icon_btn = QPushButton("Browse")
-        self.icon_btn.setFixedWidth(80)
-        self.icon_btn.setToolTip("Browse for icon image file")
-        self.icon_btn.clicked.connect(self.on_browse_icon)
-        row.addWidget(self.icon_btn)
+
+        # Small info label showing the actual preset path
+        self.icon_info = QLabel()
+        self.icon_info.setStyleSheet("color: #666; font-size: 10px;")
+        self.icon_info.setMaximumWidth(120)
+        row.addWidget(self.icon_info)
+
         row.addStretch(1)
         layout.addLayout(row)
 
-        # --- Floating Icon Preview ---
+        # --- Icon Preview ---
         self.icon_preview = QLabel(self)
-        self.icon_preview.setFixedSize(64, 64)
+        self.icon_preview.setFixedSize(65, 65)
         self.icon_preview.setToolTip("Loading identity...")
-        # Position it freely
-        self.icon_preview.move(335, self.folder_edit.y() + 35)
+        self.icon_preview.move(325, self.folder_edit.y() + 42)
         self.icon_preview.raise_()
 
         # === WORKSPACE BEHAVIOR SECTION ===
@@ -185,75 +194,9 @@ class WorkspaceTab(QWidget):
 
         # === THEME SETTINGS SECTION ===
         theme_label = QLabel("<b>Theme Settings</b>")
-        theme_label.setToolTip("Per-workspace desktop theme customization")
+        theme_label.setToolTip("Per-workspace desktop theme customization (system themes only)")
         layout.addWidget(theme_label)
 
-        # --- Icon Bake Style (NON-PERSISTENT) ---
-        from core.constants import ICON_PRESETS
-
-        row = QHBoxLayout()
-        row.setSpacing(5)
-
-        lbl = QLabel("Icon Style:")
-        lbl.setFixedWidth(120)
-        lbl.setToolTip("Choose template style for icon baking (not saved)")
-        row.addWidget(lbl)
-
-        items = [(name.capitalize(), name) for name in sorted(ICON_PRESETS.keys())]
-        self.icon_preset_combo = create_theme_like_combo(items)
-
-        # set default
-        index = self.icon_preset_combo.findData("mint")
-        if index != -1:
-            self.icon_preset_combo.setCurrentIndex(index)
-
-        self.icon_preset_combo.setToolTip("Temporary style used when baking icons")
-
-        row.addWidget(self.icon_preset_combo)
-        row.addStretch(1)
-
-        layout.addLayout(row)
-        
-        # --- GTK Bake Style (NON-PERSISTENT) ---
-        from core.constants import THEME_PRESETS
-        row = QHBoxLayout()
-        row.setSpacing(5)
-        lbl = QLabel("GTK Style:")
-        lbl.setFixedWidth(120)
-        lbl.setToolTip("Choose template style for GTK theme baking (not saved)")
-        row.addWidget(lbl)
-        items = [(name.capitalize(), name) for name in sorted(THEME_PRESETS.keys())]
-        self.gtk_preset_combo = create_theme_like_combo(items)
-        index = self.gtk_preset_combo.findData("breeze")
-        if index != -1:
-            self.gtk_preset_combo.setCurrentIndex(index)
-        self.gtk_preset_combo.setToolTip("Temporary style used when baking GTK themes")
-        row.addWidget(self.gtk_preset_combo)
-        row.addStretch(1)
-        layout.addLayout(row)
-
-        # --- CURSOR BAKE STYLE (NON-PERSISTENT) ---
-        row = QHBoxLayout()
-        row.setSpacing(5)
-        lbl = QLabel("Cursor Style:")
-        lbl.setFixedWidth(120)
-        lbl.setToolTip("Choose template style for cursor baking (not saved)")
-        row.addWidget(lbl)
-        try:
-            from core.constants import CURSOR_PRESETS
-            cursor_items = [(name.capitalize(), name) for name in sorted(CURSOR_PRESETS.keys())]
-        except ImportError:
-            cursor_items = [("Oxy", "oxy")]
-            
-        self.cursor_preset_combo = create_theme_like_combo(cursor_items)
-        index = self.cursor_preset_combo.findData("oxy")
-        if index != -1:
-            self.cursor_preset_combo.setCurrentIndex(index)
-        self.cursor_preset_combo.setToolTip("Temporary style used when baking cursor engines")
-        row.addWidget(self.cursor_preset_combo)
-        row.addStretch(1)
-        layout.addLayout(row)
-        
         self.theme_controls = {}
         
         theme_settings = [
@@ -283,7 +226,6 @@ class WorkspaceTab(QWidget):
         layout.addStretch()
         self.setLayout(layout)
         self.update_theme_availability()
-        self.update_icon_preview()
 
     def update_theme_availability(self):
         """Update theme dropdown availability based on current DE/WM."""
@@ -310,7 +252,7 @@ class WorkspaceTab(QWidget):
             else:
                 dt_combo.setToolTip("Desktop shell themes not applicable")
 
-        # Universal Basics (always enabled for now)
+        # Universal Basics (always enabled)
         for key in ['icon_theme', 'gtk_theme', 'cursor_theme']:
             combo = self.theme_controls.get(key)
             if combo:
@@ -323,16 +265,6 @@ class WorkspaceTab(QWidget):
         p = QFileDialog.getExistingDirectory(self, f"Select folder for WS{self.index}", BASE_FOLDER)
         if p:
             self.folder_edit.setText(p)
-
-    def on_browse_icon(self):
-        """Browse and select custom icon for this workspace."""
-        start_dir = ICON_DIR if os.path.exists(ICON_DIR) else BASE_FOLDER
-        f, _ = QFileDialog.getOpenFileName(
-            self, f"Select icon for WS{self.index}", start_dir, 
-            "Images (*.png *.jpg *.jpeg *.svg *.gif, *.webp)"
-        )
-        if f:
-            self.icon_edit.setText(f)
 
     def on_mode_changed(self, text):
         """
@@ -363,7 +295,7 @@ class WorkspaceTab(QWidget):
             self.order_combo.setCurrentIndex(0)
 
     def update_icon_preview(self):
-        """Update live preview and show Hex/HSV details in tooltip."""
+        """Update live preview with Hex/HSV details from config (read-only)."""
         path = self.icon_edit.text().strip()
         display_path = path if (path and os.path.isfile(path)) else (DEFAULT_ICON if os.path.isfile(DEFAULT_ICON) else "")
         
@@ -373,33 +305,57 @@ class WorkspaceTab(QWidget):
                 Qt.AspectRatioMode.KeepAspectRatio, 
                 Qt.TransformationMode.SmoothTransformation))
             
-            # 1. Get Hex
-            hex_val = get_icon_color(display_path)
+            # Get Hex from config (NOT from detecting the image!)
+            section = f"ws{self.index}"
+            hex_val = self.parent_window.config.get(section, 'icon_color', default='')
             
-            # 2. Convert to HSV if we have a valid hex
+            # Convert to HSV if we have a valid hex
             hsv_info = "N/A"
-            if hex_val:
-                # utils.hex_to_hsv expects the hex without the '#'
-                h, s, v = hex_to_hsv(hex_val.lstrip('#'))
-                # Format to Degrees and Percentages
-                hsv_info = f"H:{int(h * 360)}° S:{int(s * 100)}% V:{int(v * 100)}%"
+            if hex_val and hex_val.startswith('#'):
+                try:
+                    h, s, v = hex_to_hsv(hex_val.lstrip('#'))
+                    hsv_info = f"H:{int(h * 360)}° S:{int(s * 100)}% V:{int(v * 100)}%"
+                except:
+                    hsv_info = "N/A"
             
-            # 3. Build Tooltip
+            # Build Tooltip
             filename = os.path.basename(display_path)
             width = pix.width()
             height = pix.height()
             
+            is_symlink = os.path.islink(display_path)
+            real_path = os.path.realpath(display_path) if is_symlink else display_path
+            
             tooltip = (
                 f"<b>File:</b> {filename}<br>"
                 f"<b>Dimensions:</b> {width}x{height} px<br>"
+                f"<b>Path:</b> {display_path}<br>"
+            )
+            
+            if is_symlink:
+                tooltip += f"<b>Symlink to:</b> {real_path}<br>"
+            
+            tooltip += (
                 f"<b>Hex:</b> {hex_val.upper() if hex_val else 'N/A'}<br>"
                 f"<b>HSV:</b> {hsv_info}"
             )
+            
+            if os.path.exists(real_path):
+                tooltip += f"<br><b>Status:</b> ✅ Valid"
+            else:
+                tooltip += f"<br><b>Status:</b> ❌ Broken symlink"
+            
             self.icon_preview.setToolTip(tooltip)
+            self.icon_preview.setEnabled(True)
+            
+            # Info label is intentionally empty (info is in tooltip)
+            self.icon_info.setText("")
             
         else:
             self.icon_preview.clear()
             self.icon_preview.setToolTip("No icon selected")
+            self.icon_preview.setEnabled(False)
+            self.icon_info.setText("")
 
     # --- CONFIG LOAD / SAVE ---
     
@@ -409,6 +365,8 @@ class WorkspaceTab(QWidget):
     
         # Basic settings
         self.folder_edit.setText(ws_config['folder'])
+        
+        # Read icon path for display only (read-only)
         self.icon_edit.setText(ws_config['icon'])
 
         # Timing
@@ -470,73 +428,27 @@ class WorkspaceTab(QWidget):
         self.update_icon_preview()
 
     def save_to_config(self):
-        """Save settings to AWPConfig."""
+        """
+        Save settings to AWPConfig.
+        Pure configuration - NO baking, NO color detection, NO icon modifications.
+        """
         config = self.parent_window.config
         section = f"ws{self.index}"
     
         # Get values
         folder = self.folder_edit.text().strip()
-        current_icon_path = self.icon_edit.text().strip()
-    
-        # Handle icon copying/renaming
-        new_icon_path = current_icon_path
-        if current_icon_path and os.path.exists(current_icon_path):
-            try:
-                # Extract workspace name from folder
-                if folder:
-                    workspace_name = os.path.basename(os.path.normpath(folder))
-                    if not workspace_name or workspace_name == '.':
-                        parts = [p for p in folder.split('/') if p]
-                        workspace_name = parts[-1] if parts else f"ws{self.index}"
-                else:
-                    workspace_name = f"ws{self.index}"
-            
-                # Ensure logos directory exists
-                os.makedirs(ICON_DIR, exist_ok=True)
-            
-                # Get file extension
-                _, ext = os.path.splitext(current_icon_path)
-                if not ext:
-                    import mimetypes
-                    mime_type, _ = mimetypes.guess_type(current_icon_path)
-                    if mime_type:
-                        ext = mimetypes.guess_extension(mime_type) or '.png'
-                    else:
-                        ext = '.png'
-            
-                # Create new icon name and path
-                new_icon_name = f"{workspace_name}{ext}"
-                new_icon_path = os.path.join(ICON_DIR, new_icon_name)
-            
-                # Copy the file with try-except for SameFileError
-                try:
-                    shutil.copy2(current_icon_path, new_icon_path)
-                    _printer.info(f"Icon saved as: {new_icon_path}", backend="dab")
-                    self.icon_edit.setText(new_icon_path)
-                    self.update_icon_preview()
-                except shutil.SameFileError:
-                    pass  # File is already where it should be
-                
-            except Exception as e:
-                _printer.error(f"Could not copy icon: {e}", backend="dab")
-    
-        # Save all settings
+        
+        # IMPORTANT: icon_edit is read-only for display only
+        # DO NOT save it - it comes from the INI and stays as-is
+        # DO NOT save icon_color - it comes from Baker
+
+        # Save settings (EXCLUDING icon path and icon_color)
         config.set(section, 'folder', folder)
-        config.set(section, 'icon', new_icon_path)  # Save the new path
+        # config.set(section, 'icon', ...)  # ← NOT saved - read-only display
         config.set(section, 'timing', self.timing_combo.currentData() or '5m')
         config.set(section, 'mode', self.mode_combo.currentText().lower())
         config.set(section, 'order', self.order_combo.currentData() or 'name_az')
         config.set(section, 'scaling', self.scaling_combo.currentData() or 'scaled')
-        
-        # Call Color Detection Function
-        if new_icon_path and os.path.exists(new_icon_path):
-            try:
-                color = get_icon_color(new_icon_path)
-                if color:
-                    config.set(section, 'icon_color', color)
-                    _printer.info(f"WS{self.index}: Color detected: {color}", backend="dab")
-            except Exception as e:
-                _printer.warning(f"WS{self.index}: Error detecting color: {e}", backend="dab")
 
         # Theme settings
         for key, combo in self.theme_controls.items():
@@ -545,29 +457,30 @@ class WorkspaceTab(QWidget):
             else:
                 config.set(section, key, '')  # Clear theme
 
+
 # =============================================================================
 # MAIN DASHBOARD WINDOW
 # =============================================================================
 
 class AWPDashboard(QWidget):
     """
-    Main AWP Configuration Dashboard.
+    Main AWP Configuration Dashboard - Pure Configurator Edition.
     
-    Provides comprehensive interface for managing all AWP settings including:
+    Provides comprehensive interface for managing all AWP settings:
     - Desktop environment and session configuration
     - Screen blanking controls
     - Workspace management and count
     - Individual workspace configuration tabs
     
-    Features professional keyboard shortcuts and smart change detection.
+    NO baking, NO color detection, NO icon copying - pure configuration only.
     """
     
     def __init__(self):
         """Initialize dashboard and load existing configuration."""
         super().__init__()
-        _printer.info("Starting AWP Dashboard...", backend="dab")
+        _printer.info("Starting AWP Dashboard (Pure Configurator)...", backend="dab")
         self.setWindowTitle("AWP Dashboard - Configuration Editor (Qt6)")
-        self.setFixedSize(550, 730)
+        self.setFixedSize(550, 740)
 
         self.config = AWPConfig()
 
@@ -577,13 +490,18 @@ class AWPDashboard(QWidget):
         self.load_config()
 
     def setup_ui(self):
-        """Initialize and arrange all user interface components with visual harmony."""
+        """Initialize and arrange all user interface components."""
         layout = QVBoxLayout()
         
-        # Header - Professional centered title
-        header = QLabel("<h2>AWP Dashboard - Configuration Editor (Qt6)</h2>")
-        header.setAlignment(Qt.AlignmentFlag.AlignCenter) # Qt6 specific flag
+        # Header
+        header = QLabel("<h2>AWP Dashboard - Configuration Editor</h2>")
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(header)
+
+        subheader = QLabel("Pure configuration tool • Use Baker for theme generation")
+        subheader.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        subheader.setStyleSheet("color: #888; font-size: 11px; margin-bottom: 5px;")
+        layout.addWidget(subheader)
 
         # Main Tab Widget navigation
         self.tab_widget = QTabWidget()
@@ -603,7 +521,7 @@ class AWPDashboard(QWidget):
         # All tabs exist now, so we can safely populate their dropdowns
         self.refresh_theme_lists()
         
-        # --- Action Buttons: Squeezed for visual harmony (4 buttons in the space of 3) ---
+        # --- Action Buttons ---
         button_layout = QHBoxLayout()
         button_layout.addStretch(0)
         
@@ -611,7 +529,7 @@ class AWPDashboard(QWidget):
         BTN_H = 32
         GAP = 6
         
-        # 1. Backup Button - Preserves user data
+        # 1. Backup Button
         self.backup_btn = QPushButton("Backup Config")
         self.backup_btn.setFixedSize(BTN_W, BTN_H)
         self.backup_btn.setToolTip("Create backup of current configuration (Ctrl+B)")
@@ -619,23 +537,15 @@ class AWPDashboard(QWidget):
         button_layout.addWidget(self.backup_btn)
         button_layout.addSpacing(GAP)
 
-        # 2. Save Button - Commits settings to .ini
+        # 2. Save Button
         self.save_btn = QPushButton("Save Changes")
         self.save_btn.setFixedSize(BTN_W, BTN_H)
-        self.save_btn.setToolTip("Save configuration and colors to .ini (Ctrl+S)")
+        self.save_btn.setToolTip("Save configuration to .ini (Ctrl+S)")
         self.save_btn.clicked.connect(self.save_config)
         button_layout.addWidget(self.save_btn)
         button_layout.addSpacing(GAP)
 
-        # 3. Sync Button - Triggers the Genetic Theme Engine
-        self.sync_btn = QPushButton("Sync Themes")
-        self.sync_btn.setFixedSize(BTN_W, BTN_H)
-        self.sync_btn.setToolTip("Bake missing Genetic Themes with folder.png thumbnails")
-        self.sync_btn.clicked.connect(self.sync_genetic_themes)
-        button_layout.addWidget(self.sync_btn)
-        button_layout.addSpacing(GAP)
-
-        # 4. Exit Button
+        # 3. Exit Button
         self.exit_btn = QPushButton("Quit")
         self.exit_btn.setFixedSize(BTN_W, BTN_H)
         self.exit_btn.setToolTip("Exit application (Ctrl+Q)")
@@ -781,149 +691,9 @@ class AWPDashboard(QWidget):
     
         self.ws_count_combo.setCurrentText(str(self.config.workspaces_count))
 
-        # Workspace settings - FIXED: kept 0-based indexing for core data structure alignment
         for i, tab in enumerate(self.workspace_tabs):
             tab.load_from_config(i)
 
-    def sync_genetic_themes(self):
-        """
-        Genetic Synchronization: Physically creates ~/.themes and ~/.icons folders
-        based on the 'icon_color' key in the .ini.
-        Now cleans up old themes before baking new ones.
-        """
-        baked_themes_count = 0
-        baked_icons_count = 0
-        baked_cursors_count = 0
-        
-        _printer.info("Starting genetic themes sync...", backend="dab")
-        
-        # Helper function to safely remove old themes
-        def remove_theme_safe(path, theme_name, theme_type):
-            """Safely remove a theme (handle symlinks and directories)."""
-            if not os.path.exists(path):
-                return False
-            
-            try:
-                if os.path.islink(path):
-                    os.unlink(path)
-                    _printer.info(f"Removed old symlink: {theme_name} ({theme_type})", backend="dab")
-                    return True
-                elif os.path.isdir(path):
-                    shutil.rmtree(path)
-                    _printer.info(f"Removed old directory: {theme_name} ({theme_type})", backend="dab")
-                    return True
-                else:
-                    _printer.warning(f"Unknown file type: {path}", backend="dab")
-                    return False
-            except Exception as e:
-                _printer.warning(f"Failed to remove {path}: {e}", backend="dab")
-                return False
-        
-        # Iterate through workspace tabs
-        for i in range(1, self.tab_widget.count()):
-            section = f'ws{i}' 
-            
-            hex_color = self.config.get(section, 'icon_color')
-            icon = self.config.get(section, 'icon')
-            
-            if not hex_color:
-                continue
-                
-            clean_hex = hex_color.lstrip('#').lower()
-            
-            # --- GET PRESETS FROM UI TAB ---
-            tab = self.tab_widget.widget(i)
-
-            preset = "mint"  # icon preset default
-            if hasattr(tab, "icon_preset_combo"):
-                combo = tab.icon_preset_combo
-                preset = combo.currentData() or combo.currentText() or "mint"
-
-            gtk_preset = "breeze"  # gtk preset default
-            if hasattr(tab, "gtk_preset_combo"):
-                combo = tab.gtk_preset_combo
-                gtk_preset = combo.currentData() or combo.currentText() or "breeze"
-
-            cursor_preset = "oxy"  # cursor preset default
-            if hasattr(tab, "cursor_preset_combo"):
-                combo = tab.cursor_preset_combo
-                cursor_preset = combo.currentData() or combo.currentText() or "oxy"
-
-            _printer.info(f"WS{i}: color={hex_color} presets[icon={preset}, gtk={gtk_preset}, cursor={cursor_preset}]", backend="dab")
-            
-            # Define new theme names
-            new_gtk_theme = f"awp-gtk-{gtk_preset}-{clean_hex}"
-            new_icon_theme = f"awp-icons-{preset}-{clean_hex}"
-            new_cursor_theme = f"awp-cursor-{cursor_preset}-{clean_hex}"
-            
-            # Get OLD theme names from config
-            old_gtk_theme = self.config.get(section, 'gtk_theme', default='')
-            old_icon_theme = self.config.get(section, 'icon_theme', default='')
-            old_cursor_theme = self.config.get(section, 'cursor_theme', default='')
-            
-            # Define paths
-            theme_path = os.path.expanduser(f"~/.themes/{new_gtk_theme}")
-            icon_path = os.path.expanduser(f"~/.icons/{new_icon_theme}")
-            cursor_path = os.path.expanduser(f"~/.icons/{new_cursor_theme}")
-            
-            # --- Check & Bake GTK Theme ---
-            if not os.path.exists(theme_path):
-                _printer.info(f"Syncing: GTK theme {new_gtk_theme} missing. Initiating bake...", backend="dab")
-                
-                # Clean old GTK theme if it exists
-                if old_gtk_theme and old_gtk_theme != new_gtk_theme:
-                    old_path = os.path.expanduser(f"~/.themes/{old_gtk_theme}")
-                    remove_theme_safe(old_path, old_gtk_theme, "GTK")
-                
-                bake_awp_theme(hex_color, icon, gtk_preset)
-                baked_themes_count += 1
-
-            # --- Check & Bake Icon Theme ---
-            if not os.path.exists(icon_path):
-                _printer.info(f"Syncing: Icon theme {new_icon_theme} missing. Initiating bake...", backend="dab")
-                
-                # Clean old Icon theme if it exists
-                if old_icon_theme and old_icon_theme != new_icon_theme:
-                    old_path = os.path.expanduser(f"~/.icons/{old_icon_theme}")
-                    remove_theme_safe(old_path, old_icon_theme, "Icon")
-                
-                bake_awp_icon(hex_color, icon, preset)
-                baked_icons_count += 1
-
-            # --- Check & Bake Cursor Theme ---
-            if not os.path.exists(cursor_path):
-                _printer.info(f"Syncing: Cursor theme {new_cursor_theme} missing. Initiating bake...", backend="dab")
-                
-                # Clean old Cursor theme if it exists
-                if old_cursor_theme and old_cursor_theme != new_cursor_theme:
-                    old_path = os.path.expanduser(f"~/.icons/{old_cursor_theme}")
-                    remove_theme_safe(old_path, old_cursor_theme, "Cursor")
-                
-                bake_awp_cursor(hex_color, icon, cursor_preset)
-                baked_cursors_count += 1
-            
-            # Update the config with new theme names (so old themes are tracked)
-            self.config.set(section, 'gtk_theme', new_gtk_theme)
-            self.config.set(section, 'icon_theme', new_icon_theme)
-            self.config.set(section, 'cursor_theme', new_cursor_theme)
-        
-        # Save config
-        self.config.save()
-        
-        # Refresh the UI dropdowns/lists
-        self.refresh_theme_lists()
-        
-        # Feedback
-        total_new = baked_themes_count + baked_icons_count + baked_cursors_count
-        if total_new > 0:
-            msg = f"Baked {baked_themes_count} themes, {baked_icons_count} icon sets, and {baked_cursors_count} cursor packages."
-            _printer.success(f"Sync complete: {msg}", backend="dab")
-            QMessageBox.information(self, "Sync Complete", msg)
-        else:
-            _printer.info("Sync complete: Everything is already up to date.", backend="dab")
-            QMessageBox.information(self, "Sync Complete", "Everything is already up to date.")
-        
-        
     def refresh_theme_lists(self):
         """Universal Refresh: Updates data but respects the UI's visual state."""
         all_themes_dict = get_available_themes()
@@ -972,7 +742,10 @@ class AWPDashboard(QWidget):
                 combo.blockSignals(False)
 
     def save_config(self):
-        """Save current GUI state to the active preset via AWPConfig API."""
+        """
+        Save current GUI state to the active preset via AWPConfig API.
+        Pure configuration - NO baking, NO icon saving, NO color detection.
+        """
         try:
             _printer.info("Saving configuration...", backend="dab")
             
@@ -994,7 +767,7 @@ class AWPDashboard(QWidget):
             
             self.config.save()
             _printer.success("Configuration saved successfully!", backend="dab")
-            QMessageBox.information(self, "Success", "Preset updated successfully!")
+            QMessageBox.information(self, "Success", "Configuration saved successfully!")
                 
         except Exception as e:
             _printer.error(f"Failed to save: {str(e)}", backend="dab")
@@ -1011,6 +784,7 @@ class AWPDashboard(QWidget):
         else:
             _printer.warning("No configuration file found to backup.", backend="dab")
             QMessageBox.warning(self, "No Config", "No configuration file found.")
+
 
 # =============================================================================
 # APPLICATION ENTRY POINT

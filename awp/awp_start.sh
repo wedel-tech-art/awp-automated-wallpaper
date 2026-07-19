@@ -51,14 +51,30 @@ if [ -n "$PRESET_NAME" ]; then
 
         ln -sfn "$TARGET_INI" "$CONFIG_FILE"
 
-        rm -f "$LOGOS_DIR/ws"*.png
-        for icon in "$TARGET_PRESET"/ws*.png; do
-            [ -e "$icon" ] && ln -sfn "$icon" "$LOGOS_DIR/$(basename "$icon")"
+        # ============================================================
+        # ENFORCE ICON PATHS TO LOGOS/ (Only ws{N}.png)
+        # ============================================================
+        echo -e "${CLR_CYAN}[ICON] Ensuring icon paths point to logos/...${CLR_RESET}"
+
+        # Read number of workspaces from INI (fallback to 4)
+        NUM_WS=$(grep "^workspaces =" "$TARGET_INI" | head -1 | sed 's/.*= //' | tr -d ' ' || echo "4")
+        if ! [[ "$NUM_WS" =~ ^[0-9]+$ ]] || [ "$NUM_WS" -lt 1 ]; then
+            NUM_WS=4
+        fi
+
+        # Only force ws{N}.png paths (standard format)
+        for i in $(seq 1 "$NUM_WS"); do
+            # Look for lines with ws{N}.png and replace with logos/ws{N}.png
+            if grep -q "^icon = .*/ws${i}\.png" "$TARGET_INI" 2>/dev/null; then
+                sed -i "s|^icon = .*/ws${i}\.png|icon = $HOME/awp/logos/ws${i}.png|" "$TARGET_INI" 2>/dev/null
+                echo -e "${CLR_GREEN}[ICON] Fixed ws$i${CLR_RESET}"
+            fi
         done
-        echo -e "${CLR_GREEN}[SUCCESS] Symlinks updated.${CLR_RESET}"
+
+        echo -e "${CLR_GREEN}[ICON] Icon paths enforced to logos/ ($NUM_WS workspaces)${CLR_RESET}"
         
         # ======================================================================
-        # 2.5 THEME SYMLINKING (NEW!)
+        # THEME SYMLINKING
         # ======================================================================
         echo -e "${CLR_CYAN}[THEMES] Linking themes for $PRESET_NAME...${CLR_RESET}"
         

@@ -222,26 +222,26 @@ ICON_REGISTRY = {
     # --- AUDIO ---
     "audio-mpeg": {
         "context": "mimetypes",
-        "png_action": {"original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
+        "png_action": {"original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze"]},
+        "svg_action": {"svg_original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze"]},
         "symlinks": ["audio-mp3", "mpeg"]
     },
     "audio-flac": {
         "context": "mimetypes",
-        "png_action": {"original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
+        "png_action": {"original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze"]},
+        "svg_action": {"svg_original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze"]},
         "symlinks": ["flac", "audio-x-flac"]
     },
     "audio-x-wav": {
         "context": "mimetypes",
-        "png_action": {"original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
+        "png_action": {"original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze"]},
+        "svg_action": {"svg_original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze"]},
         "symlinks": ["audio-wav", "audio-vnd.wave", "x-wav", "wav"]
     },
     "audio-midi": {
         "context": "mimetypes",
-        "png_action": {"original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
-        "svg_action": {"svg_original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze", "adwaitaru", "rami"]},
+        "png_action": {"original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze"]},
+        "svg_action": {"svg_original": ["besgnulinux", "sweet-hollow", "slot-multicolor", "sweet", "breeze"]},
         "symlinks": [
             "audio-mid", "audio-x-midi", "audio-sp-midi",
             "audio-smf", "midi", "mid"
@@ -460,6 +460,115 @@ GTK2_ASSETS = [
     "spin-rtl-down-active.png", "spin-rtl-up-active.png", "tab.png", "treeview-ltr-button-active.png", "treeview-rtl-button-active.png"
 ]
 
+# ==============================================================================
+# TARGET ASSETS FOR MINT THEME
+# ==============================================================================
+MINT_ASSETS = [
+    # --- GTK2 (23 files) ---
+    'checkbox-checked.png',
+    'checkbox-checked-insensitive.png',
+    'combo-entry-focus.png',
+    'combo-entry-focus-notebook.png',
+    'combo-entry-focus-notebook-rtl.png',
+    'combo-entry-focus-rtl.png',
+    'entry-border-active-bg.png',
+    'entry-border-active-bg-solid.png',
+    'menu-checkbox-checked.png',
+    'menu-checkbox-checked-insensitive.png',
+    'menu-radio-checked.png',
+    'menu-radio-checked-insensitive.png',
+    'notebook-entry-border-active-bg.png',
+    'progressbar.png',
+    'progressbar_v.png',
+    'radio-checked.png',
+    'radio-checked-insensitive.png',
+    'slider-horiz-active.png',
+    'slider-prelight.png',
+    'slider-vert-active.png',
+    'toolbar-entry-border-active-bg.png',
+    'trough-horizontal-active.png',
+    'trough-vertical-active.png',
+
+    # --- GTK3/GTK4 (checkbox, radio, switch) ---
+
+    'checkbox-checked@2.png',
+    'checkbox-checked-dark.png',
+    'checkbox-checked-dark@2.png',
+
+    'checkbox-checked-insensitive@2.png',
+    'checkbox-checked-insensitive-dark.png',
+    'checkbox-checked-insensitive-dark@2.png',
+    'checkbox-checked-insensitive-selected.png',
+    'checkbox-checked-insensitive-selected@2.png',
+    'checkbox-checked-selected.png',
+    'checkbox-checked-selected@2.png',    
+    'checkbox-checked-selectionmode.png',
+    'checkbox-checked-selectionmode@2.png',
+    'checkbox-checked-selectionmode-dark.png',
+    'checkbox-checked-selectionmode-dark@2.png',
+    'checkbox-mixed.png',
+    'checkbox-mixed@2.png',
+    'checkbox-mixed-dark.png',
+    'checkbox-mixed-dark@2.png',
+    'checkbox-mixed-insensitive.png',
+    'checkbox-mixed-insensitive@2.png',
+    'checkbox-mixed-insensitive-dark.png',
+    'checkbox-mixed-insensitive-dark@2.png',
+    'checkbox-mixed-insensitive-selected.png',
+    'checkbox-mixed-insensitive-selected@2.png',
+    'checkbox-mixed-selected.png',
+    'checkbox-mixed-selected@2.png',
+
+    'radio-checked@2.png',
+    'radio-checked-dark.png',
+    'radio-checked-dark@2.png',
+
+    'radio-checked-insensitive@2.png',
+    'radio-checked-insensitive-dark.png',
+    'radio-checked-insensitive-dark@2.png',
+    'radio-checked-insensitive-selected.png',
+    'radio-checked-insensitive-selected@2.png',
+    'radio-checked-selected.png',
+    'radio-checked-selected@2.png',
+    'radio-mixed.png',
+    'radio-mixed@2.png',
+    'radio-mixed-dark.png',
+    'radio-mixed-dark@2.png',
+    'radio-mixed-insensitive.png',
+    'radio-mixed-insensitive@2.png',
+    'radio-mixed-insensitive-dark.png',
+    'radio-mixed-insensitive-dark@2.png',
+    'radio-mixed-insensitive-selected.png',
+    'radio-mixed-insensitive-selected@2.png',
+    'radio-mixed-selected.png',
+    'radio-mixed-selected@2.png',
+    'switch-active.png',
+    'switch-active@2.png',
+    'switch-active-dark.png',
+    'switch-active-dark@2.png',
+    'switch-active-header.png',
+    'switch-active-header@2.png',
+    'switch-active-header-dark.png',
+    'switch-active-header-dark@2.png',
+    'switch-active-insensitive.png',
+    'switch-active-insensitive@2.png',
+    'switch-active-insensitive-dark.png',
+    'switch-active-insensitive-dark@2.png',
+    'switch-active-insensitive-header.png',
+    'switch-active-insensitive-header@2.png',
+    'switch-active-insensitive-header-dark.png',
+    'switch-active-insensitive-header-dark@2.png',
+    'switch-active-insensitive-selected.png',
+    'switch-active-insensitive-selected@2.png',
+    'switch-active-selected.png',
+    'switch-active-selected@2.png',
+
+    # --- xfwm4 ---
+    'close-active.png',
+    'close-prelight.png',
+    'close-pressed.png',
+]
+
 
 ICON_PRESETS = {
     'mint': {
@@ -510,6 +619,7 @@ ICON_PRESETS = {
         'path': 'template-icon-presets/rami',
         'colors': [
             ('a27ae4', 'hex'),
+            ('7240c3', 'mid_dark'),
             ('7155a0', 'dark_shade'),
             ('dbcbfa', 'lightest'),
             ('cbb1f0', 'lighter'),
@@ -518,6 +628,8 @@ ICON_PRESETS = {
             ('7e7e7e', 'body_light'),
         ],
         'family_ratios': {
+            'mid_dark':   (0.0, 1.15, 0.78),
+            
             # Pure: (-5.0, 0.71, 0.71)  → 261°, 47%, 63%
             'dark_shade': (-1.0, 0.90, 0.58),  # Minimal cool, richer shadow
             
@@ -540,6 +652,7 @@ ICON_PRESETS = {
         'colors': [
             ('a27ae4', 'hex'),
             ('dbcbfa', 'lightest'),
+            ('7240c3', 'mid_dark'),
             ('7155a0', 'dark_shade'),
             ('6c763f', 'trash_dark_base'),
             
@@ -553,6 +666,8 @@ ICON_PRESETS = {
         'family_ratios': {
             # Pure: (0.0, 0.29, 1.10)  → 266°, 19%, 98%
             'lightest':   (2.0, 0.20, 1.25),   # 268°, 13%, 111% (warm, bright emblem)
+            
+            'mid_dark':   (0.0, 1.15, 0.78),
             
             # Pure: (-5.0, 0.71, 0.71)  → 261°, 47%, 63%
             'dark_shade': (-2.0, 0.95, 0.65),  # 264°, 63%, 58% (richer shadow)
@@ -569,8 +684,8 @@ ICON_PRESETS = {
     'slot-multicolor': {
         'path': 'template-icon-presets/slot-multicolor',
         'colors': [
-            ('7155a0', 'dark_shade'),
             ('a27ae4', 'hex'),
+            ('7155a0', 'dark_shade'),
             ('cbb1f0', 'lighter'),
             ('6c763f', 'trash_dark_base'),
             ('adbc6a', 'trash_light_leaf'),
@@ -680,97 +795,142 @@ ICON_PRESETS = {
 
 THEME_PRESETS = {
     'breeze': {
-        'path':    'template-theme-presets/breeze',
+        'path': 'template-theme-presets/breeze',
+        'source_hex': '3daee9',
         'rebrand': ['Breeze-Dark', 'Breeze'],
-        'colors':  [
-            ('3daee9', 'hex'),           # Main accent
-            ('61, 174, 233', 'rgb'),     # RGB version
-            ('37, 164, 230', 'rgb'),     # RGB alt
-            ('cc241d', 'hex'),           # Close button
-            ('d79921', 'hide_gold'),     # Hide button
-            ('98971a', 'maximize_blue'), # Maximize button
+        'colors': [
+            # --- Main accent ---
+            ('3daee9', 'hex'),
+            ('3daee9', 'source_hex'),
+
+            # --- RGB alt (different shade, no hex) ---
+            ('37, 164, 230', 'rgb'),
+
+            # --- Window buttons ---
+            ('cc241d', 'hex'),
+            ('d79921', 'hide_gold'),
+            ('98971a', 'maximize_blue'),
             ('2673a8', 'selection_bg'),
         ],
         'family_ratios': {
+            'source_hex':     (0.0, 1.0, 1.0),
             'maximize_blue':  (-25, 1.00, 1.00),
             'hide_gold':      (-50, 1.00, 1.00),
             'selection_bg':   (0, 1.0, SELECTION_BRIGHTNESS),
         },
-        'assets':  TARGET_ASSETS,
+        'assets': TARGET_ASSETS,
     },
+
     'colloid': {
-        'path':    'template-theme-presets/colloid',
+        'path': 'template-theme-presets/colloid',
+        'source_hex': '009cff',
         'rebrand': ['Colloid-Orange-Dark-Gruvbox'],
-        'colors':  [
+        'colors': [
+            # --- Source color for PNG assets ---
+            ('009cff', 'source_hex'),
+
+            # --- Main accent ---
             ('fe8019', 'hex'),
-            ('254, 128, 25', 'rgb'),
+
+            # --- Derived colors ---
             ('d65d0e', 'dark_shade'),
-            ('214, 93, 14', 'dark_shade_rgb'),
             ('fe9137', 'shade'),
-            ('254, 145, 55', 'shade_rgb'),
             ('fda24d', 'lighter'),
-            ('253, 162, 77', 'lighter_rgb'),
+
+            # --- Window buttons ---
             ('cc241d', 'hex'),
             ('d79921', 'hide_gold'),
             ('98971a', 'maximize_blue'),
             ('b35a12', 'selection_bg'),
         ],
         'family_ratios': {
+            'source_hex':     (0.0, 1.0, 1.0),
             'dark_shade':     (0, 1.0, 0.78),
-            'dark_shade_rgb': (0, 1.0, 0.78),
             'shade':          (0, 1.0, 0.93),
-            'shade_rgb':      (0, 1.0, 0.93),
             'lighter':        (0, 0.85, 1.10),
-            'lighter_rgb':    (0, 0.85, 1.10),
             'maximize_blue':  (-25, 1.00, 1.00),
             'hide_gold':      (-50, 1.00, 1.00),
             'selection_bg':   (0, 1.00, SELECTION_BRIGHTNESS),
         },
         'assets': GTK2_ASSETS,
     },
+
     'graphite': {
-        'path':    'template-theme-presets/graphite',
-        'rebrand': ['Graphite-blue-Dark', 'Graphite-blue'],
-        'colors':  [
+        'path': 'template-theme-presets/graphite',
+        'source_hex': '52ade2',
+        'rebrand': ['Graphite-blue-Dark'],
+        'colors': [
+            # --- Source color for PNG assets ---
+            ('52ade2', 'source_hex'),
+
+            # --- Main accent ---
             ('fe8019', 'hex'),
-            ('254, 128, 25', 'rgb'),
+
+            # --- Derived colors ---
             ('d65d0e', 'dark_shade'),
-            ('214, 93, 14', 'dark_shade_rgb'),
             ('fe9137', 'shade'),
-            ('254, 145, 55', 'shade_rgb'),
             ('fda24d', 'lighter'),
-            ('253, 162, 77', 'lighter_rgb'),
             ('b35a12', 'selection_bg'),
+            
+            ('cc241d', 'hex'),
+            
+            ('d79921', 'hide_gold'),
+            ('98971a', 'maximize_blue'),
         ],
         'family_ratios': {
+            'source_hex':     (0.0, 1.0, 1.0),
             'dark_shade':     (0, 1.0, 0.78),
-            'dark_shade_rgb': (0, 1.0, 0.78),
             'shade':          (0, 1.0, 0.93),
-            'shade_rgb':      (0, 1.0, 0.93),
             'lighter':        (0, 0.85, 1.10),
-            'lighter_rgb':    (0, 0.85, 1.10),
+            'hide_gold':     (-50, 1.00, 1.00),
+            'maximize_blue': (-25, 1.00, 1.00),            
             'selection_bg':   (0, 1.00, SELECTION_BRIGHTNESS),
         },
         'assets': GTK2_ASSETS,
     },
+
     'flat-remix': {
-        'path':    'template-theme-presets/flat-remix',
-        'rebrand': ['Flat-Remix-GTK-Blue-Darkest-Solid'],
-        'colors':  [
-            ('2777ff', 'hex'), ('3b84ff', 'hex'), ('317dff', 'hex'), ('1d71ff', 'hex'),
-            ('2165d9', 'hex'), ('2262cf', 'hex'), ('377cf1', 'hex'), ('3b83fd', 'hex'),
+        'path': 'template-theme-presets/flat-remix',
+        'source_hex': '54ade6',
+        'rebrand': ['Flat-Remix-GTK-Blue-Darkest'],
+        'colors': [
+            # --- Source color for PNG assets ---
+            ('54ade6', 'source_hex'),
+
+            # --- Main accent ---
+            ('2777ff', 'hex'),
+
+            # --- All original flat-remix colors (preserved) ---
+            ('3b84ff', 'hex'),
+            ('317dff', 'hex'),
+            ('1d71ff', 'hex'),
+            ('2165d9', 'hex'),
+            ('2262cf', 'hex'),
+            ('377cf1', 'hex'),
+            ('3b83fd', 'hex'),
             ('468aff', 'hex'),
-            ('00348d', 'dark_border'), ('00215a', 'dark_border'), ('0047c0', 'dark_border'),
-            ('0052df', 'dark_border'), ('0056e9', 'dark_border'), ('004fd4', 'dark_border'),
+            ('00348d', 'dark_border'),
+            ('00215a', 'dark_border'),
+            ('0047c0', 'dark_border'),
+            ('0052df', 'dark_border'),
+            ('0056e9', 'dark_border'),
+            ('004fd4', 'dark_border'),
             ('1d59be', 'dark_border'),
-            ('6ea4ff', 'hover_light'), ('74a7ff', 'hover_light'), ('8db7ff', 'hover_light'),
-            ('5a97ff', 'hover_light'), ('4187ff', 'hover_light'), ('5594ff', 'hover_light'),
-            ('4b8dff', 'hover_light'), ('83b6ec', 'hover_light'), ('337fdc', 'hover_light'),
+            ('6ea4ff', 'hover_light'),
+            ('74a7ff', 'hover_light'),
+            ('8db7ff', 'hover_light'),
+            ('5a97ff', 'hover_light'),
+            ('4187ff', 'hover_light'),
+            ('5594ff', 'hover_light'),
+            ('4b8dff', 'hover_light'),
+            ('83b6ec', 'hover_light'),
+            ('337fdc', 'hover_light'),
             ('999911', 'hide_gold'),
             ('999922', 'maximize_blue'),
             ('1a5599', 'selection_bg'),
         ],
         'family_ratios': {
+            'source_hex':    (0.0, 1.0, 1.0),
             'dark_border':   (0, 1.00, 0.45),
             'hover_light':   (0, 0.50, 1.00),
             'hide_gold':     (-50, 1.00, 1.00),
@@ -778,6 +938,50 @@ THEME_PRESETS = {
             'selection_bg':  (0, 1.00, SELECTION_BRIGHTNESS),
         },
         'assets': FLAT_REMIX_ASSETS,
+    },
+
+    'mint': {
+        'path': 'template-theme-presets/mint',
+        'source_hex': '1f9ede',
+        'rebrand': ['Mint-Y-Dark-Aqua', 'Mint-Y'],
+        'colors': [
+            # --- Main accent ---
+            ('1f9ede', 'source_hex'),
+            ('1f9ede', 'hex'),
+
+            # --- Derived colors ---
+            ('1c8ec8', 'hover_active'),
+            ('197eb1', 'entry_border'),
+            ('166e9b', 'entry_border_dark'),
+            ('1d91cc', 'entry_border_alt'),
+
+            # --- Window buttons ---
+            ('135e84', 'close_active'),
+            ('12587b', 'close_active_dark'),
+            ('cc241d', 'hex'),
+            ('d79921', 'hide_gold'),
+            ('98971a', 'maximize_blue'),
+
+            # --- Tooltip background (RGB only, no hex) ---
+            ('29, 150, 211', 'tooltip_bg_rgb'),
+
+            # --- Selection background ---
+            ('999777', 'selection_bg'),
+        ],
+        'family_ratios': {
+            'source_hex':        (0.0, 1.0, 1.0),
+            'hover_active':      (0, 0.95, 0.92),
+            'entry_border':      (0, 0.90, 0.85),
+            'entry_border_dark': (0, 0.85, 0.80),
+            'entry_border_alt':  (0, 0.92, 0.88),
+            'close_active':      (0, 1.0, 0.80),
+            'close_active_dark': (0, 1.0, 0.75),
+            'tooltip_bg':        (0, 1.0, 0.75),
+            'maximize_blue':     (-25, 1.00, 1.00),
+            'hide_gold':         (-50, 1.00, 1.00),
+            'selection_bg':      (0, 1.00, SELECTION_BRIGHTNESS),
+        },
+        'assets': MINT_ASSETS,
     },
 }
 
@@ -804,6 +1008,12 @@ SVG_TEMPLATES = {
     <mask id="f"><rect x="15" y="15" width="70" height="70" rx="15" ry="15" fill="white"/><path d="M 23 68 L 32 36 C 33 32 35 32 36 36 L 41 58 C 42 62 44 62 45 58 L 49 41 C 50 37 52 37 53 41 L 58 58 C 59 62 61 62 62 58 L 65 39 C 66 32 79 32 79 44 C 79 49 76 51 73 51" fill="none" stroke="black" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/></mask>
   </defs>
   <rect x="15" y="15" width="70" height="70" rx="15" ry="15" fill="{{COLOR}}" mask="url(#f)"/>
+</svg>''',
+    
+    'awp-firma': '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="15 15 70 70" width="512" height="512">
+  <rect x="10" y="10" width="80" height="80" rx="22" fill="none" />
+  <path d="M 23 68 L 32 36 C 33 32 35 32 36 36 L 41 58 C 42 62 44 62 45 58 L 49 41 C 50 37 52 37 53 41 L 58 58 C 59 62 61 62 62 58 L 65 39 C 66 32 79 32 79 44 C 79 49 76 51 73 51" fill="none" stroke="{{COLOR}}" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" />
 </svg>''',
     
     'debian': '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>

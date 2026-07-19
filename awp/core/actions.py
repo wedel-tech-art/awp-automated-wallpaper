@@ -143,3 +143,40 @@ def run_awp_start(preset_name: str, awp_dir: str = None) -> bool:
     except Exception as e:
         _printer.error(f"Failed to run awp_start.sh: {e}", backend="actions")
         return False
+
+# =============================================================================
+# SYSTEM ACTIONS
+# =============================================================================
+
+def x11_blanking(timeout_seconds: int):
+    """Universal X11 screen blanking control via xset."""
+    try:
+        if timeout_seconds == 0:
+            subprocess.run(["xset", "s", "off", "-dpms"], check=False)
+            _printer.info(f"Screen blanking: DISABLED", backend="actions")
+        else:
+            subprocess.run(["xset", "s", str(timeout_seconds)], check=False)
+            subprocess.run(["xset", "+dpms", "dpms", str(timeout_seconds), str(timeout_seconds), str(timeout_seconds)], check=False)
+            _printer.info(f"Screen blanking: {timeout_seconds}s", backend="actions")
+    except Exception as e:
+        _printer.error(f"Blanking Error: {e}", backend="actions")
+        
+# =============================================================================
+# RUNTIME STATE
+# =============================================================================
+
+def get_preset_from_shm():
+    """
+    Read the current preset name from RAM-based session state.
+    
+    Returns:
+        str: Preset name, or None if not found
+    """
+    shm_path = "/dev/shm/awp_active_preset"
+    if os.path.exists(shm_path):
+        try:
+            with open(shm_path, 'r') as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return None

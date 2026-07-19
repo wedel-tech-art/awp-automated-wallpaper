@@ -10,12 +10,12 @@
 [Desktop Entry]
 Type=X-GNOME-Metatheme
 Name=Flat-Remix-GTK-Blue-Darkest
-Comment=AWP Unified Engine • Flat Remix Darkest Solid (GTK3) x Normalised 203° Assets (GTK2)
+Comment=AWP Unified Engine • Flat-Remix-GTK-Blue-Darkest (GTK3) x Assets (GTK2)
 Encoding=UTF-8
 
 [X-GNOME-Metatheme]
 GtkTheme=Flat-Remix-GTK-Blue-Darkest
-MetacityTheme=Flat-Remix-Darkest-Metacity
-IconTheme=Flat-Remix-Blue-Darkest
+MetacityTheme=Flat-Remix-GTK-Blue-Darkest
+IconTheme=Adwaita
 CursorTheme=Adwaita
 ButtonLayout=:minimize,maximize,close

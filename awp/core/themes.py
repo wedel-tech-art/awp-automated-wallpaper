@@ -9,15 +9,36 @@ import os
 import shutil
 import subprocess
 import colorsys
-from core.constants import ICON_PRESETS, THEME_PRESETS, CURSOR_PRESETS, TARGET_ASSETS, ICON_SIZES, ICON_REGISTRY, AWP_DIR
+from core.constants import (
+    ICON_PRESETS,
+    THEME_PRESETS,
+    CURSOR_PRESETS,
+    TARGET_ASSETS,
+    ICON_SIZES,
+    ICON_REGISTRY,
+    AWP_DIR,
+    SVG_TEMPLATES
+)
 from core.utils import (
-    hex_to_hsv, 
-    hsv_to_hex, 
-    apply_hue_shift, 
-    apply_sat_val, 
+    # HSV conversions (for SVG replacements)
+    hex_to_hsv,
+    hsv_to_hex,
+    apply_hue_shift,
+    apply_sat_val,
     calculate_family_color,
     hex_to_rgb,
-    rgb_to_hex
+    rgb_to_hex,
+    
+    # HLS conversions (for modulate)
+    hex_to_hls,
+    hls_to_hex,
+    
+    # Math utilities
+    signed_hue_diff,
+    clamp,
+    
+    # Config helpers
+    get_source_hex_from_config
 )
 from core.printer import get_printer
 _printer = get_printer()
@@ -25,154 +46,231 @@ _printer = get_printer()
 
 def _build_gtk_replacements(config, clean_hex, new_rgb):
     """
-    GTK themes: includes trap zone logic for XFWM buttons.
-    Called by bake_awp_theme().
+    Build color replacement tuples for GTK theme files.
+
+    Unified approach:
+        - Hex colors: auto-generate both HEX and RGB replacements
+        - RGB colors: replace only the 3 RGB values (alpha preserved automatically)
+        - RGB with family_ratio: uses calculated color from family_ratios
+        - Derived colors: auto-generate both HEX and RGB replacements
+
+    Args:
+        config: Theme preset configuration dictionary
+        clean_hex: Target hex color without '#' (e.g., 'bebe00')
+        new_rgb: Target RGB values as a string (e.g., '190, 190, 0')
+
+    Returns:
+        list: List of (old_string, new_string) replacement tuples
     """
     replacements = []
     family = {}
-    
+
+    # --- Calculate derived family colors ---
     if config.get('family_ratios'):
         h, _, _ = hex_to_hsv(clean_hex)
         hue_degrees = h * 360
-        
+
         for name, (hue_shift_deg, sat_ratio, val_ratio) in config['family_ratios'].items():
-            # GTK trap zone (only for non-zero hue shifts)
-            if hue_shift_deg != 0 and 220.0 <= hue_degrees <= 310.0:
-                hue_shift_deg = -hue_shift_deg * 1.4
-            
-            family[name] = calculate_family_color(clean_hex, sat_ratio, val_ratio, hue_shift_deg)
-            r, g, b = hex_to_rgb(family[name])
-            family[f"{name}_rgb"] = f"{r}, {g}, {b}"
-    
-    # Build replacements
+            if name == 'source_hex':
+                family[name] = clean_hex
+            else:
+                # GTK trap zone for XFWM buttons on purple/blue hues
+                if hue_shift_deg != 0 and 220.0 <= hue_degrees <= 310.0:
+                    hue_shift_deg = -hue_shift_deg * 1.4
+                family[name] = calculate_family_color(
+                    clean_hex, sat_ratio, val_ratio, hue_shift_deg
+                )
+
+    # --- Build replacements ---
     for old, kind in config['colors']:
         if kind == 'hex':
+            # --- Replace HEX ---
             replacements.append((old, clean_hex))
-        elif kind == 'rgb':
-            replacements.append((old, new_rgb))
+
+            # --- Auto-generate RGB (3 values only) ---
+            r_old, g_old, b_old = int(old[0:2], 16), int(old[2:4], 16), int(old[4:6], 16)
+            replacements.append((f"{r_old}, {g_old}, {b_old}", new_rgb))
+
+        elif kind == 'source_hex':
+            # --- source_hex maps directly to clean_hex ---
+            replacements.append((old, clean_hex))
+
+        elif kind == 'rgb' or kind.endswith('_rgb'):
+            # --- RGB with optional family_ratio ---
+            base_name = kind.replace('_rgb', '') if kind.endswith('_rgb') else kind
+            if base_name in family:
+                # Use calculated RGB from family_ratios
+                r_new, g_new, b_new = hex_to_rgb(family[base_name])
+                replacements.append((old, f"{r_new}, {g_new}, {b_new}"))
+            else:
+                # Fallback: use main RGB
+                replacements.append((old, new_rgb))
+
         elif kind in family:
+            # --- Derived hex color ---
             replacements.append((old, family[kind]))
+
+            # --- Auto-generate RGB for derived color ---
+            r_old, g_old, b_old = int(old[0:2], 16), int(old[2:4], 16), int(old[4:6], 16)
+            r_new, g_new, b_new = hex_to_rgb(family[kind])
+            replacements.append((f"{r_old}, {g_old}, {b_old}", f"{r_new}, {g_new}, {b_new}"))
+
         else:
-            _printer.warning(f"Color kind '{kind}' not found in derived family ratios.", backend="themes")
-    
+            _printer.warning(
+                f"Color kind '{kind}' not found in family ratios.",
+                backend="themes"
+            )
+
     return replacements
 
 
-def _modulate_assets(config, target_path, clean_hex):
+def _modulate_gtk_assets(config, target_path, clean_hex, source_hex=None):
     """
-    Studio-Mastered PNG modulation engine.
-    Phase-2 Closed Loop Feedback Control Edition (Universal Sobriety).
-    Bakes a 1x1 test pixel in memory to measure and counteract non-linear color drift,
-    ensuring consistent, matte, and premium GTK2 widgets across all presets.
+    Modulate GTK PNG assets using PIL with dynamic fuzz.
+    Elegant, no halo, preserves whites and insensitive variants.
     """
-    if not config.get('assets'):
+    from PIL import Image
+
+    if not config or not config.get('assets'):
         return
 
-    # --- FASE 0: PARSE ABSOLUTE TARGET VALUES ---
-    r_int, g_int, b_int = int(clean_hex[0:2], 16), int(clean_hex[2:4], 16), int(clean_hex[4:6], 16)
-    target_hls = colorsys.rgb_to_hls(r_int/255.0, g_int/255.0, b_int/255.0)
-    target_hue_deg = target_hls[0] * 360
-
-    source_hue = 203  # Fixed baseline for Breeze-mapped templates
-
-    # First-pass mathematical prediction
-    hue_diff = target_hue_deg - source_hue
-    if hue_diff < 0: 
-        hue_diff += 360
-    base_im_hue = round(100 + (hue_diff / 1.7))
-    if base_im_hue > 200: 
-        base_im_hue -= 200
-
-    # Base factor calculated from distance on the color wheel
-    hue_dist = min(abs(target_hue_deg - source_hue), 360 - abs(target_hue_deg - source_hue))
-    factor = min(hue_dist / 140.0, 1.0)
-    
-    base_brightness = round(100 - (20 * factor))
-    base_saturation = round(100 + (30 * factor))
-
-    # --- FASE 1: THE FEEDBACK LOOP (Virtual Pixel Probe) ---
-    probe_source_hex = "#3daee9"  # Master Breeze Blue
-    probe_file = os.path.join("/dev/shm", f"awp_probe_{clean_hex}.png")
-    
-    try:
-        # Create the test pixel in RAM
-        subprocess.run(["convert", "-size", "1x1", f"xc:{probe_source_hex}", probe_file], check=True)
-        # Apply the theoretical modulation to the test pixel
-        subprocess.run(["mogrify", "-modulate", f"{base_brightness},{base_saturation},{base_im_hue}", probe_file], check=True)
-        
-        # Read back the EXACT Hex code that ImageMagick generated
-        result_hex = subprocess.check_output([
-            "convert", probe_file, "-format", "%[hex:p{0,0}]", "info:"
-        ]).decode("utf-8").strip().lower()
-        
-        # Clean up the virtual pixel immediately
-        if os.path.exists(probe_file): 
-            os.remove(probe_file)
-        
-        # Convert the measured result to HLS to analyze drift
-        pr, pg, pb = int(result_hex[0:2], 16)/255.0, int(result_hex[2:4], 16)/255.0, int(result_hex[4:6], 16)/255.0
-        measured_hls = colorsys.rgb_to_hls(pr, pg, pb)
-        measured_hue_deg = measured_hls[0] * 360
-
-        # --- FASE 2: REALITY-BASED CALIBRATION ("Sobriedad Universal") ---
-        hue_drift = target_hue_deg - measured_hue_deg
-        corrected_hue_diff = hue_diff + hue_drift
-        final_im_hue = round(100 + (corrected_hue_diff / 1.7))
-        if final_im_hue > 200: final_im_hue -= 200
-        if final_im_hue < 0: final_im_hue = 0
-
-        # Universal Elastic Compactor
-        final_brightness = base_brightness
-
-        if 30 <= measured_hue_deg <= 165:
-            # Zone Yellows / Greens
-            final_brightness = min(base_brightness, 80)
-            final_saturation = round(100 + (5 * factor))
-        elif 300 <= measured_hue_deg <= 350:
-            # Zone Fucsias / Magentas
-            final_brightness = min(base_brightness, 85)
-            final_saturation = round(100 + (15 * factor))
-        elif measured_hue_deg < 20 or measured_hue_deg > 355:
-            # --- SURGICAL RED ZONE TRIGGER ---
-            # Shifting to -10 to completely kill the remaining orange bleeding 
-            # specially in reds.
-            final_im_hue = max(0, final_im_hue - 8)
-            final_brightness = min(base_brightness, 85)
-            final_saturation = min(base_saturation, 110)
-        else:
-            # Rest (blues, purples)
-            final_saturation = round(100 + (25 * factor))
-
-    except Exception as e:
-        _printer.warning(f"Feedback probe failed ({e}). Falling back to linear equations.", backend="themes")
-        final_im_hue = base_im_hue
-        final_brightness = base_brightness
-        final_saturation = base_saturation
-        measured_hue_deg = target_hue_deg
+    if not source_hex:
+        source_hex = get_source_hex_from_config(config)
+        if not source_hex:
+            _printer.error("No source_hex found!", backend="themes")
+            return
 
     _printer.info(
-        f"Theme Feedback Loop: Target:{target_hue_deg:.1f}° -> Measured:{measured_hue_deg:.1f}° | "
-        f"Calibrated Params -> H:{final_im_hue} B:{final_brightness}% S:{final_saturation}%", 
+        f"Modulating GTK assets (PIL): #{source_hex} → #{clean_hex}",
         backend="themes"
     )
 
-    # --- FASE 3: RECURSIVE FILE SYSTEM EXECUTION ---
-    # Index the target paths dynamically using the elastic folder mapping matrix
-    filename_to_paths = {}
-    for root, dirs, files in os.walk(target_path):
-        for f in files:
-            filename_to_paths.setdefault(f, []).append(os.path.join(root, f))
+    src_r, src_g, src_b = hex_to_rgb(source_hex)
+    tgt_r, tgt_g, tgt_b = hex_to_rgb(clean_hex)
 
-    # Apply the audited, ultra-calibrated values exclusively over target targets
+    diff_r = tgt_r - src_r
+    diff_g = tgt_g - src_g
+    diff_b = tgt_b - src_b
+
+    # --- Dynamic Fuzz ---
+    min_fuzz = 30
+    max_fuzz = 300  # Elegant balance
+
+    filename_to_paths = {}
+    for root, _, files in os.walk(target_path):
+        for f in files:
+            if f in config['assets']:
+                filename_to_paths.setdefault(f, []).append(os.path.join(root, f))
+
+    success_count = 0
     for filename in config['assets']:
         if filename in filename_to_paths:
             for asset_file in filename_to_paths[filename]:
-                subprocess.run([
-                    "mogrify", "-modulate",
-                    f"{final_brightness},{final_saturation},{final_im_hue}",
-                    asset_file
-                ], check=True)
+                try:
+                    img = Image.open(asset_file).convert("RGBA")
+                    pixels = img.load()
+                    width, height = img.size
 
+                    for y in range(height):
+                        for x in range(width):
+                            r, g, b, a = pixels[x, y]
+                            if a == 0:
+                                continue
+
+                            dist = abs(r - src_r) + abs(g - src_g) + abs(b - src_b)
+
+                            if dist <= min_fuzz:
+                                new_r = r + diff_r
+                                new_g = g + diff_g
+                                new_b = b + diff_b
+
+                            elif dist <= max_fuzz:
+                                ratio = 1.0 - ((dist - min_fuzz) / (max_fuzz - min_fuzz))
+                                ratio = max(0, min(1, ratio))
+
+                                new_r = int(r + diff_r * ratio)
+                                new_g = int(g + diff_g * ratio)
+                                new_b = int(b + diff_b * ratio)
+
+                            else:
+                                continue
+
+                            new_r = max(0, min(255, new_r))
+                            new_g = max(0, min(255, new_g))
+                            new_b = max(0, min(255, new_b))
+
+                            pixels[x, y] = (new_r, new_g, new_b, a)
+
+                    img.save(asset_file, "PNG")
+                    success_count += 1
+
+                except Exception as e:
+                    _printer.warning(
+                        f"Failed to modulate {os.path.basename(asset_file)}: {e}",
+                        backend="themes"
+                    )
+
+    if success_count:
+        _printer.info(f"Modulated {success_count} GTK assets", backend="themes")
+
+
+def _modulate_icon_assets(png_manifest, template_path, shm_workspace, 
+                          clean_hex, source_hex):
+    """
+    Icon PNG modulation using selective color replacement.
+    """
+    modulate_assets = []
+    for folder_path, files in png_manifest["modulate"].items():
+        modulate_assets.extend(files)
+    
+    if not modulate_assets or not source_hex:
+        return
+
+    _printer.info(
+        f"Replacing color in icon assets: #{source_hex} → #{clean_hex}",
+        backend="themes"
+    )
+
+    file_map = {}
+    for root, _, files in os.walk(template_path):
+        for f in files:
+            if f in modulate_assets:
+                rel_path = os.path.relpath(root, template_path)
+                file_map.setdefault(f, []).append({
+                    'src': os.path.join(root, f),
+                    'rel_dir': rel_path
+                })
+
+    success_count = 0
+    for filename in modulate_assets:
+        if filename in file_map:
+            for entry in file_map[filename]:
+                dest_dir = os.path.join(shm_workspace, entry['rel_dir'])
+                dest_file = os.path.join(dest_dir, filename)
+                os.makedirs(dest_dir, exist_ok=True)
+                
+                try:
+                    subprocess.run([
+                        "convert", entry['src'],
+                        "-fuzz", "19%",
+                        "-fill", f"#{clean_hex}",
+                        "-opaque", f"#{source_hex}",
+                        "-strip", dest_file
+                    ], check=True, capture_output=True)
+                    success_count += 1
+                except subprocess.CalledProcessError as e:
+                    _printer.warning(
+                        f"Failed to replace color in {filename}: {e}",
+                        backend="themes"
+                    )
+    
+    if success_count:
+        _printer.info(f"Replaced color in {success_count} icon assets", backend="themes")
+
+
+# =============================================================================
+# BAKE FUNCTIONS
+# =============================================================================
 
 def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze', preset_name: str = None):
     """Dynamic Theme Synthesis Engine (AWP-G2) - Multi-Preset Edition"""
@@ -182,11 +280,14 @@ def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze', pre
     config = THEME_PRESETS[preset]
 
     clean_hex = hex_color.lstrip('#').lower()
+    
+    # Get source_hex from config
+    source_hex = get_source_hex_from_config(config)
+    
     theme_name = f"awp-gtk-{preset}-{clean_hex}"
     home = os.path.expanduser("~")
     template_path = os.path.join(home, "awp", config['path'])
     
-    # === CHANGE HERE ===
     if preset_name:
         # Per-preset path: ~/awp/presets/{preset_name}/themes/gtk/{theme_name}
         target_path = os.path.join(AWP_DIR, 'presets', preset_name, 'themes', 'gtk', theme_name)
@@ -234,7 +335,7 @@ def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze', pre
                     subprocess.run(["sed", "-i", f"s/{name}/{theme_name}/gI", index_file], check=True)
 
             # --- 5. Studio-Mastered PNG Modulation ---
-            _modulate_assets(config, target_path, clean_hex)
+            _modulate_gtk_assets(config, target_path, clean_hex, source_hex)
 
             # --- 6. Cleanup ---
             gres = os.path.join(target_path, "gtk-3.0/gtk.gresource")
@@ -330,6 +431,11 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint", preset
     png_manifest, svg_manifest, symlink_map = _build_manifests(ICON_REGISTRY, preset_name=preset)
 
     clean_hex = hex_color.lstrip('#').lower()
+    
+    # --- RGB values for SVG recolor ---
+    r_int = int(clean_hex[0:2], 16)
+    g_int = int(clean_hex[2:4], 16)
+    b_int = int(clean_hex[4:6], 16)
 
     # --- PRESET LOGIC: supports dict (svg-capable) or plain string ---
     preset_config = ICON_PRESETS.get(preset, "template-icon-presets/mint")
@@ -341,8 +447,7 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint", preset
     theme_name = f"awp-icons-{preset}-{clean_hex}"
     home = os.path.expanduser("~")
     template_path = os.path.join(home, "awp", template_folder)
-    
-    # === CHANGE HERE ===
+   
     if preset_name:
         # Per-preset path: ~/awp/presets/{preset_name}/themes/icons/{theme_name}
         target_path = os.path.join(AWP_DIR, 'presets', preset_name, 'themes', 'icons', theme_name)
@@ -454,25 +559,18 @@ def bake_awp_icon(hex_color: str, icon: str = None, preset: str = "mint", preset
             with open(os.path.join(target_path, "index.theme"), "w") as f:
                 f.write("\n".join(index_lines))
 
-            # --- STEP 2: Color Calculation (PNG modulation) ---
-            r_int, g_int, b_int = int(clean_hex[0:2], 16), int(clean_hex[2:4], 16), int(clean_hex[4:6], 16)
-            hls = colorsys.rgb_to_hls(r_int/255.0, g_int/255.0, b_int/255.0)
-            target_hue_deg = hls[0] * 360
-            hue_dist = min(abs(target_hue_deg - 262), 360 - abs(target_hue_deg - 262))
-            factor = min(hue_dist / 140.0, 1.0)
-            brightness, saturation = round(100 - (40 * factor)), round(100 + (60 * factor))
-            im_hue = round(100 + ((target_hue_deg - 262) / 1.8))
+            # --- STEP 2+3: Modulate PNG assets using icon-specific function ---
+            # Get source_hex from icon preset
+            icon_source_hex = get_source_hex_from_config(preset_config) if isinstance(preset_config, dict) else None
 
-            # --- STEP 3: Modulate PNG assets in RAM ---
-            for folder_path, files in png_manifest["modulate"].items():
-                for asset in files:
-                    src = os.path.join(template_path, asset)
-                    temp_dest = os.path.join(shm_workspace, asset)
-                    if os.path.exists(src):
-                        subprocess.run([
-                            "convert", src, "-modulate", f"{brightness},{saturation},{im_hue}",
-                            "-strip", temp_dest
-                        ], check=True)
+            if icon_source_hex:
+                _modulate_icon_assets(
+                    png_manifest=png_manifest,
+                    template_path=template_path,
+                    shm_workspace=shm_workspace,
+                    clean_hex=clean_hex,
+                    source_hex=icon_source_hex
+                )
 
             # --- STEP 3.5: SVG Recolor in RAM (svg-capable presets only) ---
             if has_svg:
@@ -595,7 +693,6 @@ def bake_awp_cursor(hex_color: str, icon: str = None, preset: str = "oxy", prese
     
     template_path = os.path.join(home, "awp", template_folder)
     
-    # === CHANGE HERE ===
     if preset_name:
         # Per-preset path: ~/awp/presets/{preset_name}/themes/cursors/{theme_name}
         target_path = os.path.join(AWP_DIR, 'presets', preset_name, 'themes', 'cursors', theme_name)
@@ -812,3 +909,104 @@ def clean_themes(theme_names: list = None):
                         pass
     
     return removed
+
+# =============================================================================
+# SVG ICON GENERATION & UTILITIES
+# =============================================================================
+
+def generate_icon_from_svg(hex_color, template_name='awp', size=512):
+    """
+    Generate a PNG icon from an SVG template using rsvg-convert.
+    
+    Args:
+        hex_color: Hex color string (e.g., '#b3004c')
+        template_name: SVG template name (default: 'awp')
+        size: Output size in pixels (default: 512)
+    
+    Returns:
+        Path to the generated PNG file, or None if failed
+    """
+    import tempfile
+    import time
+    
+    if not shutil.which('rsvg-convert'):
+        return None
+    
+    # Use /dev/shm for temp files (RAM disk) if available
+    if os.path.exists('/dev/shm'):
+        unique_id = f"awp_icon_{int(time.time())}_{os.getpid()}"
+        temp_dir = os.path.join('/dev/shm', unique_id)
+        os.makedirs(temp_dir, exist_ok=True)
+    else:
+        temp_dir = tempfile.mkdtemp(prefix='awp_icon_')
+    
+    png_path = os.path.join(temp_dir, 'folder.png')
+    
+    try:
+        svg_template = SVG_TEMPLATES.get(template_name, SVG_TEMPLATES.get('awp'))
+        svg_content = svg_template.replace('{{COLOR}}', hex_color)
+        
+        temp_svg = os.path.join(temp_dir, 'folder.svg')
+        with open(temp_svg, 'w') as f:
+            f.write(svg_content)
+        
+        cmd = ['rsvg-convert', '-w', str(size), '-h', str(size), '-o', png_path, temp_svg]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        if result.returncode != 0 or not os.path.exists(png_path):
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            return None
+        
+        return png_path
+        
+    except Exception:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        return None
+
+def cleanup_temp_icon(icon_path):
+    """
+    Clean up temporary icon files and directory.
+    
+    Args:
+        icon_path: Path to the temporary icon file
+    """
+    if not icon_path:
+        return
+    
+    temp_dir = os.path.dirname(icon_path)
+    try:
+        if os.path.exists(icon_path):
+            os.remove(icon_path)
+        svg_path = os.path.join(temp_dir, 'folder.svg')
+        if os.path.exists(svg_path):
+            os.remove(svg_path)
+        if os.path.exists(temp_dir) and not os.listdir(temp_dir):
+            os.rmdir(temp_dir)
+    except OSError:
+        pass
+
+def extract_preset_from_theme(theme_name, prefix):
+    """
+    Extract the preset name from a theme string.
+    
+    Examples:
+        "awp-gtk-breeze-ff0000" → "breeze"
+        "awp-icons-mint-ff0000" → "mint"
+        "awp-cursor-oxy-ff0000" → "oxy"
+    
+    Args:
+        theme_name: The full theme name (e.g., 'awp-gtk-breeze-ff0000')
+        prefix: The prefix to remove (e.g., 'awp-gtk-')
+    
+    Returns:
+        The preset name (e.g., 'breeze'), or None if not found
+    """
+    if not theme_name:
+        return None
+    
+    if theme_name.startswith(prefix):
+        theme_name = theme_name.replace(prefix, '')
+    
+    # Remove color suffix: "breeze-ff0000" → "breeze"
+    parts = theme_name.rsplit('-', 1)
+    return parts[0] if parts else theme_name

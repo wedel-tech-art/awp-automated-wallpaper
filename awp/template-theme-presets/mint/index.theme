@@ -1,0 +1,21 @@
+# ==============================================================================
+# AWP HYBRID ARCHITECTURE MANIFEST
+# ==============================================================================
+# BASE FRAMEWORK: Mint-Y-Dark-Aqua from LMDE 7.0
+# GTK+ 3.0 / 4.0: Tweaked SVG Layouts (Dynamic Color Modulation Support)
+# GTK+ 2.0 (LEGACY): Integrated Mint-Style Control Assets (PNG Matrix)
+# TARGET COMPATIBILITY: XFCE 4.18+ / Desktop Framework Unification
+# ==============================================================================
+
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Mint-Y-Dark-Aqua
+Comment=AWP Hybrid Engine • Mint-Y-Dark-Aqua Transformed SVG (GTK2/3/4) Controls
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=Mint-Y-Dark-Aqua
+MetacityTheme=Mint-Y
+IconTheme=Adwaita
+CursorTheme=Bibata-Modern-Classic
+ButtonLayout=:minimize,maximize,close
