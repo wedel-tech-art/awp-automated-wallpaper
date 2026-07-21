@@ -52,7 +52,7 @@ if [ -n "$PRESET_NAME" ]; then
         ln -sfn "$TARGET_INI" "$CONFIG_FILE"
 
         # ============================================================
-        # ENFORCE ICON PATHS TO LOGOS/ (Only ws{N}.png)
+        # 1. ENFORCE ICON PATHS TO LOGOS
         # ============================================================
         echo -e "${CLR_CYAN}[ICON] Ensuring icon paths point to logos/...${CLR_RESET}"
 
@@ -73,8 +73,19 @@ if [ -n "$PRESET_NAME" ]; then
 
         echo -e "${CLR_GREEN}[ICON] Icon paths enforced to logos/ ($NUM_WS workspaces)${CLR_RESET}"
         
+        # ============================================================
+        # 2. CREATE ICON SYMLINKS
+        # ============================================================
+        echo -e "${CLR_CYAN}[SYMLINK] Creating icon symlinks in logos/...${CLR_RESET}"
+        
+        rm -f "$LOGOS_DIR/ws"*.png
+        for icon in "$TARGET_PRESET"/ws*.png; do
+            [ -e "$icon" ] && ln -sfn "$icon" "$LOGOS_DIR/$(basename "$icon")"
+        done
+        echo -e "${CLR_GREEN}[SUCCESS] Icon symlinks updated.${CLR_RESET}"
+        
         # ======================================================================
-        # THEME SYMLINKING
+        # 3. THEME SYMLINKING
         # ======================================================================
         echo -e "${CLR_CYAN}[THEMES] Linking themes for $PRESET_NAME...${CLR_RESET}"
         
