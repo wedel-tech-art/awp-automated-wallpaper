@@ -1780,7 +1780,7 @@ menu menuitem {
 }
 
 menu menuitem:hover {
-  background-color: alpha(currentColor, 0.08);
+  background-color: #b35a12;
 }
 
 menu menuitem:active {
@@ -2416,7 +2416,7 @@ check:checked:hover, check:indeterminate:hover,
 radio:checked:hover,
 radio:indeterminate:hover {
   box-shadow: 0 0 0 6px rgba(254, 128, 25, 0.15);
-  background-color: #fe9c4c;
+  background-color: #fe8019;
 }
 
 check:checked:active, check:indeterminate:active,
@@ -8230,7 +8230,7 @@ menubar.-vala-panel-background > menuitem:disabled {
 
 .nemo-window .nemo-window-pane widget.entry {
   border-radius: 6px;
-  background-color: rgba(251, 241, 199, 0.04);
+  background-color: #b35a12;
 }
 
 .nemo-window .toolbar {

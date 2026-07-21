@@ -54,7 +54,7 @@ popover.background .menuitem.button.flat:selected, .csd treeview.view:selected, 
 
 .nemo-window .nemo-window-pane widget.entry:selected, window.background.csd evview.view.content-view:selected, window.background.csd evview.view.content-view:selected:backdrop, .nautilus-window.background.csd notebook widget.view:selected, entry selection, textview text selection:focus, textview text selection, widget.view:selected, .view:selected {
   color: #fbf1c7;
-  background-color: #fe8019;
+  background-color: #b35a12;
 }
 
 .linked:not(.vertical) > button, .linked:not(.vertical) > entry {
@@ -1780,7 +1780,7 @@ menu menuitem {
 }
 
 menu menuitem:hover {
-  background-color: alpha(currentColor, 0.08);
+  background-color: #b35a12;
 }
 
 menu menuitem:active {
@@ -2416,7 +2416,7 @@ check:checked:hover, check:indeterminate:hover,
 radio:checked:hover,
 radio:indeterminate:hover {
   box-shadow: 0 0 0 6px rgba(254, 128, 25, 0.15);
-  background-color: #fe9c4c;
+  background-color: #fe8019;
 }
 
 check:checked:active, check:indeterminate:active,
