@@ -1,0 +1,1242 @@
+#!/usr/bin/env python3
+"""
+AWP - Automated Wallpaper Program (Qt6 Version)
+Configuration Dashboard - Pure Configurator Edition
+
+DAB is now a PURE configuration tool:
+- Configure wallpaper folders, timing, scaling
+- Configure system themes (GTK, Icons, Cursors, Desktop, WM)
+- Configure screen blanking
+- Icon preview with tooltip info (read-only, from INI)
+- NO baking, NO color detection, NO icon copying, NO icon saving
+
+All theme baking is handled by Baker.
+"""
+
+import os
+import sys
+import shutil
+import json
+
+# QT6 IMPORTS
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+    QPushButton, QFileDialog, QComboBox, QMessageBox, QTabWidget, QCheckBox,
+    QFrame, QGroupBox, QSizePolicy
+)
+from PyQt6.QtCore import Qt, QStandardPaths
+from PyQt6.QtGui import QPixmap
+
+# OTHER IMPORTS
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from core.constants import (
+    AWP_DIR, CONFIG_PATH, ICON_DIR, DEFAULT_ICON, THEME_CAPABILITIES,
+    PRESETS_DIR, SHM_ACTIVE_PRESET, AVAILABLE_PRESETS, RUNTIME_STATE_PATH
+)
+from core.config import AWPConfig
+from core.themes import get_available_themes
+from core.utils import hex_to_hsv
+from backends import BACKEND_NAMES
+from core.printer import get_printer
+
+# Initialize printer for dashboard
+_printer = get_printer()
+
+BASE_FOLDER = QStandardPaths.writableLocation(
+    QStandardPaths.StandardLocation.HomeLocation
+)
+
+# =============================================================================
+# SHARED STYLES
+# =============================================================================
+
+GROUPBOX_STYLE = """
+    QGroupBox {
+        color: #ccc;
+        font-weight: bold;
+        font-size: 12px;
+        border: 1px solid #555;
+        border-radius: 8px;
+        margin-top: 8px;
+        padding-top: 6px;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 15px;
+        padding: 0 8px 0 8px;
+    }
+"""
+
+# =============================================================================
+# WORKSPACE CONFIGURATION TAB
+# =============================================================================
+
+class WorkspaceTab(QWidget):
+    """
+    Configuration tab for individual workspace settings.
+    
+    Provides interface for configuring:
+    - Wallpaper folder and rotation settings
+    - Theme customization per workspace
+    - System theme selection (no baking)
+    - Icon preview with tooltip info (read-only)
+    
+    Attributes:
+        index (int): Workspace number (1-based)
+        parent_window (AWPDashboard): Reference to main dashboard window
+    """
+    
+    def __init__(self, index, parent_window):
+        """
+        Initialize workspace configuration tab.
+        
+        Args:
+            index (int): Workspace number (1-based)
+            parent_window (AWPDashboard): Parent dashboard instance
+        """
+        super().__init__()
+        self.index = index
+        self.parent_window = parent_window
+        self.current_ws = 1
+        self.ws_cache = {}
+        self.is_loading = False
+        
+        layout = QVBoxLayout()
+        layout.setSpacing(8)
+
+        # --- Helper to create consistent combo boxes ---
+        def create_theme_like_combo(items):
+            """Create standardized combo box for theme-like options."""
+            combo = QComboBox()
+            combo.setFixedWidth(290)
+            combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            combo.setEditable(True)
+            combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+            for text, data in items:
+                combo.addItem(text, data)
+            return combo
+
+        # ============================================================
+        # 1. WORKSPACE IDENTITY GROUP
+        # ============================================================
+        identity_group = QGroupBox(" Workspace Identity ")
+        identity_group.setStyleSheet(GROUPBOX_STYLE)
+        identity_layout = QVBoxLayout()
+        identity_layout.setSpacing(8)
+        identity_layout.setContentsMargins(15, 10, 15, 10)
+
+        # Folder selection row
+        row = QHBoxLayout()
+        row.setSpacing(10)
+        lbl = QLabel("Folder:")
+        lbl.setFixedWidth(60)
+        lbl.setToolTip("Select folder containing wallpaper images for this workspace")
+        row.addWidget(lbl)
+        self.folder_edit = QLineEdit()
+        self.folder_edit.setMaximumWidth(300)
+        self.folder_edit.setPlaceholderText(f"{BASE_FOLDER}/...")
+        self.folder_edit.setToolTip("Path to folder containing JPEG/PNG wallpapers")
+        row.addWidget(self.folder_edit)
+        self.folder_btn = QPushButton("Browse")
+        self.folder_btn.setFixedWidth(80)
+        self.folder_btn.setToolTip("Browse for wallpaper folder")
+        self.folder_btn.clicked.connect(self.on_browse_folder)
+        row.addWidget(self.folder_btn)
+        row.addStretch(1)
+        identity_layout.addLayout(row)
+
+        # Icon path (read-only, shows logos/ symlink)
+        row = QHBoxLayout()
+        row.setSpacing(10)
+        lbl = QLabel("Icon:")
+        lbl.setFixedWidth(60)
+        lbl.setToolTip("Workspace icon (read-only - managed by AWP)")
+        row.addWidget(lbl)
+
+        self.icon_edit = QLineEdit()
+        self.icon_edit.setMinimumWidth(232)
+        self.icon_edit.setPlaceholderText("Icon path...")
+        self.icon_edit.setToolTip("Icon path (read-only)")
+        self.icon_edit.setReadOnly(True)
+        row.addWidget(self.icon_edit)
+
+        # Small info label showing the actual preset path
+        self.icon_info = QLabel()
+        self.icon_info.setStyleSheet("color: #666; font-size: 10px;")
+        self.icon_info.setMaximumWidth(120)
+        row.addWidget(self.icon_info)
+
+        row.addStretch(1)
+        identity_layout.addLayout(row)
+        
+        # Icon Color (read-only, shows the current accent color)
+        row = QHBoxLayout()
+        row.setSpacing(10)
+        lbl = QLabel("Color:")
+        lbl.setFixedWidth(60)
+        lbl.setToolTip("Workspace accent color (read-only - managed by Baker)")
+        row.addWidget(lbl)
+
+        self.color_edit = QLineEdit()
+        self.color_edit.setMinimumWidth(100)
+        self.color_edit.setPlaceholderText("#ffffff")
+        self.color_edit.setToolTip("Accent color (read-only)")
+        self.color_edit.setReadOnly(True)
+        row.addWidget(self.color_edit)
+
+        # Small color preview
+        self.color_preview = QLabel()
+        self.color_preview.setFixedSize(24, 24)
+        self.color_preview.setStyleSheet("background-color: #888; border: 1px solid #555; border-radius: 4px;")
+        row.addWidget(self.color_preview)
+
+        row.addStretch(1)
+        identity_layout.addLayout(row)
+
+        identity_group.setLayout(identity_layout)
+        layout.addWidget(identity_group)
+
+        # --- Icon Preview ---
+        # Create the icon preview (floating over the identity group)
+        self.icon_preview = QLabel(self)
+        self.icon_preview.setFixedSize(56, 56)
+        self.icon_preview.setToolTip("Loading identity...")
+        self.icon_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.icon_preview.setScaledContents(True)
+        self.icon_preview.setText("🎨")  # Placeholder
+
+        # Position it with x,y coordinates (adjust these values)
+        ICON_X = 337  # Horizontal position
+        ICON_Y = 36   # Vertical position
+        self.icon_preview.move(ICON_X, ICON_Y)
+        self.icon_preview.raise_()  # Bring to front
+
+        # --- Icon Info Text (below the preview) ---
+        self.icon_info_text = QLabel(self)
+        self.icon_info_text.setFixedSize(165, 63)
+        self.icon_info_text.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.icon_info_text.setWordWrap(True)
+        self.icon_info_text.setText("Hover over icon for info")
+
+        # Position it below the icon preview
+        ICON_INFO_X = 402
+        ICON_INFO_Y = 33  # 65px (icon height) + 5px gap
+        self.icon_info_text.move(ICON_INFO_X, ICON_INFO_Y)
+        self.icon_info_text.raise_()
+
+        # ============================================================
+        # 2. WORKSPACE SETTINGS GROUP
+        # ============================================================
+        behavior_group = QGroupBox(" Workspace Settings ")
+        behavior_group.setStyleSheet(GROUPBOX_STYLE)
+        behavior_layout = QVBoxLayout()
+        behavior_layout.setSpacing(8)
+        behavior_layout.setContentsMargins(15, 10, 15, 10)
+
+        # Create behavior combo boxes with tooltips
+        self.timing_combo = create_theme_like_combo([
+            ("30 seconds", "30s"), ("1 minute", "1m"), ("5 minutes", "5m"),
+            ("10 minutes", "10m"), ("30 minutes", "30m"), ("1 hour", "1h"),
+            ("24 hours", "24h")
+        ])
+        self.timing_combo.setToolTip("How often to rotate wallpapers automatically")
+
+        self.mode_combo = create_theme_like_combo([
+            ("Random", "random"), ("Sequential", "sequential")
+        ])
+        self.mode_combo.setToolTip("Random: random order each time\nSequential: fixed order through wallpapers")
+        self.mode_combo.currentTextChanged.connect(self.on_mode_changed)
+
+        self.order_combo = create_theme_like_combo([
+            ("A-Z (Alphabetical)", "name_az"), ("Z-A (Reverse)", "name_za"),
+            ("Oldest First", "name_old"), ("Newest First", "name_new")
+        ])
+        self.order_combo.setToolTip("Sort order for sequential mode wallpapers")
+
+        self.scaling_combo = create_theme_like_combo([
+            ("Centered", "centered"), ("Scaled", "scaled"), ("Zoomed", "zoomed")
+        ])
+        self.scaling_combo.setToolTip("How wallpapers fit the screen\nCentered: original size\nScaled: fit to screen\nZoomed: fill screen (cropped)")
+
+        # Add behavior rows with labels and tooltips
+        behavior_configs = [
+            ("Timing:", self.timing_combo, "Wallpaper rotation interval"),
+            ("Mode:", self.mode_combo, "Rotation pattern behavior"),
+            ("Order:", self.order_combo, "Sorting method for sequential mode"),
+            ("Scaling:", self.scaling_combo, "Wallpaper display style")
+        ]
+        
+        for lbl_text, combo, tooltip in behavior_configs:
+            row = QHBoxLayout()
+            row.setSpacing(5)
+            lbl = QLabel(lbl_text)
+            lbl.setFixedWidth(120)
+            lbl.setToolTip(tooltip)
+            row.addWidget(lbl)
+            row.addWidget(combo)
+            row.addStretch(1)
+            behavior_layout.addLayout(row)
+
+        behavior_group.setLayout(behavior_layout)
+        layout.addWidget(behavior_group)
+
+        # ============================================================
+        # 3. THEME SETTINGS GROUP
+        # ============================================================
+        theme_group = QGroupBox(" Theme Settings ")
+        theme_group.setStyleSheet(GROUPBOX_STYLE)
+        theme_layout = QVBoxLayout()
+        theme_layout.setSpacing(8)
+        theme_layout.setContentsMargins(15, 10, 15, 10)
+
+        self.theme_controls = {}
+        
+        theme_settings = [
+            ("Icon Theme", "icon_theme", "icon_themes", "Desktop and application icons"),
+            ("GTK Theme", "gtk_theme", "gtk_themes", "Application window appearance"),
+            ("Cursor Theme", "cursor_theme", "cursor_themes", "Mouse cursor style"),
+            ("Desktop Theme", "desktop_theme", "desktop_themes", "Cinnamon desktop panels and widgets"),
+            ("Window Theme", "wm_theme", "wm_themes", "Window borders and controls")
+        ]
+        
+        for label, key, theme_type, tooltip in theme_settings:
+            row = QHBoxLayout()
+            row.setSpacing(5)
+            lbl = QLabel(f"{label}:")
+            lbl.setFixedWidth(120)
+            lbl.setToolTip(tooltip)
+            row.addWidget(lbl)
+            
+            combo = create_theme_like_combo([("(Not set)", "")])
+            combo.setToolTip(f"Select {label.lower()} for this workspace")
+
+            row.addWidget(combo)
+            row.addStretch(1)
+            self.theme_controls[key] = combo
+            theme_layout.addLayout(row)
+
+        theme_group.setLayout(theme_layout)
+        layout.addWidget(theme_group)
+
+        layout.addStretch()
+        self.setLayout(layout)
+        self.update_theme_availability()
+
+    def load_all_workspaces(self):
+        """Load ALL workspaces from INI into cache at startup."""
+        if self.is_loading:
+            return
+        self.is_loading = True
+        
+        num_workspaces = self.parent_window.config.workspaces_count
+        for ws_num in range(num_workspaces):
+            ws_config = self.parent_window.config.get_workspace_config(ws_num)
+            self.ws_cache[ws_num + 1] = ws_config  # 1-based key
+        _printer.info(f"Loaded {num_workspaces} workspaces into cache", backend="dab")
+    
+        self.is_loading = False 
+           
+    def _apply_config(self, ws_config):
+        """Apply configuration to UI widgets."""
+        # Basic settings
+        self.folder_edit.setText(ws_config['folder'])
+        self.icon_edit.setText(ws_config['icon'])
+        
+        # Color
+        color_val = ws_config.get('icon_color', '')
+        self.color_edit.setText(color_val)
+        if color_val and color_val.startswith('#'):
+            self.color_preview.setStyleSheet(f"background-color: {color_val}; border: 1px solid #555; border-radius: 4px;")
+        else:
+            self.color_preview.setStyleSheet("background-color: #888; border: 1px solid #555; border-radius: 4px;")
+        
+        # Timing
+        timing = ws_config['timing']
+        for i in range(self.timing_combo.count()):
+            if self.timing_combo.itemData(i) == timing:
+                self.timing_combo.setCurrentIndex(i)
+                break
+        else:
+            self.timing_combo.setCurrentText("5 minutes")
+        
+        # Mode and order
+        mode = ws_config['mode']
+        self.mode_combo.setCurrentText(mode.title())
+        
+        if mode == "random":
+            found_n = False
+            for i in range(self.order_combo.count()):
+                if self.order_combo.itemData(i) == "n":
+                    found_n = True
+                    self.order_combo.setCurrentIndex(i)
+                    break
+            if not found_n:
+                self.order_combo.addItem("Random (n)", "n")
+                self.order_combo.setCurrentIndex(self.order_combo.count() - 1)
+            self.order_combo.setEnabled(False)
+        else:
+            order = ws_config['order']
+            for i in range(self.order_combo.count()):
+                if self.order_combo.itemData(i) == order:
+                    self.order_combo.setCurrentIndex(i)
+                    break
+            self.order_combo.setEnabled(True)
+        
+        # Scaling
+        scaling = ws_config['scaling']
+        for i in range(self.scaling_combo.count()):
+            if self.scaling_combo.itemData(i) == scaling:
+                self.scaling_combo.setCurrentIndex(i)
+                break
+        
+        # Theme settings
+        for key, combo in self.theme_controls.items():
+            theme_value = ws_config.get(key, '')
+            if theme_value:
+                found = False
+                for i in range(combo.count()):
+                    if combo.itemText(i) == theme_value:
+                        combo.setCurrentIndex(i)
+                        found = True
+                        break
+                if not found:
+                    combo.addItem(theme_value)
+                    combo.setCurrentText(theme_value)
+            else:
+                combo.setCurrentIndex(0)  # "(Not set)"
+        
+        self.update_theme_availability()
+        self.update_icon_preview()
+    
+    def update_theme_availability(self):
+        """Update theme dropdown availability based on current DE/WM."""
+        de = self.parent_window.get_current_de().lower()
+        
+        # Get capabilities for this DE, fallback to generic
+        caps = THEME_CAPABILITIES.get(de, THEME_CAPABILITIES['generic'])
+        
+        # Window Theme
+        wm_combo = self.theme_controls.get('wm_theme')
+        if wm_combo:
+            wm_combo.setEnabled(caps['has_wm_theme'])
+            if caps['has_wm_theme']:
+                wm_combo.setToolTip(f"Select window borders/decorations for {de.upper()}")
+            else:
+                wm_combo.setToolTip(f"Window borders integrated into GTK theme")
+
+        # Desktop Theme
+        dt_combo = self.theme_controls.get('desktop_theme')
+        if dt_combo:
+            dt_combo.setEnabled(caps['has_desktop_theme'])
+            if caps['has_desktop_theme']:
+                dt_combo.setToolTip("Select the desktop shell theme")
+            else:
+                dt_combo.setToolTip("Desktop shell themes not applicable")
+
+        # Universal Basics (always enabled)
+        for key in ['icon_theme', 'gtk_theme', 'cursor_theme']:
+            combo = self.theme_controls.get(key)
+            if combo:
+                combo.setEnabled(True)
+                
+    # --- SIGNAL HANDLERS ---
+    
+    def on_browse_folder(self):
+        """Browse and select wallpaper folder for this workspace."""
+        p = QFileDialog.getExistingDirectory(self, f"Select folder for WS{self.index}", BASE_FOLDER)
+        if p:
+            self.folder_edit.setText(p)
+
+    def on_mode_changed(self, text):
+        """
+        Adjust order combo behavior based on rotation mode.
+        
+        Args:
+            text (str): Current mode selection ("Random" or "Sequential")
+        """
+        if text == "Random":
+            # Force 'n' for random mode
+            found_n = False
+            for i in range(self.order_combo.count()):
+                if self.order_combo.itemData(i) == "n":
+                    found_n = True
+                    self.order_combo.setCurrentIndex(i)
+                    break
+            if not found_n:
+                self.order_combo.addItem("Random (n)", "n")
+                self.order_combo.setCurrentIndex(self.order_combo.count() - 1)
+            self.order_combo.setEnabled(False)
+        else:
+            self.order_combo.setEnabled(True)
+            # Remove 'n' if exists
+            for i in range(self.order_combo.count()):
+                if self.order_combo.itemData(i) == "n":
+                    self.order_combo.removeItem(i)
+                    break
+            self.order_combo.setCurrentIndex(0)
+
+    def update_icon_preview(self):
+        """Update live preview with Hex/HSV details from config."""
+        path = self.icon_edit.text().strip()
+        display_path = path if (path and os.path.isfile(path)) else (DEFAULT_ICON if os.path.isfile(DEFAULT_ICON) else "")
+        
+        if display_path:
+            pix = QPixmap(display_path)
+            self.icon_preview.setPixmap(pix.scaled(60, 60, 
+                Qt.AspectRatioMode.KeepAspectRatio, 
+                Qt.TransformationMode.SmoothTransformation))
+            
+            # Get Hex from config
+            section = f"ws{self.index}"
+            hex_val = self.parent_window.config.get(section, 'icon_color', default='')
+            
+            # Convert to HSV
+            hsv_info = "N/A"
+            if hex_val and hex_val.startswith('#'):
+                try:
+                    h, s, v = hex_to_hsv(hex_val.lstrip('#'))
+                    h_info = f"{int(h * 360)}º"
+                    s_info = f"{int(s * 100)}%"
+                    v_info = f"{int(v * 100)}%"
+                except:
+                    h_info = "N/A"
+                    s_info = "N/A"
+                    v_info = "N/A"
+            
+            # Build info text
+            filename = os.path.basename(display_path)
+            width = pix.width()
+            height = pix.height()
+            
+            is_symlink = os.path.islink(display_path)
+            real_path = os.path.realpath(display_path) if is_symlink else display_path
+            
+            info_lines = [
+                #f"File: {filename}",
+                f"Size: {width}x{height}",
+                f"Hex: {hex_val.upper() if hex_val else 'N/A'}",
+                f"H: {h_info}",
+                f"S: {s_info}",
+                f"V: {v_info}"
+            ]
+            
+            info_text = "\n".join(info_lines)
+            self.icon_info_text.setText(info_text)
+            self.icon_info_text.setStyleSheet("""
+                color: #aaa;
+                font-size: 10px;
+
+            """)
+            
+            self.icon_preview.setEnabled(True)
+            
+        else:
+            self.icon_preview.clear()
+            self.icon_preview.setText("🎨")
+            self.icon_info_text.setText("No icon selected")
+            self.icon_info_text.setStyleSheet("""
+                color: #666;
+                font-size: 10px;
+                background: #2a2a2a;
+                border: 1px solid #444;
+                border-radius: 4px;
+                padding: 4px;
+            """)
+            self.icon_preview.setEnabled(True)
+
+    # --- CONFIG LOAD / SAVE ---
+    
+    def load_from_config(self, ws_num: int):
+        """Load settings from cache (not INI)."""
+        if self.is_loading:
+            return
+        self.is_loading = True
+        
+        ws_num_1based = ws_num + 1
+        self.current_ws = ws_num_1based
+        self.index = ws_num_1based
+        
+        if ws_num_1based in self.ws_cache:
+            ws_config = self.ws_cache[ws_num_1based]
+            self._apply_config(ws_config)
+            _printer.info(f"Loading WS{ws_num_1based} from cache", backend="dab")
+        else:
+            _printer.warning(f"Workspace {ws_num_1based} not in cache!", backend="dab")
+        
+        self.is_loading = False
+        
+    def save_current_to_cache(self):
+        """Save current UI state to cache (no INI write)."""
+        if self.is_loading:
+            return
+        
+        ws_num = self.current_ws
+        
+        # Build config dict from current UI state
+        config_dict = {
+            'folder': self.folder_edit.text().strip(),
+            'icon': self.icon_edit.text().strip(),
+            'icon_color': self.color_edit.text().strip(),
+            'timing': self.timing_combo.currentData() or '5m',
+            'mode': self.mode_combo.currentText().lower(),
+            'order': self.order_combo.currentData() or 'name_az',
+            'scaling': self.scaling_combo.currentData() or 'scaled',
+        }
+        
+        # Theme settings
+        for key, combo in self.theme_controls.items():
+            if combo.currentText() and combo.currentText() != "(Not set)":
+                config_dict[key] = combo.currentText()
+            else:
+                config_dict[key] = ''
+        
+        # Store in cache
+        self.ws_cache[ws_num] = config_dict
+        _printer.info(f"Saved WS{ws_num} to cache", backend="dab")
+
+    def save_all_to_ini(self):
+        """Write ALL workspace cache to INI file."""
+        config = self.parent_window.config
+        
+        for ws_num_1based, ws_config in self.ws_cache.items():
+            section = f"ws{ws_num_1based}"
+            # Skip icon field (read-only)
+            for key, value in ws_config.items():
+                if key != 'icon':  # icon is read-only, don't write
+                    config.set(section, key, value)
+        
+        config.save()
+        _printer.success(f"Saved {len(self.ws_cache)} workspaces to INI!", backend="dab")
+    
+    def save_to_config(self):
+        """
+        Save settings to AWPConfig.
+        Pure configuration - NO baking, NO color detection, NO icon modifications.
+        """
+        config = self.parent_window.config
+        # self.index is 1-based (1=WS1, 2=WS2, etc.)
+        # Convert to 0-based for get_workspace_config
+        ws_num = self.index - 1
+        section = f"ws{self.index}"  # INI section is 1-based
+        
+        # Get values
+        folder = self.folder_edit.text().strip()
+        
+        # Save settings
+        config.set(section, 'folder', folder)
+        config.set(section, 'timing', self.timing_combo.currentData() or '5m')
+        config.set(section, 'mode', self.mode_combo.currentText().lower())
+        config.set(section, 'order', self.order_combo.currentData() or 'name_az')
+        config.set(section, 'scaling', self.scaling_combo.currentData() or 'scaled')
+
+        # Theme settings
+        for key, combo in self.theme_controls.items():
+            if combo.currentText() and combo.currentText() != "(Not set)":
+                config.set(section, key, combo.currentText())
+            else:
+                config.set(section, key, '')  # Clear theme
+
+
+# =============================================================================
+# MAIN DASHBOARD WINDOW
+# =============================================================================
+
+class AWPDashboard(QWidget):
+    """
+    Main AWP Configuration Dashboard - Pure Configurator Edition.
+    
+    Provides comprehensive interface for managing all AWP settings:
+    - Desktop environment and session configuration
+    - Screen blanking controls
+    - Workspace management and count
+    - Individual workspace configuration tabs
+    
+    NO baking, NO color detection, NO icon copying - pure configuration only.
+    """
+    
+    def __init__(self):
+        """Initialize dashboard and load existing configuration."""
+        super().__init__()
+        _printer.info("Starting AWP Dashboard...", backend="dab")
+        self.setWindowTitle("AWP Dashboard - Configuration Editor")
+        self.setFixedSize(528, 830)
+        
+        # Get system active preset from SHM
+        self.system_preset = self._get_current_preset()
+        
+        # DAB starts editing the system preset
+        self.current_preset = self.system_preset
+        
+        # Build path to the current preset's INI
+        preset_path = os.path.join(PRESETS_DIR, self.current_preset)
+        ini_path = os.path.join(preset_path, f"{self.current_preset}.ini")
+        
+        if os.path.exists(ini_path):
+            self.config = AWPConfig(ini_path)
+            _printer.info(f"Loaded preset: {self.current_preset}", backend="dab")
+        else:
+            _printer.warning(f"Preset INI not found: {ini_path}, using default", backend="dab")
+            self.config = AWPConfig()
+            self.current_preset = self.config.de
+        
+        self.setup_ui()
+        self.setup_keybindings()
+        self.load_config()
+
+    def _get_current_preset(self):
+        """Read the active preset from /dev/shm/awp_active_preset."""
+        if os.path.exists(SHM_ACTIVE_PRESET):
+            try:
+                with open(SHM_ACTIVE_PRESET, 'r') as f:
+                    preset = f.read().strip()
+                    if preset in AVAILABLE_PRESETS:
+                        return preset
+                    else:
+                        _printer.warning(f"Preset '{preset}' not in AVAILABLE_PRESETS, using default", backend="dab")
+            except Exception as e:
+                _printer.error(f"Failed to read SHM: {e}", backend="dab")
+        # Fallback to first available preset
+        return AVAILABLE_PRESETS[0] if AVAILABLE_PRESETS else "qtile_xfce-debian"
+
+    def update_info_labels(self):
+        """Update the info labels with current config values."""
+        if hasattr(self, 'de_label'):
+            self.de_label.setText(self.config.de)
+        if hasattr(self, 'session_label'):
+            self.session_label.setText(self.config.session_type)
+        if hasattr(self, 'ws_count_label'):
+            self.ws_count_label.setText(str(self.config.workspaces_count))
+    
+    def update_info_colors(self):
+        """Update the info labels with the system accent color from SHM."""
+        try:
+            with open(RUNTIME_STATE_PATH, 'r') as f:
+                data = json.load(f)
+                color = data.get('icon_color', '#6a8cff')
+        except:
+            color = '#6a8cff'
+        
+        if not color.startswith('#'):
+            color = '#6a8cff'
+        
+        style = f"color: {color}; font-size: 11px; font-weight: bold;"
+        
+        if hasattr(self, 'de_label'):
+            self.de_label.setStyleSheet(style)
+        if hasattr(self, 'session_label'):
+            self.session_label.setStyleSheet(style)
+        if hasattr(self, 'ws_count_label'):
+            self.ws_count_label.setStyleSheet(style)
+    
+    def update_workspace_combo(self):
+        """Update the workspace combo box with current workspaces."""
+        self.ws_combo.clear()
+        num_workspaces = self.config.workspaces_count
+        for i in range(num_workspaces):
+            self.ws_combo.addItem(f"WS{i + 1}")
+        if self.ws_combo.count() > 0:
+            self.ws_combo.setCurrentIndex(0)
+    
+    def setup_ui(self):
+        """Initialize and arrange all user interface components."""
+        layout = QVBoxLayout()
+        layout.setSpacing(10)
+        layout.setContentsMargins(15, 10, 15, 10)
+        
+        # Header
+        header = QLabel("<h1 style='color: #ddd; font-weight: 300; font-size: 24px;'>⚙️ AWP Dashboard</h1>")
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(header)
+
+        subheader = QLabel("Configure workspaces, wallpaper, and theme settings")
+        subheader.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        subheader.setStyleSheet("color: #888; font-size: 11px; margin-bottom: 3px;")
+        layout.addWidget(subheader)
+
+        # ============================================================
+        # GENERAL SETTINGS GROUPBOX
+        # ============================================================
+        general_group = QGroupBox(" General Settings ")
+        general_group.setStyleSheet(GROUPBOX_STYLE)
+        
+        # ← CREATE general_layout FIRST
+        general_layout = QVBoxLayout()
+        general_layout.setSpacing(8)
+        general_layout.setContentsMargins(15, 10, 15, 10)
+
+        # Row 0: Preset Selector
+        preset_layout = QHBoxLayout()
+        preset_layout.setSpacing(10)
+
+        preset_layout.addWidget(QLabel("Preset:"))
+        self.preset_combo = QComboBox()
+        self.preset_combo.setMinimumWidth(200)
+        self.preset_combo.setEditable(False)
+
+        # Populate from AVAILABLE_PRESETS constant with checkmark for system preset
+        for preset in AVAILABLE_PRESETS:
+            is_system = preset == self.system_preset  # ← System active preset gets ✓
+            is_current = preset == self.current_preset  # ← DAB's current preset
+            
+            label = f"{preset} {'✓' if is_system else ''}"
+            self.preset_combo.addItem(label, preset)
+            if is_current:
+                self.preset_combo.setCurrentIndex(self.preset_combo.count() - 1)
+                       
+        self.preset_combo.currentIndexChanged.connect(self.on_preset_changed)
+        preset_layout.addWidget(self.preset_combo)
+        preset_layout.addStretch()
+        general_layout.addLayout(preset_layout)
+
+        # Separator line after preset selector
+        sep_line1 = QFrame()
+        sep_line1.setFrameShape(QFrame.Shape.HLine)
+        sep_line1.setFrameShadow(QFrame.Shadow.Sunken)
+        sep_line1.setStyleSheet("background-color: #444; max-height: 1px;")
+        general_layout.addWidget(sep_line1)
+
+        # Row 1: System Info (read-only)
+        info_layout = QHBoxLayout()
+        info_layout.setSpacing(10)
+
+        de_label_text = QLabel("DE:")
+        de_label_text.setFixedWidth(30)
+        info_layout.addWidget(de_label_text)
+        self.de_label = QLabel(self.config.de)
+        self.de_label.setStyleSheet("color: #6a8cff; font-size: 11px; font-weight: bold;")
+        info_layout.addWidget(self.de_label)
+
+        info_layout.addSpacing(15)
+
+        session_label_text = QLabel("Session:")
+        session_label_text.setFixedWidth(60)
+        info_layout.addWidget(session_label_text)
+        self.session_label = QLabel(self.config.session_type)
+        self.session_label.setStyleSheet("color: #6a8cff; font-size: 11px; font-weight: bold;")
+        info_layout.addWidget(self.session_label)
+
+        info_layout.addSpacing(15)
+
+        ws_label_text = QLabel("Workspaces:")
+        ws_label_text.setFixedWidth(75)
+        info_layout.addWidget(ws_label_text)
+        self.ws_count_label = QLabel(str(self.config.workspaces_count))
+        self.ws_count_label.setStyleSheet("color: #6a8cff; font-size: 11px; font-weight: bold;")
+        info_layout.addWidget(self.ws_count_label)
+
+        info_layout.addStretch()
+        general_layout.addLayout(info_layout)
+
+        # Separator line within the GroupBox
+        sep_line2 = QFrame()
+        sep_line2.setFrameShape(QFrame.Shape.HLine)
+        sep_line2.setFrameShadow(QFrame.Shadow.Sunken)
+        sep_line2.setStyleSheet("background-color: #444; max-height: 1px;")
+        general_layout.addWidget(sep_line2)
+
+        # Row 2: Screen Blanking (editable)
+        blanking_layout = QHBoxLayout()
+        blanking_layout.setSpacing(10)
+
+        blanking_layout.addWidget(QLabel("Screen Blanking:"))
+        self.blanking_combo = self.create_standard_combo(
+            width=180,
+            items=[
+                ("Disabled", "0"), ("30 seconds", "30"), ("1 minute", "60"),
+                ("5 minutes", "300"), ("10 minutes", "600"), ("20 minutes", "1200"),
+                ("30 minutes", "1800"), ("1 hour", "3600")
+            ]
+        )
+        self.blanking_combo.setToolTip("Time before screen blanks/sleeps (X11)")
+        self.blanking_combo.currentTextChanged.connect(self.on_blanking_changed)
+        blanking_layout.addWidget(self.blanking_combo)
+
+        self.blanking_pause_cb = QCheckBox("Paused")
+        self.blanking_pause_cb.setToolTip("Temporarily disable screen blanking")
+        self.blanking_pause_cb.toggled.connect(self.on_blanking_pause_toggled)
+        blanking_layout.addWidget(self.blanking_pause_cb)
+
+        blanking_layout.addStretch()
+        general_layout.addLayout(blanking_layout)
+
+        general_group.setLayout(general_layout)
+        layout.addWidget(general_group)
+
+        # --- Workspace Selector ---
+        top_bar = QHBoxLayout()
+        top_bar.setSpacing(12)
+
+        ws_label = QLabel("Workspace:")
+        ws_label.setFixedWidth(75)
+        top_bar.addWidget(ws_label)
+        self.ws_combo = QComboBox()
+        self.ws_combo.setMinimumWidth(200)
+        self.ws_combo.setEditable(False)
+        num_workspaces = self.config.workspaces_count
+        for i in range(num_workspaces):
+            self.ws_combo.addItem(f"WS{i + 1}")
+        self.ws_combo.currentIndexChanged.connect(self.on_workspace_changed)
+        top_bar.addWidget(self.ws_combo)
+
+        top_bar.addStretch()
+        layout.addLayout(top_bar)
+
+        # --- Workspace Configuration Area ---
+        self.workspace_widget = WorkspaceTab(1, self)
+        layout.addWidget(self.workspace_widget)
+
+        # --- Action Buttons ---
+        button_layout = QHBoxLayout()
+        button_layout.addStretch(0)
+
+        BTN_W = 118
+        BTN_H = 34
+        GAP = 8
+
+        # 1. Backup Button (neutral/blue)
+        self.backup_btn = QPushButton("Backup ini")
+        self.backup_btn.setFixedSize(BTN_W, BTN_H)
+        self.backup_btn.setToolTip("Create backup of current configuration (Ctrl+B)")
+        self.backup_btn.clicked.connect(self.backup_config)
+        self.backup_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 12px;
+                background: #3a5a7a;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 16px;
+            }
+            QPushButton:hover {
+                background: #4a7a9a;
+            }
+            QPushButton:pressed {
+                background: #2a4a5a;
+            }
+        """)
+        button_layout.addWidget(self.backup_btn)
+        button_layout.addSpacing(GAP)
+
+        # 2. Save Button (green - like Baker's bake)
+        self.save_btn = QPushButton("Save Changes")
+        self.save_btn.setFixedSize(BTN_W, BTN_H)
+        self.save_btn.setToolTip("Save configuration to .ini (Ctrl+S)")
+        self.save_btn.clicked.connect(self.save_config)
+        self.save_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 12px;
+                background: #2d7d2d;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 16px;
+            }
+            QPushButton:hover {
+                background: #3d9d3d;
+            }
+            QPushButton:pressed {
+                background: #1d6d1d;
+            }
+        """)
+        button_layout.addWidget(self.save_btn)
+        button_layout.addSpacing(GAP)
+
+        # 3. Exit Button (red - like Baker's quit)
+        self.exit_btn = QPushButton("Quit")
+        self.exit_btn.setFixedSize(BTN_W, BTN_H)
+        self.exit_btn.setToolTip("Exit application (Ctrl+Q)")
+        self.exit_btn.clicked.connect(self.close)
+        self.exit_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 12px;
+                font-weight: bold;
+                background: #5a2d2d;
+                color: #ddd;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 16px;
+            }
+            QPushButton:hover {
+                background: #7a3d3d;
+                color: white;
+            }
+            QPushButton:pressed {
+                background: #4a1d1d;
+            }
+        """)
+        button_layout.addWidget(self.exit_btn)
+        
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+        self.setLayout(layout)
+        layout.addSpacing(8)
+
+    def refresh_theme_lists(self):
+        """Refresh theme lists for the current workspace widget using cache."""
+        if not hasattr(self, 'workspace_widget'):
+            return
+        
+        all_themes_dict = get_available_themes()
+        
+        mapping = {
+            "icon_theme": "icon_themes",
+            "gtk_theme": "gtk_themes",
+            "cursor_theme": "cursor_themes",
+            "desktop_theme": "desktop_themes",
+            "wm_theme": "wm_themes"
+        }
+        
+        # Get current workspace number from the widget
+        ws_num = self.workspace_widget.current_ws
+        section = f'ws{ws_num}'
+        
+        # Get the cached config for this workspace
+        cached_config = self.workspace_widget.ws_cache.get(ws_num, {})
+        
+        for key, combo in self.workspace_widget.theme_controls.items():
+            # Get saved value from cache (not INI!)
+            saved_val = cached_config.get(key, '')
+            theme_type = mapping.get(key)
+            theme_list = all_themes_dict.get(theme_type, [])
+            
+            combo.blockSignals(True)
+            combo.clear()
+            
+            # Always start with (Not set) as the first option
+            combo.addItem("(Not set)", "")
+            
+            # Fill with themes
+            for theme in theme_list:
+                combo.addItem(theme)
+                
+            # Set the selection from cache
+            if saved_val and saved_val.strip() != "":
+                idx = combo.findText(saved_val)
+                if idx >= 0:
+                    combo.setCurrentIndex(idx)
+                else:
+                    combo.addItem(saved_val)
+                    new_idx = combo.findText(saved_val)
+                    combo.setCurrentIndex(new_idx)
+            else:
+                combo.setCurrentIndex(0)  # "(Not set)"
+            
+            combo.blockSignals(False)
+    
+    def on_preset_changed(self, index):
+        """Handle preset selection change."""
+        if index < 0:
+            return
+        
+        preset_name = self.preset_combo.currentData()
+        
+        if not preset_name or preset_name == self.current_preset:
+            return
+        
+        if self.load_preset(preset_name):
+            self.preset_combo.blockSignals(True)
+            self.preset_combo.clear()
+            for preset in AVAILABLE_PRESETS:
+                is_system = preset == self.system_preset  # ← Always system
+                is_current = preset == self.current_preset  # ← DAB's current
+                
+                label = f"{preset} {'✓' if is_system else ''}"
+                self.preset_combo.addItem(label, preset)
+                if is_current:
+                    self.preset_combo.setCurrentIndex(self.preset_combo.count() - 1)
+            self.preset_combo.blockSignals(False)
+
+    def load_preset(self, preset_name):
+        """Load a specific preset's INI file."""
+        if preset_name not in AVAILABLE_PRESETS:
+            _printer.error(f"Unknown preset: {preset_name}", backend="dab")
+            return False
+        
+        preset_path = os.path.join(PRESETS_DIR, preset_name)
+        ini_path = os.path.join(preset_path, f"{preset_name}.ini")
+        
+        if not os.path.exists(ini_path):
+            _printer.error(f"Preset INI not found: {ini_path}", backend="dab")
+            return False
+        
+        _printer.info(f"Loading preset: {preset_name}", backend="dab")
+        
+        # Reload config
+        self.config = AWPConfig(ini_path)
+        self.current_preset = preset_name
+        
+        # Clear and rebuild cache
+        if hasattr(self, 'workspace_widget'):
+            self.workspace_widget.ws_cache = {}
+            self.workspace_widget.load_all_workspaces()
+            self.workspace_widget.load_from_config(0)
+            self.workspace_widget.update_icon_preview()
+            self.workspace_widget.current_ws = 1
+        
+        # Update UI
+        self.update_info_labels()
+        self.update_workspace_combo()
+        self.refresh_theme_lists()
+        self.setWindowTitle(f"AWP Dashboard - {preset_name}")
+        
+        # Update info colors with system accent (reads from SHM)
+        self.update_info_colors()  # ← No arguments, no cache reading
+        
+        _printer.success(f"Loaded preset: {preset_name} ({self.config.workspaces_count} workspaces)", backend="dab")
+        return True
+    
+    def on_workspace_changed(self, index):
+        """Handle workspace selection change."""
+        if index < 0:
+            return
+        
+        if hasattr(self, 'workspace_widget'):
+            # Save current workspace UI state to cache BEFORE switching
+            self.workspace_widget.save_current_to_cache()
+            
+            # Load new workspace from cache
+            ws_num = index + 1
+            self.workspace_widget.load_from_config(index)
+            self.workspace_widget.update_icon_preview()
+            self.setWindowTitle(f"AWP Dashboard - Workspace {ws_num}")
+            self.refresh_theme_lists()
+            
+    def setup_keybindings(self):
+        """Configure keyboard shortcuts."""
+        self.save_btn.setShortcut("Ctrl+S")
+        self.backup_btn.setShortcut("Ctrl+B")  
+        self.exit_btn.setShortcut("Ctrl+Q")
+        
+    def create_standard_combo(self, items=None, width=200, editable=True):
+        """Create a standardized combo box used across all tabs."""
+        combo = QComboBox()
+        combo.setFixedWidth(width)
+        combo.setEditable(editable)
+        combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)  # Qt6 enum
+
+        if editable:
+            combo.lineEdit().setReadOnly(True)
+            combo.lineEdit().setAlignment(Qt.AlignmentFlag.AlignLeft)  # Qt6 enum
+
+        if items:
+            for item in items:
+                if isinstance(item, tuple):
+                    combo.addItem(item[0], item[1])
+                else:
+                    combo.addItem(item, item)
+        return combo
+
+    def get_current_de(self):
+        """Get current desktop environment from config."""
+        return self.config.de  # Read directly from config
+
+    def on_de_changed(self, text):
+        """Handle DE change and update UI availability."""
+        # This is a legacy method - kept for compatibility
+        pass
+
+    def on_blanking_changed(self, text):
+        """Handle blanking timeout changes."""
+        if text == "Disabled":
+            self.blanking_pause_cb.setChecked(True)
+            self.blanking_pause_cb.setEnabled(True)
+        else:
+            self.blanking_pause_cb.setChecked(False)
+            self.blanking_pause_cb.setEnabled(True)
+
+    def on_blanking_pause_toggled(self, checked):
+        """Handle blanking pause toggle."""
+        if checked:
+            self.blanking_combo.setCurrentText("Disabled")
+        else:
+            self.blanking_combo.setCurrentText("20 minutes")
+
+    def load_config(self):
+        """Load all settings from AWPConfig into cache."""
+        # Load blanking settings
+        if self.config.blanking_pause or self.config.blanking_timeout == 0:
+            self.blanking_combo.setCurrentText("Disabled")
+            self.blanking_pause_cb.setChecked(True)
+        else:
+            for i in range(self.blanking_combo.count()):
+                if str(self.blanking_combo.itemData(i)) == str(self.config.blanking_timeout):
+                    self.blanking_combo.setCurrentIndex(i)
+                    break
+            self.blanking_pause_cb.setChecked(False)
+
+        # Update info labels
+        self.update_info_labels()
+        
+        # Update workspace combo
+        self.update_workspace_combo()
+
+        # Load ALL workspaces into cache
+        if hasattr(self, 'workspace_widget'):
+            self.workspace_widget.load_all_workspaces()
+            self.workspace_widget.load_from_config(0)  # Load WS1 from cache
+            self.workspace_widget.update_icon_preview()
+            
+            # Block signal to prevent on_workspace_changed from firing
+            self.ws_combo.blockSignals(True)
+            self.ws_combo.setCurrentIndex(0)  # Select WS1 in combo
+            self.ws_combo.blockSignals(False)
+            
+            self.setWindowTitle(f"AWP Dashboard - {self.current_preset}")
+            self.refresh_theme_lists()
+            
+            # Update info colors with system accent (reads from SHM)
+            self.update_info_colors()
+
+    def save_config(self):
+        """Save all cached data to INI."""
+        try:
+            _printer.info(f"Saving to preset: {self.current_preset}", backend="dab")
+            
+            # Save blanking settings
+            if self.blanking_pause_cb.isChecked():
+                self.config.set('general', 'blanking_timeout', '0')
+                self.config.set('general', 'blanking_pause', 'true')
+            else:
+                timeout_val = str(self.blanking_combo.currentData() or '0')
+                self.config.set('general', 'blanking_timeout', timeout_val)
+                self.config.set('general', 'blanking_pause', 'false')
+            
+            # Save all workspace data from cache
+            if hasattr(self, 'workspace_widget'):
+                # First save current UI state to cache
+                self.workspace_widget.save_current_to_cache()
+                # Then write entire cache to INI
+                self.workspace_widget.save_all_to_ini()
+            
+            _printer.success(f"Configuration saved successfully to {self.current_preset}!", backend="dab")
+            QMessageBox.information(self, "Success", f"All workspaces saved to '{self.current_preset}'!")
+                
+        except Exception as e:
+            _printer.error(f"Failed to save: {str(e)}", backend="dab")
+            QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
+    
+    def backup_config(self):
+        """Create backup of current configuration file."""
+        if os.path.exists(self.config.path):
+            backup_path = str(self.config.path) + ".backup"
+            shutil.copy(str(self.config.path), backup_path)
+            _printer.success(f"Configuration backed up to: {backup_path}", backend="dab")
+            QMessageBox.information(self, "Backup Created", 
+                                  f"Configuration backed up to:\n{backup_path}")
+        else:
+            _printer.warning("No configuration file found to backup.", backend="dab")
+            QMessageBox.warning(self, "No Config", "No configuration file found.")
+
+
+# =============================================================================
+# APPLICATION ENTRY POINT
+# =============================================================================
+
+if __name__ == "__main__":
+    """Main application entry point - Qt6 style."""
+    app = QApplication([])
+    window = AWPDashboard()
+    window.show()
+    sys.exit(app.exec())

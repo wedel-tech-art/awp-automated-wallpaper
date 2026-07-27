@@ -46,8 +46,12 @@ from core.themes import (
     cleanup_temp_icon,
     extract_preset_from_theme
 )
-from core.constants import THEME_PRESETS, ICON_PRESETS, CURSOR_PRESETS, SVG_TEMPLATES
+from core.constants import (
+    THEME_PRESETS, ICON_PRESETS, CURSOR_PRESETS, SVG_TEMPLATES,
+    AVAILABLE_PRESETS, PRESETS_DIR
+)
 from core.config import AWPConfig
+from core.utils import hex_to_hsv
 from core.actions import run_awp_start, get_preset_from_shm
 from core.printer import get_printer
 
@@ -58,8 +62,7 @@ class AWPBaker(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("🎨 AWP Baker - Workspace Color Manager")
-        self.resize(600, 830)
-        self.setMinimumSize(540, 700)
+        self.setFixedSize(540, 830)
         self.current_hex = "#b3004c"
         
         # Load config
@@ -68,8 +71,8 @@ class AWPBaker(QMainWindow):
         self.current_preset = shm_preset or self.config.get('general', 'os_detected') or 'qtile_xfce-debian'
         
         # Get all available presets
-        self.presets_dir = os.path.expanduser("~/awp/presets")
-        self.available_presets = self._get_available_presets()
+        self.presets_dir = PRESETS_DIR
+        self.available_presets = AVAILABLE_PRESETS
         
         self.preset_path = os.path.join(self.presets_dir, self.current_preset)
         self.config_path = os.path.expanduser("~/awp/awp_config.ini")
@@ -741,18 +744,6 @@ class AWPBaker(QMainWindow):
         else:
             return False
     
-    def _get_available_presets(self):
-        """Get list of available presets from the presets directory."""
-        presets = []
-        if os.path.exists(self.presets_dir):
-            for item in os.listdir(self.presets_dir):
-                item_path = os.path.join(self.presets_dir, item)
-                if os.path.isdir(item_path) and not item.startswith('.'):
-                    if os.path.exists(os.path.join(item_path, f"{item}.ini")) or \
-                       any(f.startswith('ws') and f.endswith('.png') for f in os.listdir(item_path)):
-                        presets.append(item)
-        return sorted(presets)
-    
     def _get_preset_ini_path(self, preset_name):
         """Get the path to a preset's INI file."""
         preset_path = os.path.join(self.presets_dir, preset_name)
@@ -1023,7 +1014,20 @@ class AWPBaker(QMainWindow):
                 border-radius: 4px; 
                 border: 2px solid {color};
             """)
-            self.current_color_label.setText(f"WS{ws['num']}: {color}")
+            
+            # Convert to HSV for display
+            hsv_info = "N/A"
+            if color.startswith('#'):
+                try:
+                    h, s, v = hex_to_hsv(color.lstrip('#'))
+                    h_deg = int(h * 360)
+                    s_pct = int(s * 100)
+                    v_pct = int(v * 100)
+                    hsv_info = f"H: {h_deg}° S: {s_pct}% V: {v_pct}%"
+                except:
+                    hsv_info = "N/A"
+            
+            self.current_color_label.setText(f"WS{ws['num']}: {color} | {hsv_info}")
             self._update_progress_style(color)
         else:
             self.current_color_preview.setStyleSheet("background: #888; border-radius: 4px; border: 2px solid #555;")

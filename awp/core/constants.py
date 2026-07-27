@@ -16,6 +16,18 @@ STATE_PATH = str(AWP_DIR / "indexes.json")
 ICON_DIR = str(AWP_DIR / "logos")
 DEFAULT_ICON = str(AWP_DIR / "debian.png")
 
+# ============================================================================
+# PRESET SYSTEM
+# ============================================================================
+PRESETS_DIR = os.path.join(str(AWP_DIR), "presets")
+SHM_ACTIVE_PRESET = "/dev/shm/awp_active_preset"
+
+AVAILABLE_PRESETS = [
+    "qtile_xfce-debian", "qtile_gnome-debian", "qtile_wayland-debian",
+    "xfce-debian", "xfce_light-debian",
+    "TEMPLATE",
+]
+
 # RAM-Bridge Paths (Zero-Disk-Write Architecture)
 RUNTIME_STATE_PATH = "/dev/shm/awp_full_state.json"
 AWP_CONFIG_RAM = "/dev/shm/awp_config_ram.json"

@@ -243,7 +243,7 @@ echo -e "${CLR_CYAN}[KDE] Setting up KDE theming infrastructure...${CLR_RESET}"
 
 # Create KDE color schemes directory
 KDE_COLORS_DIR="$HOME/.local/share/color-schemes"
-KDE_COLOR_FILE="$KDE_COLORS_DIR/Awp.colors"
+KDE_COLOR_FILE="$KDE_COLORS_DIR/AWP_Dynamic.colors"
 SHM_KDE_FILE="/dev/shm/awp-kde-color.colors"
 
 mkdir -p "$KDE_COLORS_DIR"

@@ -14,6 +14,31 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 ## 🚀 Key Features
 
+## 🔧 Dashboard Upgrade & Baker Enhancements (V3.14)
+
+**DAB now features presets** — switch between any preset from the `presets/` directory directly from the Dashboard.
+
+### What Changed
+
+- **DAB now features Presets:** Switch between any preset from the `presets/` directory (`qtile_xfce-debian`, `xfce-debian`, etc.) directly from the Dashboard. Edit workspace settings across different presets seamlessly.
+- **Tab-Free UI:** The old 9-tab interface has been replaced with a clean, modern single-window design. Select any workspace from a combo box and all settings update instantly.
+- **Modern Action Buttons:** Backup, Save, and Quit buttons now match Baker's sleek, modern style with color-coded actions.
+- **Preset Indicator:** A ✓ mark clearly shows which preset is currently active in your system (from `/dev/shm/awp_active_preset`).
+- **Renamed to `dab`:** Now matches Baker's naming convention for consistency.
+- **HSV Info Display in Baker:** Baker now shows HSV values (Hue, Saturation, Value) next to the color preview for better color understanding.
+- **Baker Floating Window Fix:** Baker now opens correctly in Qtile with proper window sizing.
+- **Symlink Cleanup:** Removed duplicate symlink in `~/.local/share/color-schemes/` — now uses consistent naming with backends.
+- **Mint Icon Theme:** Improved audio icons for better visual consistency.
+
+### Why This Matters
+
+- **Full Preset Access:** View and edit workspace settings from any preset in one interface.
+- **Cleaner UI:** No more tabs cluttering the screen.
+- **Professional Look:** Modern, cohesive design across all AWP tools.
+- **Better Color Understanding:** HSV values help you understand color relationships.
+
+> 💡 **Recommended Workflow:** Use **DAB** (Dashboard) for configuration and preset selection, and **Baker** for theme generation. They complement each other perfectly.
+
 ## 🔧 DAB Pure Configurator & NEW TOOLS!!! preset_cloner.sh, awp_rotate.sh (V3.13)
 
 **DAB is now exclusively a configuration tool** — no baking, no color detection.
@@ -297,7 +322,7 @@ DAB is now a **pure configuration tool** — no baking, no color detection. It h
 All theme baking is handled exclusively by **Baker**. DAB and Baker complement each other perfectly.
 
 ```
-python3 dab.py
+In ~/awp do "./dab" or python3 dab
 ```
 
 ### Preset Cloner Tool
@@ -365,17 +390,8 @@ python3 nav.py black
 
 ## Screenshots
 
-### General Settings
-![General Settings](screenshots/General_Settings.png)
-
-### Workspace 1 Configuration
-![Workspace 1 Configuration](screenshots/ws1_config.png)
-
-### Workspace 2 Configuration
-![Workspace 2 Configuration](screenshots/ws2_config.png)
-
-### Workspace 3 Configuration
-![Workspace 3 Configuration](screenshots/ws3_config.png)
+### Dab - Dashboard
+![Dab Main Window](screenshots/dab_main.png)
 
 ### Baker - Theme Generator
 ![Baker Main Window](screenshots/baker_main.png)
@@ -432,7 +448,7 @@ awp-automated-wallpaper/
 │   ├── logos/                      # Active workspace icons (symlinks)
 │   ├── daemon.py                   # Full background service (with rotation)
 │   ├── daemon-light.py             # Light background service (no rotation)
-│   ├── dab.py                      # Qt6 Dashboard
+│   ├── dab                         # Qt6 Dashboard
 │   ├── nav.py                      # Navigation controller
 │   ├── hud_vertical.py             # Sidebar system monitor
 │   ├── hud_bottom.py               # Bottom dock monitor
@@ -448,6 +464,7 @@ awp-automated-wallpaper/
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
+| **V3.14** | Jul 2026 | 🔧 Dashboard Upgrade — DAB now features presets, tab-free UI, modern buttons, preset indicator, renamed to `dab`. HSV display in Baker. Floating window fix. Symlink cleanup. Mint audio icons updated.
 | **V3.13** | Jul 2026 | 🔧 DAB Pure Configurator — Baking/color detection removed from DAB. New preset_cloner.sh and awp_rotate.sh utilities. Icon path enforcement to logos/. Daemon wallpaper index sync fixed. New GTK preset (mint) and SVG template (awp-firma). |
 | **V3.12** | Jul 2026 | 🎨 Preset-Based Themes — Self-contained presets with baked themes, symlink activation, TEMPLATE showcase |
 | **V3.11** | Jul 2026 | 🧁 AWP Baker — Standalone color & theme generator with SVG templates, multi-preset support, surgical operations, and progress bar |
