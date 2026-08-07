@@ -1010,3 +1010,31 @@ def extract_preset_from_theme(theme_name, prefix):
     # Remove color suffix: "breeze-ff0000" → "breeze"
     parts = theme_name.rsplit('-', 1)
     return parts[0] if parts else theme_name
+
+def extract_color_from_theme(theme_name: str) -> str:
+    """
+    Extract hex color from a theme name.
+    
+    Examples:
+        "awp-gtk-breeze-ff0000" → "#ff0000"
+        "awp-icons-mint-00ff00" → "#00ff00"
+        "custom-theme-123456" → "#123456"
+        "Adwaita" → None
+    
+    Args:
+        theme_name: The full theme name (e.g., 'awp-gtk-breeze-ff0000')
+    
+    Returns:
+        The hex color with # (e.g., '#ff0000'), or None if no hex found
+    """
+    if not theme_name:
+        return None
+    
+    # Theme format: *-xxxxxx (6 hex chars at the end)
+    parts = theme_name.split('-')
+    if len(parts) >= 1:
+        possible_hex = parts[-1]
+        if len(possible_hex) == 6 and all(c in '0123456789abcdefABCDEF' for c in possible_hex):
+            return f"#{possible_hex}"
+    
+    return None

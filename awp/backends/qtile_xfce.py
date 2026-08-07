@@ -176,3 +176,52 @@ def qtile_xfce_set_icon(icon_path: str):
     # from backends.xfce import xfce_set_icon
     # return xfce_set_icon(icon_path)
     return False
+
+
+
+def qtile_xfce_get_current_themes():
+    """Get current theme settings from Qtile/XFCE."""
+    current = {
+        'gtk': None,
+        'icon': None,
+        'cursor': None,
+        'wm': None
+    }
+    
+    try:
+        result = subprocess.run(
+            ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['gtk'] = result.stdout.strip()
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['icon'] = result.stdout.strip()
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["xfconf-query", "-c", "xsettings", "-p", "/Gtk/CursorThemeName"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['cursor'] = result.stdout.strip()
+    except:
+        pass
+    
+    # Qtile doesn't use XFWM, so wm_theme is not applicable
+    current['wm'] = None
+    
+    _printer.info(f"Current themes: GTK={current['gtk']}, Icons={current['icon']}, Cursor={current['cursor']}", backend="qtile_xfce")
+    
+    return current
+

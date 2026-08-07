@@ -1,0 +1,1169 @@
+#!/usr/bin/env python3
+"""
+🛁 Bath - Simple Theme & Wallpaper Tool
+Uses AWP's existing backends, core functions, and theme engine.
+No workspaces, no presets, no INI files.
+"""
+
+import os
+import sys
+import subprocess
+from PyQt6.QtWidgets import *
+from PyQt6.QtCore import Qt
+
+# ============================================================
+# REUSE AWP'S EXISTING CODE
+# ============================================================
+from backends import get_backend
+from core.actions import (
+    get_backend_func,
+    x11_blanking,
+    get_current_blanking,
+    set_themes,
+    set_wallpaper,
+    set_backend
+)
+from core.themes import (
+    generate_icon_from_svg,
+    bake_awp_theme,
+    bake_awp_icon,
+    bake_awp_cursor,
+    cleanup_temp_icon,
+    get_available_themes,
+    extract_color_from_theme
+)
+from core.constants import (
+    THEME_PRESETS, ICON_PRESETS, CURSOR_PRESETS, SVG_TEMPLATES,
+    THEME_CAPABILITIES
+)
+from core.printer import get_printer
+
+_printer = get_printer()
+
+# Simple GroupBox style
+GROUPBOX_STYLE = """
+    QGroupBox {
+        color: #ccc;
+        font-weight: bold;
+        font-size: 12px;
+        border: 1px solid #555;
+        border-radius: 8px;
+        margin-top: 5px;
+        padding-top: 5px;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 15px;
+        padding: 0 8px 0 8px;
+    }
+"""
+
+class SimpleConfig:
+    """Minimal config object that mimics AWPConfig for Bath."""
+    def __init__(self, theme_config):
+        self.theme_config = theme_config
+    
+    def get(self, section, key, fallback=None):
+        result = self.theme_config.get(key, fallback)
+        return result
+    
+    def has_section(self, section):
+        return True
+    
+    def set(self, section, key, value):
+        pass
+    
+    def getint(self, section, key, fallback=0):
+        return fallback
+
+class Bath(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("🛁 Bath - Simple Theme & Wallpaper Tool")
+        self.setFixedSize(540, 720)
+        
+        # Detect DE
+        self.de, self.session_type = self.detect_de()
+        _printer.info(f"Detected DE: {self.de}, Session: {self.session_type}", backend="bath")
+        
+        # Set the backend for core.actions
+        set_backend(self.de)
+        _printer.info(f"Backend set to: {self.de}", backend="bath")
+        
+        # Detect workspace count
+        self.workspace_count = self.detect_workspace_count()
+        _printer.info(f"Workspaces: {self.workspace_count}", backend="bath")
+        
+        # Load backend and capabilities
+        self.backend = get_backend(self.de)
+        self.caps = THEME_CAPABILITIES.get(self.de, THEME_CAPABILITIES['generic'])
+        
+        self.setup_ui()
+        self.setup_keybindings()
+        
+        self._setup_apply_icon_preview()
+        self.apply_icon_combo.currentTextChanged.connect(self.update_apply_icon_preview)
+        
+        # Now load settings (this will trigger the preview)
+        self.load_current_settings()
+        
+    def detect_de(self):
+        """Enhanced DE detection matching backends/__init__.py logic."""
+        import subprocess
+        
+        xdg_de = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+        desktop_session = os.environ.get("DESKTOP_SESSION", "").lower()
+        wayland_display = os.environ.get("WAYLAND_DISPLAY", "")
+        is_wayland = bool(wayland_display)
+        
+        def process_exists(name):
+            try:
+                output = subprocess.check_output(['pgrep', '-x', name], stderr=subprocess.DEVNULL)
+                return bool(output.strip())
+            except:
+                return False
+        
+        def check_qtile():
+            """Check if Qtile is running."""
+            try:
+                output = subprocess.check_output(['pgrep', '-x', 'qtile'], stderr=subprocess.DEVNULL)
+                return bool(output.strip())
+            except:
+                return False
+        
+        has_xfsettingsd = process_exists('xfsettingsd')
+        has_gsd_xsettings = process_exists('gsd-xsettings')
+        has_qtile = check_qtile()
+        
+        de = "generic"
+        
+        # Qtile detection - check process first
+        if has_qtile:
+            if is_wayland:
+                de = "qtile_wayland"
+            elif has_gsd_xsettings:
+                de = "qtile_gnome"
+            elif has_xfsettingsd:
+                de = "qtile_xfce"
+            else:
+                de = "qtile_xfce"  # Default Qtile
+        elif 'qtile' in xdg_de or 'qtile' in desktop_session:
+            if is_wayland:
+                de = "qtile_wayland"
+            elif has_gsd_xsettings:
+                de = "qtile_gnome"
+            elif has_xfsettingsd:
+                de = "qtile_xfce"
+            else:
+                de = "qtile_xfce"
+        elif 'xfce' in xdg_de or 'xfce' in desktop_session or 'xubuntu' in xdg_de:
+            de = "xfce"
+        elif 'gnome' in xdg_de or 'gnome' in desktop_session or 'ubuntu' in xdg_de:
+            de = "gnome"
+        elif 'cinnamon' in xdg_de or 'cinnamon' in desktop_session:
+            de = "cinnamon"
+        elif 'mate' in xdg_de or 'mate' in desktop_session:
+            de = "mate"
+        elif 'kde' in xdg_de or 'plasma' in desktop_session:
+            de = "kde"
+        elif is_wayland:
+            de = "wayland"
+        
+        return de, "wayland" if is_wayland else "x11"
+    
+    def detect_workspace_count(self):
+        """Get workspace count from the backend."""
+        func = get_backend_func("workspace_count")
+        if func:
+            try:
+                count = func()
+                if count and count > 0:
+                    _printer.info(f"Workspace count: {count}", backend="bath")
+                    return str(count)
+            except Exception as e:
+                _printer.warning(f"Failed to get workspace count: {e}", backend="bath")
+        
+        # Fallback to 4 (common default)
+        _printer.info("Workspace count (default): 4", backend="bath")
+        return "4"
+    
+    def create_standard_combo(self, items=None, width=160, default=None):
+        combo = QComboBox()
+        combo.setFixedWidth(width)
+        combo.setEditable(True)
+        combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        combo.lineEdit().setReadOnly(True)
+        combo.lineEdit().setAlignment(Qt.AlignmentFlag.AlignLeft)
+        
+        if items:
+            for i, item in enumerate(items):
+                if isinstance(item, tuple):
+                    combo.addItem(item[0], item[1])
+                    # If this item's display text matches the default, select it
+                    if default and item[0] == default:
+                        combo.setCurrentIndex(i)
+                else:
+                    combo.addItem(item, item)
+                    if default and item == default:
+                        combo.setCurrentIndex(i)
+        
+        return combo
+    
+    def create_label(self, text, width=120):
+        """Create a standardized label with fixed width."""
+        label = QLabel(text)
+        label.setFixedWidth(width)
+        return label
+    
+    def create_theme_row(self, label_text, combo):
+        """Create a row with label, combo, and color preview."""
+        row = QHBoxLayout()
+        row.setSpacing(10)
+        
+        # Label
+        row.addWidget(self.create_label(label_text, 110))
+        
+        # Combo
+        row.addWidget(combo)
+        
+        # Color preview square
+        color_preview = QLabel()
+        color_preview.setFixedSize(23, 23)
+        color_preview.setStyleSheet("background-color: #888; border: 1px solid #555; border-radius: 4px;")
+        color_preview.setToolTip("Theme accent color")
+        row.addWidget(color_preview)
+        
+        # Store reference to update later
+        combo.color_preview = color_preview
+        
+        # Connect signal to update color when selection changes
+        combo.currentTextChanged.connect(lambda: self.update_theme_color(combo))
+        
+        row.addStretch()
+        return row
+    
+    def update_theme_color(self, combo):
+        """Update the color preview for a combo when selection changes."""
+        theme_name = combo.currentText()
+        color = extract_color_from_theme(theme_name)
+        
+        if hasattr(combo, 'color_preview'):
+            if color:
+                combo.color_preview.setStyleSheet(f"""
+                    background-color: {color}; 
+                    border: 2px solid {color}; 
+                    border-radius: 4px;
+                """)
+                combo.color_preview.setToolTip(f"Color: {color}")
+            else:
+                combo.color_preview.setStyleSheet("""
+                    background-color: #888; 
+                    border: 1px solid #555; 
+                    border-radius: 4px;
+                """)
+                combo.color_preview.setToolTip("No color detected")
+    
+    def get_current_workspace(self):
+        """Get the current workspace number from the backend."""
+        current_ws_func = get_backend_func("current_ws")
+        if current_ws_func:
+            try:
+                return current_ws_func()
+            except:
+                pass
+        return 0  # Fallback
+    
+    def get_current_system_themes(self):
+        """Get current system settings from the backend."""
+        func = get_backend_func("get_current_themes")
+        if func:
+            try:
+                return func()
+            except Exception as e:
+                _printer.warning(f"Failed to get current themes: {e}", backend="bath")
+        
+        # Fallback
+        return {
+            'gtk': None,
+            'icon': None,
+            'cursor': None,
+            'wm': None,
+            'desktop': None
+        }
+    
+    def setup_ui(self):
+        layout = QVBoxLayout()
+        layout.setSpacing(8)
+        layout.setContentsMargins(15, 10, 15, 10)
+        
+        # Header
+        header = QLabel("<h1 style='color: #ddd; font-weight: 300; font-size: 24px;'>🛁 Bath</h1>")
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(header)
+        
+        sub = QLabel("Simple theme & wallpaper manager")
+        sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sub.setStyleSheet("color: #888; font-size: 11px; margin-bottom: 5px;")
+        layout.addWidget(sub)
+        
+        # ============================================================
+        # SYSTEM INFO
+        # ============================================================
+        info_group = QGroupBox(" System Info ")
+        info_group.setStyleSheet(GROUPBOX_STYLE)
+        info_layout = QVBoxLayout()
+        info_layout.setSpacing(6)
+        info_layout.setContentsMargins(15, 8, 15, 8)
+        
+        row1 = QHBoxLayout()
+        row1.setSpacing(6)
+
+        row1.addWidget(QLabel("DE:"))
+        self.de_label = QLabel(self.de)
+        self.de_label.setStyleSheet("color: #6a8cff; font-weight: bold;")
+        row1.addWidget(self.de_label)
+
+        row1.addSpacing(70)
+
+        row1.addWidget(QLabel("Session:"))
+        self.session_label = QLabel(self.session_type)
+        self.session_label.setStyleSheet("color: #6a8cff; font-weight: bold;")
+        row1.addWidget(self.session_label)
+
+        row1.addSpacing(70)
+
+        row1.addWidget(QLabel("Workspaces:"))
+        self.ws_label = QLabel(self.workspace_count)
+        self.ws_label.setStyleSheet("color: #6a8cff; font-weight: bold;")
+        row1.addWidget(self.ws_label)
+
+        row1.addStretch()
+        info_layout.addLayout(row1)
+        
+        notes = self.caps.get('notes', '')
+        if notes:
+            note_label = QLabel(f"ℹ️ {notes}")
+            note_label.setStyleSheet("color: #888; font-size: 10px; font-style: italic;")
+            info_layout.addWidget(note_label)
+        
+        info_group.setLayout(info_layout)
+        layout.addWidget(info_group)
+        
+        # ============================================================
+        # WALLPAPER SETTINGS
+        # ============================================================
+        wp_group = QGroupBox(" Wallpaper ")
+        wp_group.setStyleSheet(GROUPBOX_STYLE)
+        wp_layout = QVBoxLayout()
+        wp_layout.setSpacing(6)
+        wp_layout.setContentsMargins(15, 8, 15, 8)
+
+        # Style
+        style_row = QHBoxLayout()
+        style_row.addWidget(self.create_label("Style:", 120))
+        style_row.setSpacing(10)
+        self.style_combo = self.create_standard_combo(
+            items=["Centered", "Scaled", "Zoomed"],
+            width=200,
+            default="Zoomed"
+        )
+        style_row.addWidget(self.style_combo)
+        style_row.addStretch()
+        wp_layout.addLayout(style_row)
+        
+        # Folder
+        folder_row = QHBoxLayout()
+        folder_row.addWidget(self.create_label("Folder:", 120))
+        folder_row.setSpacing(10)
+        self.folder_edit = QLineEdit()
+        self.folder_edit.setFixedWidth(200)
+        self.folder_edit.setPlaceholderText("~/Pictures/Wallpapers")
+        folder_row.addWidget(self.folder_edit)
+
+        # Browse Button (now green like the others)
+        self.browse_btn = QPushButton("Browse")
+        self.browse_btn.setFixedSize(67, 23)
+        self.browse_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 12px;
+                background: #2d7d2d;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 12px;
+            }
+            QPushButton:hover {
+                background: #3d9d3d;
+            }
+            QPushButton:pressed {
+                background: #1d6d1d;
+            }
+        """)
+        self.browse_btn.clicked.connect(self.browse_folder)
+        folder_row.addWidget(self.browse_btn)
+        folder_row.addStretch()
+        wp_layout.addLayout(folder_row)
+
+        wp_group.setLayout(wp_layout)
+        layout.addWidget(wp_group)
+        
+        # ============================================================
+        # THEME GENERATION
+        # ============================================================
+        self.gen_group = QGroupBox(" Generate Themes ")
+        self.gen_group.setStyleSheet(GROUPBOX_STYLE)
+        gen_layout = QVBoxLayout()
+        gen_layout.setSpacing(6)
+        gen_layout.setContentsMargins(15, 8, 15, 8)
+        
+        # Color
+        color_row = QHBoxLayout()
+        color_row.addWidget(self.create_label("Color:", 120))
+        color_row.setSpacing(10)
+        self.color_edit = QLineEdit()
+        self.color_edit.setFixedWidth(92)
+        self.color_edit.setPlaceholderText("#b7004f")
+        self.color_edit.setText("#b7004f")
+        self.color_edit.textChanged.connect(self.update_color_preview)
+        color_row.addWidget(self.color_edit)
+
+        # Color Preview Square
+        self.color_preview = QLabel()
+        self.color_preview.setFixedSize(23, 23)
+        self.color_preview.setStyleSheet("background-color: #888; border: 1px solid #555; border-radius: 4px;")
+        color_row.addWidget(self.color_preview)
+
+        # Pick Button (now matching green buttons!)
+        self.pick_btn = QPushButton("Pick")
+        self.pick_btn.setFixedSize(64, 23)
+        self.pick_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 12px;
+                background: #2d7d2d;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 12px;
+            }
+            QPushButton:hover {
+                background: #3d9d3d;
+            }
+            QPushButton:pressed {
+                background: #1d6d1d;
+            }
+        """)
+        self.pick_btn.clicked.connect(self.pick_color)
+        color_row.addWidget(self.pick_btn)
+
+        color_row.addStretch()
+        gen_layout.addLayout(color_row)
+        self.update_color_preview()
+        
+        # SVG Template
+        template_row = QHBoxLayout()
+        template_row.addWidget(self.create_label("Icon Template:", 120))
+        template_row.setSpacing(10)
+        self.template_combo = self.create_standard_combo(
+            items=[(name.title(), name) for name in sorted(SVG_TEMPLATES.keys())],
+            width=200,
+            default="Awp"
+        )
+        template_row.addWidget(self.template_combo)
+        template_row.addStretch()
+        gen_layout.addLayout(template_row)
+        
+        # GTK
+        gtk_row = QHBoxLayout()
+        gtk_row.addWidget(self.create_label("GTK Theme:", 120))
+        gtk_row.setSpacing(10)
+        self.gtk_combo = self.create_standard_combo(
+            items=[(name.title(), name) for name in sorted(THEME_PRESETS.keys())],
+            width=200,
+            default="Breeze"
+        )
+        gtk_row.addWidget(self.gtk_combo)
+        gtk_row.addStretch()
+        gen_layout.addLayout(gtk_row)
+        
+        # Icon
+        icon_row = QHBoxLayout()
+        icon_row.addWidget(self.create_label("Icon Theme:", 120))
+        icon_row.setSpacing(10)
+        self.icon_combo = self.create_standard_combo(
+            items=[(name.title(), name) for name in sorted(ICON_PRESETS.keys())],
+            width=200,
+            default="Mint"
+        )
+        icon_row.addWidget(self.icon_combo)
+        icon_row.addStretch()
+        gen_layout.addLayout(icon_row)
+        
+        # Cursor
+        cursor_row = QHBoxLayout()
+        cursor_row.addWidget(self.create_label("Cursor Theme:", 120))
+        cursor_row.setSpacing(10)
+        self.cursor_combo = self.create_standard_combo(
+            items=[(name.title(), name) for name in sorted(CURSOR_PRESETS.keys())],
+            width=200,
+            default="Oxy"
+        )
+        cursor_row.addWidget(self.cursor_combo)
+        cursor_row.addStretch()
+        gen_layout.addLayout(cursor_row)
+        
+        self.gen_group.setLayout(gen_layout)
+        layout.addWidget(self.gen_group)
+        
+        # Floating Generate Button
+        self.generate_btn = QPushButton("Bake", self.gen_group)
+        self.generate_btn.setFixedSize(67, 23)
+        self.generate_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 12px;
+                background: #2d7d2d;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 16px;
+            }
+            QPushButton:hover {
+                background: #3d9d3d;
+            }
+        """)
+        self.generate_btn.clicked.connect(self.generate_themes)
+        
+        # ============================================================
+        # THEME APPLICATION
+        # ============================================================
+        self.apply_group = QGroupBox(" Apply Themes ")
+        self.apply_group.setStyleSheet(GROUPBOX_STYLE)
+        apply_layout = QVBoxLayout()
+        apply_layout.setSpacing(6)
+        apply_layout.setContentsMargins(15, 8, 15, 8)
+        
+        # GTK
+        self.apply_gtk_combo = self.create_standard_combo(width=260)
+        apply_layout.addLayout(self.create_theme_row("GTK Theme:", self.apply_gtk_combo))
+
+        # Icons
+        self.apply_icon_combo = self.create_standard_combo(width=260)
+        apply_layout.addLayout(self.create_theme_row("Icon Theme:", self.apply_icon_combo))
+
+        # Cursor
+        self.apply_cursor_combo = self.create_standard_combo(width=260)
+        apply_layout.addLayout(self.create_theme_row("Cursor Theme:", self.apply_cursor_combo))
+
+        # Window Theme
+        self.apply_window_combo = self.create_standard_combo(width=260)
+        self.apply_window_combo.setEnabled(self.caps.get('has_wm_theme', False))
+        apply_layout.addLayout(self.create_theme_row("Window Theme:", self.apply_window_combo))
+
+        # Desktop Theme
+        self.apply_desktop_combo = self.create_standard_combo(width=260)
+        self.apply_desktop_combo.setEnabled(self.caps.get('has_desktop_theme', False))
+        apply_layout.addLayout(self.create_theme_row("Desktop Theme:", self.apply_desktop_combo))
+        
+        self.apply_group.setLayout(apply_layout)
+        layout.addWidget(self.apply_group)
+        
+        # Floating Apply Button
+        self.apply_btn = QPushButton("Apply", self.apply_group)
+        self.apply_btn.setFixedSize(67, 23)
+        self.apply_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 12px;
+                background: #2d7d2d;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 16px;
+            }
+            QPushButton:hover {
+                background: #3d9d3d;
+            }
+        """)
+        self.apply_btn.clicked.connect(self.apply_themes)
+        
+        # ============================================================
+        # SCREEN BLANKING
+        # ============================================================
+        blanking_group = QGroupBox(" Screen Blanking ")
+        blanking_group.setStyleSheet(GROUPBOX_STYLE)
+        blanking_layout = QHBoxLayout()
+        blanking_layout.setSpacing(10)
+        blanking_layout.setContentsMargins(15, 8, 15, 8)
+        
+        blanking_layout.addWidget(self.create_label("Timeout:", 110))
+        self.blanking_combo = self.create_standard_combo(
+            items=["Disabled", "30s", "1m", "5m", "10m", "20m", "30m", "1h"],
+            width=200,
+            default="20m"
+        )
+        blanking_layout.addWidget(self.blanking_combo)
+        blanking_layout.addStretch()
+        
+        blanking_group.setLayout(blanking_layout)
+        layout.addWidget(blanking_group)
+        
+        # ============================================================
+        # ACTION BUTTONS (Colorful like DAB/Baker)
+        # ============================================================
+        layout.addSpacing(8)
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
+
+        button_layout.addStretch()
+
+        # 1. Reset Button (Orange - like Baker's neutral)
+        self.reset_btn = QPushButton("Reset")
+        self.reset_btn.setFixedSize(100, 32)
+        self.reset_btn.setToolTip("Discard changes and reload current system themes")
+        self.reset_btn.clicked.connect(self.reset_settings)
+        self.reset_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 12px;
+                background: #8a6a2a;
+                color: #ddd;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 16px;
+            }
+            QPushButton:hover {
+                background: #aa8a3a;
+                color: white;
+            }
+            QPushButton:pressed {
+                background: #6a4a1a;
+            }
+        """)
+        button_layout.addWidget(self.reset_btn)
+
+        button_layout.addSpacing(10)
+
+        # 2. Apply All Button (Green - like Baker's bake)
+        self.apply_all_btn = QPushButton("Apply All")
+        self.apply_all_btn.setFixedSize(100, 32)
+        self.apply_all_btn.setToolTip("Apply wallpaper, themes, and blanking settings")
+        self.apply_all_btn.clicked.connect(self.apply_all)
+        self.apply_all_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 12px;
+                background: #2d7d2d;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 16px;
+            }
+            QPushButton:hover {
+                background: #3d9d3d;
+            }
+            QPushButton:pressed {
+                background: #1d6d1d;
+            }
+        """)
+        button_layout.addWidget(self.apply_all_btn)
+
+        button_layout.addSpacing(10)
+
+        # 3. Quit Button (Red - like Baker's quit)
+        self.quit_btn = QPushButton("Quit")
+        self.quit_btn.setFixedSize(100, 32)
+        self.quit_btn.setToolTip("Exit Bath (Ctrl+Q)")
+        self.quit_btn.clicked.connect(self.close)
+        self.quit_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 12px;
+                font-weight: bold;
+                background: #5a2d2d;
+                color: #ddd;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 16px;
+            }
+            QPushButton:hover {
+                background: #7a3d3d;
+                color: white;
+            }
+            QPushButton:pressed {
+                background: #4a1d1d;
+            }
+        """)
+        button_layout.addWidget(self.quit_btn)
+
+        button_layout.addStretch()
+
+        layout.addLayout(button_layout)
+        
+        layout.addSpacing(6)
+        self.setLayout(layout)
+    
+    def _setup_apply_icon_preview(self):
+        """Create the floating icon preview widget for the Apply section."""
+        self.apply_icon_preview = QLabel(self)
+        self.apply_icon_preview.setFixedSize(65, 65)
+        self.apply_icon_preview.setToolTip("Applied icon theme preview")
+        self.apply_icon_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.apply_icon_preview.setText("🎨")  # Placeholder
+        self.apply_icon_preview.setScaledContents(True)
+        self.apply_icon_preview.setStyleSheet("""background: #2e2e2e;""")
+        
+        # ============================================================
+        # ADJUST THESE VALUES TO POSITION THE PREVIEW
+        # ============================================================
+        PREVIEW_X = 451  # Horizontal position (adjust as needed)
+        PREVIEW_Y = 440   # Vertical position (adjust as needed)
+        # ============================================================
+        
+        self.apply_icon_preview.move(PREVIEW_X, PREVIEW_Y)
+        self.apply_icon_preview.raise_()
+    
+    def setup_keybindings(self):
+        """Configure keyboard shortcuts."""
+        self.quit_btn.setShortcut("Ctrl+Q")
+        self.reset_btn.setShortcut("Ctrl+R")
+        self.apply_all_btn.setShortcut("Ctrl+A")
+        self.generate_btn.setShortcut("Ctrl+G")
+        self.apply_btn.setShortcut("Ctrl+U")
+    
+    def showEvent(self, event):
+        """Position floating buttons after the window is shown."""
+        super().showEvent(event)
+        self.position_floating_buttons()
+    
+    def resizeEvent(self, event):
+        """Reposition floating buttons on resize."""
+        super().resizeEvent(event)
+        self.position_floating_buttons()
+    
+    def position_floating_buttons(self):
+        """Position the floating buttons at the top-right of their group boxes."""
+        # Generate button
+        if hasattr(self, 'generate_btn') and hasattr(self, 'gen_group'):
+            btn_x = self.gen_group.width() - 156
+            btn_y = 139 
+            self.generate_btn.move(btn_x, btn_y)
+            self.generate_btn.raise_()
+        
+        # Apply button
+        if hasattr(self, 'apply_btn') and hasattr(self, 'apply_group'):
+            btn_x = self.apply_group.width() - 75
+            btn_y = 139
+            self.apply_btn.move(btn_x, btn_y)
+            self.apply_btn.raise_()
+    
+    def load_current_settings(self):
+        """Load current system settings and populate combos."""
+        # Populate theme combos
+        self.populate_theme_lists()
+        
+        # Get current system themes
+        current = self.get_current_system_themes()
+        
+        # Update apply combos to show current values
+        if current.get('gtk'):
+            idx = self.apply_gtk_combo.findText(current['gtk'])
+            if idx >= 0:
+                self.apply_gtk_combo.setCurrentIndex(idx)
+            else:
+                self.apply_gtk_combo.addItem(current['gtk'])
+                self.apply_gtk_combo.setCurrentText(current['gtk'])
+            self.update_theme_color(self.apply_gtk_combo)
+        
+        if current.get('icon'):
+            idx = self.apply_icon_combo.findText(current['icon'])
+            if idx >= 0:
+                self.apply_icon_combo.setCurrentIndex(idx)
+            else:
+                self.apply_icon_combo.addItem(current['icon'])
+                self.apply_icon_combo.setCurrentText(current['icon'])
+            self.update_theme_color(self.apply_icon_combo)
+            self.update_apply_icon_preview()
+        
+        if current.get('cursor'):
+            idx = self.apply_cursor_combo.findText(current['cursor'])
+            if idx >= 0:
+                self.apply_cursor_combo.setCurrentIndex(idx)
+            else:
+                self.apply_cursor_combo.addItem(current['cursor'])
+                self.apply_cursor_combo.setCurrentText(current['cursor'])
+            self.update_theme_color(self.apply_cursor_combo)
+        
+        if current.get('wm'):
+            idx = self.apply_window_combo.findText(current['wm'])
+            if idx >= 0:
+                self.apply_window_combo.setCurrentIndex(idx)
+            else:
+                self.apply_window_combo.addItem(current['wm'])
+                self.apply_window_combo.setCurrentText(current['wm'])
+            self.update_theme_color(self.apply_window_combo)
+        
+        # Load blanking from system
+        blanking = get_current_blanking()
+        idx = self.blanking_combo.findText(blanking)
+        if idx >= 0:
+            self.blanking_combo.setCurrentIndex(idx)
+        else:
+            # If the exact string isn't found, try to add it
+            self.blanking_combo.addItem(blanking)
+            self.blanking_combo.setCurrentText(blanking)
+    
+    
+    def populate_theme_lists(self):
+        """Populate theme combos using core.themes.get_available_themes()."""
+        themes = get_available_themes()
+        
+        # GTK (always available)
+        self.apply_gtk_combo.clear()
+        self.apply_gtk_combo.addItem("(Default)")
+        for theme in themes.get('gtk_themes', []):
+            self.apply_gtk_combo.addItem(theme)
+        
+        # Icons (always available)
+        self.apply_icon_combo.clear()
+        self.apply_icon_combo.addItem("(Default)")
+        for theme in themes.get('icon_themes', []):
+            self.apply_icon_combo.addItem(theme)
+        
+        # Cursor (always available)
+        self.apply_cursor_combo.clear()
+        self.apply_cursor_combo.addItem("(Default)")
+        for theme in themes.get('cursor_themes', []):
+            self.apply_cursor_combo.addItem(theme)
+        
+        # Window Theme (only if supported)
+        if self.caps.get('has_wm_theme', False):
+            self.apply_window_combo.clear()
+            self.apply_window_combo.addItem("(Default)")
+            for theme in themes.get('wm_themes', []):
+                self.apply_window_combo.addItem(theme)
+        else:
+            self.apply_window_combo.clear()
+            self.apply_window_combo.addItem("(Not supported)")
+            self.apply_window_combo.setEnabled(False)
+        
+        # Desktop Theme (only if supported)
+        if self.caps.get('has_desktop_theme', False):
+            self.apply_desktop_combo.clear()
+            self.apply_desktop_combo.addItem("(Default)")
+            for theme in themes.get('desktop_themes', []):
+                self.apply_desktop_combo.addItem(theme)
+        else:
+            self.apply_desktop_combo.clear()
+            self.apply_desktop_combo.addItem("(Not supported)")
+            self.apply_desktop_combo.setEnabled(False)
+    
+    def browse_folder(self):
+        folder = QFileDialog.getExistingDirectory(self, "Select Wallpaper Folder")
+        if folder:
+            self.folder_edit.setText(folder)
+    
+    def render_existing_icon_preview(self, theme_name, size=60):
+        """
+        Render the folder.svg from an already-baked icon theme.
+        Trims transparent borders and centers the result.
+        """
+        import shutil
+        
+        if not theme_name or not theme_name.startswith('awp-icons-'):
+            return None
+        
+        # Find the folder.svg in the baked icon theme
+        svg_path = os.path.expanduser(f"~/.icons/{theme_name}/places/scalable/folder.svg")
+        if not os.path.exists(svg_path):
+            return None
+        
+        # Check if rsvg-convert is available
+        if not shutil.which('rsvg-convert'):
+            return None
+        
+        # Render with rsvg-convert at larger size for quality
+        render_size = size * 3
+        temp_dir = f"/dev/shm/awp_preview_{os.getpid()}"
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        temp_png = os.path.join(temp_dir, 'preview.png')
+        trimmed_png = os.path.join(temp_dir, 'trimmed.png')
+        
+        try:
+            # Step 1: Render SVG to PNG
+            subprocess.run([
+                'rsvg-convert',
+                '-w', str(render_size),
+                '-h', str(render_size),
+                '-o', temp_png,
+                svg_path
+            ], check=True, capture_output=True, timeout=2)
+            
+            if not os.path.exists(temp_png):
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                return None
+            
+            # Step 2: Trim transparent borders and center with ImageMagick
+            if shutil.which('convert'):
+                # Trim transparent borders
+                subprocess.run([
+                    'convert', temp_png,
+                    '-trim', '+repage',  # Remove transparent borders
+                    '-background', 'none',
+                    '-gravity', 'center',
+                    '-extent', f'{render_size}x{render_size}',  # Center in square
+                    trimmed_png
+                ], check=True, capture_output=True, timeout=2)
+                
+                # Step 3: Resize to final size
+                subprocess.run([
+                    'convert', trimmed_png,
+                    '-resize', f'{size}x{size}',
+                    '-background', 'none',
+                    '-gravity', 'center',
+                    '-extent', f'{size}x{size}',
+                    temp_png  # Overwrite with final version
+                ], check=True, capture_output=True, timeout=2)
+            else:
+                # No ImageMagick, just use the raw PNG (may not be centered)
+                pass
+            
+            # Load the final image
+            from PyQt6.QtGui import QPixmap
+            pix = QPixmap(temp_png)
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            return pix
+            
+        except Exception:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            return None
+        
+        return None
+    
+    def update_apply_icon_preview(self):
+        """Update the floating preview for the Apply section's icon theme."""
+        # Safety check: make sure the preview exists
+        if not hasattr(self, 'apply_icon_preview'):
+            return
+        
+        theme_name = self.apply_icon_combo.currentText()
+        
+        if not theme_name or not theme_name.startswith('awp-icons-'):
+            self.apply_icon_preview.clear()
+            self.apply_icon_preview.setText("🎨")
+            return
+        
+        # Render the already-baked icon
+        pix = self.render_existing_icon_preview(theme_name, 100)
+        if pix and not pix.isNull():
+            self.apply_icon_preview.setPixmap(pix)
+            self.apply_icon_preview.setText("")
+            self.apply_icon_preview.setToolTip(f"Icon preview: {theme_name}")
+        else:
+            self.apply_icon_preview.clear()
+            self.apply_icon_preview.setText("🎨")
+            self.apply_icon_preview.setToolTip("No preview available")   
+    
+    def update_color_preview(self):
+        """Update the color preview square when hex changes."""
+        hex_color = self.color_edit.text().strip()
+        if hex_color.startswith('#') and len(hex_color) == 7:
+            self.color_preview.setStyleSheet(f"""
+                background-color: {hex_color}; 
+                border: 1px solid {hex_color}; 
+                border-radius: 4px;
+            """)
+        else:
+            self.color_preview.setStyleSheet("background-color: #888; border: 1px solid #555; border-radius: 4px;")
+    
+    def pick_color(self):
+        color = QColorDialog.getColor()
+        if color.isValid():
+            hex_val = color.name()
+            self.color_edit.setText(hex_val)
+            self.update_color_preview()
+    
+    def generate_themes(self):
+        """Generate themes using core.themes."""
+        hex_color = self.color_edit.text().strip()
+        if not hex_color.startswith('#') or len(hex_color) != 7:
+            QMessageBox.warning(self, "Error", "Please enter a valid hex color (e.g., #b7004f)")
+            return
+        
+        gtk = self.gtk_combo.currentData()
+        icon = self.icon_combo.currentData()
+        cursor = self.cursor_combo.currentData()
+        template = self.template_combo.currentData()
+        
+        try:
+            icon_path = generate_icon_from_svg(hex_color, template)
+            if not icon_path:
+                QMessageBox.warning(self, "Error", "Failed to generate icon. Is rsvg-convert installed?")
+                return
+            
+            # Bake themes using core.themes
+            bake_awp_theme(hex_color, icon_path, gtk)
+            bake_awp_icon(hex_color, icon_path, icon)
+            bake_awp_cursor(hex_color, icon_path, cursor)
+            
+            cleanup_temp_icon(icon_path)
+            
+            self.populate_theme_lists()  # Refresh theme lists
+            
+            QMessageBox.information(self, "Success", f"Themes generated successfully!\n\nGTK: {gtk}\nIcon: {icon}\nCursor: {cursor}")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to generate themes:\n\n{str(e)}")
+    
+    def apply_themes(self):
+        """Apply themes using core.actions.set_themes()."""
+        gtk = self.apply_gtk_combo.currentText()
+        icon = self.apply_icon_combo.currentText()
+        cursor = self.apply_cursor_combo.currentText()
+        window = self.apply_window_combo.currentText() if self.caps.get('has_wm_theme', False) else ""
+        desktop = self.apply_desktop_combo.currentText() if self.caps.get('has_desktop_theme', False) else ""
+        
+        # Build theme config
+        theme_config = {}
+        if gtk and gtk != "(Default)":
+            theme_config['gtk_theme'] = gtk
+        if icon and icon != "(Default)":
+            theme_config['icon_theme'] = icon
+        if cursor and cursor != "(Default)":
+            theme_config['cursor_theme'] = cursor
+        if window and window != "(Default)":
+            theme_config['wm_theme'] = window
+        if desktop and desktop != "(Default)":
+            theme_config['desktop_theme'] = desktop
+        
+        if not theme_config:
+            QMessageBox.warning(self, "Warning", "Please select at least one theme to apply.")
+            return
+        
+        try:
+            # Create fake config
+            fake_config = SimpleConfig(theme_config)
+            
+            # Get current workspace
+            ws_num = self.get_current_workspace()
+            
+            # Apply themes
+            set_themes(ws_num, fake_config)
+            
+            QMessageBox.information(self, "Success", "Themes applied successfully!")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to apply themes:\n\n{str(e)}")    
+    
+    def apply_all(self):
+        # Apply wallpaper
+        folder = self.folder_edit.text()
+        if folder and os.path.exists(folder):
+            from core.utils import load_images, sort_images
+            images = load_images(folder)
+            if images:
+                sorted_images = sort_images(images, 'name_az')
+                first_image = str(sorted_images[0])  # ← Pass the actual image!
+                scaling = self.style_combo.currentText().lower()
+                ws_num = self.get_current_workspace()
+                set_wallpaper(ws_num, first_image, scaling)
+                _printer.info(f"Applied wallpaper: {first_image}", backend="bath")
+            else:
+                _printer.warning(f"No images found in {folder}", backend="bath")
+        
+        # Apply themes (using the same logic as apply_themes)
+        gtk = self.apply_gtk_combo.currentText()
+        icon = self.apply_icon_combo.currentText()
+        cursor = self.apply_cursor_combo.currentText()
+        window = self.apply_window_combo.currentText() if self.caps.get('has_wm_theme', False) else ""
+        desktop = self.apply_desktop_combo.currentText() if self.caps.get('has_desktop_theme', False) else ""
+        
+        theme_config = {}
+        if gtk and gtk != "(Default)":
+            theme_config['gtk_theme'] = gtk
+        if icon and icon != "(Default)":
+            theme_config['icon_theme'] = icon
+        if cursor and cursor != "(Default)":
+            theme_config['cursor_theme'] = cursor
+        if window and window != "(Default)":
+            theme_config['wm_theme'] = window
+        if desktop and desktop != "(Default)":
+            theme_config['desktop_theme'] = desktop
+        
+        if theme_config:
+            fake_config = SimpleConfig(theme_config)
+            ws_num = self.get_current_workspace()
+            set_themes(ws_num, fake_config)
+            _printer.info("Applied themes", backend="bath")
+        
+        # Apply blanking
+        blanking_text = self.blanking_combo.currentText()
+        if blanking_text == "Disabled":
+            x11_blanking(0)
+        else:
+            try:
+                value = int(blanking_text[:-1])
+                unit = blanking_text[-1]
+                if unit == 'm':
+                    value *= 60
+                elif unit == 'h':
+                    value *= 3600
+                x11_blanking(value)
+            except:
+                x11_blanking(1800)
+        
+        QMessageBox.information(self, "Success", "All settings applied successfully!")    
+    
+    def reset_settings(self):
+        """Reset EVERYTHING to initial state (as if just started)."""
+        # Reload everything from the system (just like startup)
+        self.load_current_settings()
+        
+        # Reset Generate Themes section to defaults
+        self.color_edit.setText("#b7004f")
+        self.update_color_preview()
+        self.gtk_combo.setCurrentText("Breeze")
+        self.icon_combo.setCurrentText("Mint")
+        self.cursor_combo.setCurrentText("Oxy")
+        self.template_combo.setCurrentText("Awp")
+        
+        # Reset Wallpaper section
+        self.folder_edit.setText("")
+        self.style_combo.setCurrentText("Zoomed")
+        
+        # Reset Blanking section (will be reloaded by load_current_settings)
+        # But we also reset to system value via load_current_settings
+        self.load_current_settings()
+        
+        QMessageBox.information(self, "Reset", "All settings reset to initial state")
+
+if __name__ == "__main__":
+    app = QApplication([])
+    
+    from PyQt6.QtGui import QPalette, QColor
+    palette = QPalette()
+    
+    # Active colors
+    palette.setColor(QPalette.ColorRole.Window, QColor(46, 46, 46))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.Base, QColor(36, 36, 36))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(46, 46, 46))
+    palette.setColor(QPalette.ColorRole.Text, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.Button, QColor(58, 58, 58))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+    
+    # Disabled colors (greyed-out)
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, QColor(120, 120, 120))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(120, 120, 120))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(100, 100, 100))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, QColor(46, 46, 46))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, QColor(46, 46, 46))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(46, 46, 46))
+    
+    app.setPalette(palette)
+    
+    window = Bath()
+    window.show()
+    sys.exit(app.exec())

@@ -142,19 +142,36 @@ def mate_set_themes(ws_num: int, config):
 
 def mate_lean_mode():
     """
-    Kills MATE desktop components to enable feh-based wallpaper.
-    Similar to xfce_lean_mode() - kills desktop manager for low-latency audio.
+    Kills MATE desktop components and prevents restart.
+    Similar to xfce_lean_mode() - kills caja-desktop for low-latency audio.
     """
     global _lean_mode_active
     
     try:
         _printer.info("Activating Lean Mode...", backend="mate")
         
-        # Kill caja-desktop (MATE's desktop manager)
-        subprocess.run(["pkill", "-f", "caja-desktop"], stderr=subprocess.DEVNULL)
-        time.sleep(0.3)  # Brief pause
+        # Prevent caja-desktop from restarting (MATE's session management)
+        # Try to disable caja-desktop autostart
+        autostart_dir = os.path.expanduser("~/.config/autostart")
+        if not os.path.exists(autostart_dir):
+            os.makedirs(autostart_dir, exist_ok=True)
         
-        # Kill cairo-dock if present (common MATE dock)
+        # Create a desktop file to disable caja-desktop
+        disable_file = os.path.join(autostart_dir, "caja-desktop-disable.desktop")
+        with open(disable_file, 'w') as f:
+            f.write("""[Desktop Entry]
+Type=Application
+Name=Disable Caja Desktop
+Exec=true
+Hidden=true
+X-GNOME-Autostart-enabled=false
+""")
+        
+        # Kill caja-desktop
+        subprocess.run(["pkill", "-f", "caja-desktop"], stderr=subprocess.DEVNULL)
+        time.sleep(0.3)
+        
+        # Kill cairo-dock if present
         subprocess.run(["pkill", "-f", "cairo-dock"], stderr=subprocess.DEVNULL)
         
         _lean_mode_active = True
@@ -168,41 +185,37 @@ def mate_lean_mode():
 
 
 def mate_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
-    """
-    LEGACY: Set wallpaper using MATE's native desktop manager.
-    Keeps desktop icons and right-click menu.
-    """
-    try:
-        style_val = SCALING_MATE.get(scaling, 'zoom')
-        wp_name = os.path.basename(image_path)
-        
-        # Set wallpaper using MATE's gsettings
-        subprocess.run([
-            "gsettings", "set", "org.mate.background", 
-            "picture-filename", image_path
-        ], check=True)
-        subprocess.run([
-            "gsettings", "set", "org.mate.background", 
-            "picture-options", style_val
-        ], check=True)
-        
-        _printer.wallpaper(ws_num, wp_name, backend="mate")
-        return True
-        
-    except subprocess.CalledProcessError as e:
-        _printer.error(f"Native wallpaper failed: {e}", backend="mate")
-        return False
-    except Exception as e:
-        _printer.error(f"Unexpected error: {e}", backend="mate")
-        return False
+    """Set wallpaper using MATE's native gsettings."""
+    style_val = SCALING_MATE.get(scaling, 'zoom')
+    wp_name = os.path.basename(image_path)
+    
+    subprocess.run([
+        "gsettings", "set", "org.mate.background", 
+        "picture-filename", image_path
+    ], check=False)
+    subprocess.run([
+        "gsettings", "set", "org.mate.background", 
+        "picture-options", style_val
+    ], check=False)
+    
+    _printer.wallpaper(ws_num, wp_name, backend="mate")
+    return True
 
 
 def mate_set_wallpaper(ws_num: int, image_path: str, scaling: str):
-    """Try feh first, fallback to native MATE."""
-    wp_name = os.path.basename(image_path)
+    """Set wallpaper using native MATE method if caja-desktop is running."""
+    # Check if caja-desktop is running
+    try:
+        result = subprocess.run(["pgrep", "-f", "caja-desktop"], capture_output=True)
+        if result.returncode == 0:
+            # caja-desktop is running → use native
+            return mate_set_wallpaper_native(ws_num, image_path, scaling)
+    except:
+        pass
     
-    # Always try feh if available
+    # Fallback to feh
     style_flag = SCALING_FEH.get(scaling, '--bg-fill')
+    wp_name = os.path.basename(image_path)
     
     try:
         subprocess.run(["feh", style_flag, image_path], check=True)
@@ -224,3 +237,58 @@ def mate_set_icon(icon_path: str):
 def mate_get_monitors_for_workspace(ws_num: int):
     """Get list of monitors (placeholder for API compatibility)."""
     return []  # MATE handles multi-monitor automatically
+
+
+
+def mate_get_current_themes():
+    """Get current theme settings from MATE."""
+    current = {
+        'gtk': None,
+        'icon': None,
+        'cursor': None,
+        'wm': None
+    }
+    
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.mate.interface", "gtk-theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['gtk'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.mate.interface", "icon-theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['icon'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.mate.interface", "cursor-theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['cursor'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.mate.Marco.general", "theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['wm'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    _printer.info(f"Current themes: GTK={current['gtk']}, Icons={current['icon']}, Cursor={current['cursor']}", backend="mate")
+    
+    return current

@@ -238,3 +238,69 @@ def cinnamon_set_icon(icon_path: str):
 def cinnamon_get_monitors_for_workspace(ws_num: int):
     """Get list of monitors (placeholder for API compatibility)."""
     return []  # Cinnamon handles multi-monitor automatically
+
+
+
+def cinnamon_get_current_themes():
+    """Get current theme settings from Cinnamon."""
+    current = {
+        'gtk': None,
+        'icon': None,
+        'cursor': None,
+        'wm': None,
+        'desktop': None
+    }
+    
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.cinnamon.desktop.interface", "gtk-theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['gtk'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.cinnamon.desktop.interface", "icon-theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['icon'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.cinnamon.desktop.interface", "cursor-theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['cursor'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.cinnamon.desktop.wm.preferences", "theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['wm'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.cinnamon.theme", "name"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['desktop'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    _printer.info(f"Current themes: GTK={current['gtk']}, Icons={current['icon']}, Cursor={current['cursor']}", backend="cinnamon")
+    
+    return current

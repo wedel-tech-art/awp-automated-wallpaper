@@ -22,6 +22,48 @@ from core.constants import (
 _printer = get_printer()
 _printer.set_backend("backends")
 
+# In backends/__init__.py, after imports
+
+def _detect_workspace_count():
+    """
+    Universal workspace count detection.
+    """
+    # 1. Try EWMH (works on all X11 WMs)
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["xprop", "-root", "_NET_NUMBER_OF_DESKTOPS"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            parts = result.stdout.strip().split()
+            if len(parts) >= 3:
+                count = int(parts[-1])
+                if count > 0:
+                    _printer.info(f"Workspace count (EWMH): {count}", backend="common")
+                    return count
+    except:
+        pass
+    
+    # 2. Try gsettings (for Wayland / GNOME)
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["gsettings", "get", "org.gnome.desktop.wm.preferences", "num-workspaces"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            count = int(result.stdout.strip())
+            if count > 0:
+                _printer.info(f"Workspace count (GNOME/gsettings): {count}", backend="common")
+                return count
+    except:
+        pass
+    
+    # 3. Final fallback
+    _printer.info("Workspace count (default): 4", backend="common")
+    return 4
+
 # ============================================================================
 # SHARED BACKEND UTILITIES (Qt6/KDE theming)
 # These are identical across all X11 backends
@@ -136,6 +178,8 @@ for name in BACKEND_NAMES:
             "themes": getattr(module, f"{prefix}_set_themes"),
             "lean_mode": getattr(module, f"{prefix}_lean_mode"),
             "current_ws": getattr(module, f"{prefix}_current_ws"),
+            "get_current_themes": getattr(module, f"{prefix}_get_current_themes", None),
+            "workspace_count": getattr(module, f"{prefix}_get_workspace_count", _detect_workspace_count),
         }
         
         # OPTIONAL: native wallpaper method (some backends have both)

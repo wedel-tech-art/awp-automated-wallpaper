@@ -24,6 +24,7 @@ Usage:
 
 import os
 import sys
+import re
 import subprocess
 import tempfile
 import shutil
@@ -44,7 +45,8 @@ from core.themes import (
     clean_themes,
     generate_icon_from_svg,
     cleanup_temp_icon,
-    extract_preset_from_theme
+    extract_preset_from_theme,
+    _build_icon_replacements
 )
 from core.constants import (
     THEME_PRESETS, ICON_PRESETS, CURSOR_PRESETS, SVG_TEMPLATES,
@@ -62,8 +64,8 @@ class AWPBaker(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("🎨 AWP Baker - Workspace Color Manager")
-        self.setFixedSize(540, 830)
-        self.current_hex = "#b3004c"
+        self.setFixedSize(550, 830)
+        self.current_hex = "#b7004f"
         
         # Load config
         self.config = AWPConfig()
@@ -243,7 +245,7 @@ class AWPBaker(QMainWindow):
         color_layout.addWidget(QLabel("Hex Color:"))
         
         self.hex_input = QLineEdit()
-        self.hex_input.setPlaceholderText("#b3004c")
+        self.hex_input.setPlaceholderText("#b7004f")
         self.hex_input.setMinimumWidth(160)
         self.hex_input.setFixedHeight(28)
         self.hex_input.textChanged.connect(self.on_hex_changed)
@@ -377,6 +379,7 @@ class AWPBaker(QMainWindow):
             self.icon_combo.addItem(name.title())
         self.icon_combo.setCurrentText("Mint")
         icon_row.addWidget(self.icon_combo)
+        self.icon_combo.currentIndexChanged.connect(self.update_icon_preview)
         
         # Icons INI label
         self.icon_ini_label = QLabel("INI: None")
@@ -488,7 +491,7 @@ class AWPBaker(QMainWindow):
         
         self.bake_btn = QPushButton("🔥 Bake && Update")
         self.bake_btn.setMinimumWidth(160)
-        self.bake_btn.setFixedHeight(38)
+        self.bake_btn.setFixedHeight(35)
         self.bake_btn.setStyleSheet("""
             QPushButton {
                 font-weight: bold;
@@ -515,7 +518,7 @@ class AWPBaker(QMainWindow):
         
         self.quit_btn = QPushButton("✕ Quit")
         self.quit_btn.setMinimumWidth(80)
-        self.quit_btn.setFixedHeight(38)
+        self.quit_btn.setFixedHeight(35)
         self.quit_btn.setStyleSheet("""
             QPushButton {
                 font-size: 13px;
@@ -541,7 +544,7 @@ class AWPBaker(QMainWindow):
         # --- Shortcuts hint ---
         hint = QLabel("Ctrl+B (Bake)  |  Ctrl+Q (Quit)")
         hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        hint.setStyleSheet("color: #555; font-size: 10px; padding: 1px;")
+        hint.setStyleSheet("color: #555; font-size: 10px;")
         layout.addWidget(hint)
         
         # --- Progress Bar ---
@@ -564,7 +567,7 @@ class AWPBaker(QMainWindow):
         layout.addWidget(self.progress_bar)
         
         # Initialize progress bar color with default hex
-        self._update_progress_style("#b3004c")
+        self._update_progress_style("#b7004f")
         
         # --- Status Bar ---
         self.statusBar().showMessage("Ready")
@@ -579,8 +582,11 @@ class AWPBaker(QMainWindow):
             }
         """)
         
+        # Setup the floating icon preview
+        self._setup_icon_preview()
+        
         # Set default hex
-        self.hex_input.setText("#b3004c")
+        self.hex_input.setText("#b7004f")
         self.on_hex_changed()
         
         # === NOW LOAD WORKSPACES ===
@@ -604,6 +610,140 @@ class AWPBaker(QMainWindow):
         
         _printer.info("AWP Baker initialized", backend="baker")
     
+    def _setup_icon_preview(self):
+        """Create the floating icon preview widget."""
+        self.icon_preview = QLabel(self)
+        self.icon_preview.setFixedSize(45, 45)
+        self.icon_preview.setToolTip("Icon theme preview")
+        self.icon_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.icon_preview.setScaledContents(True)
+        self.icon_preview.setText("🎨")  # Placeholder
+        self.icon_preview.setStyleSheet("""background: #2a2a2a;""")
+        
+        # Position it (floating)
+        # These coordinates can be adjusted
+        ICON_X = 456
+        ICON_Y = 355
+        self.icon_preview.move(ICON_X, ICON_Y)
+        self.icon_preview.raise_()
+    
+    def generate_icon_theme_preview(self, hex_color, preset_name='mint', size=60):
+        """Generate a preview of an icon theme's folder.svg."""
+        if not hex_color or not preset_name:
+            return None
+        
+        if not shutil.which('rsvg-convert'):
+            return None
+        
+        # Get the preset config
+        preset_config = ICON_PRESETS.get(preset_name, {})
+        if not preset_config:
+            return None
+        
+        # Get the source SVG from template-icon-presets
+        template_path = preset_config.get('path', f'template-icon-presets/{preset_name}')
+        svg_path = os.path.expanduser(f"~/awp/{template_path}/folder.svg")
+        if not os.path.exists(svg_path):
+            return None
+        
+        # Read the SVG
+        with open(svg_path, 'r') as f:
+            svg_content = f.read()
+        
+        # Build color replacements
+        clean_hex = hex_color.lstrip('#')
+        r, g, b = int(clean_hex[0:2], 16), int(clean_hex[2:4], 16), int(clean_hex[4:6], 16)
+        new_rgb = f"{r}, {g}, {b}"
+        
+        replacements = _build_icon_replacements(preset_config, clean_hex, new_rgb)
+        
+        # Apply replacements
+        for old, new in replacements:
+            svg_content = svg_content.replace(old, new)
+        
+        # Render with rsvg-convert (larger for quality)
+        temp_dir = f"/dev/shm/awp_preview_{os.getpid()}"
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        temp_svg = os.path.join(temp_dir, 'preview.svg')
+        temp_png = os.path.join(temp_dir, 'preview.png')
+        trimmed_png = os.path.join(temp_dir, 'trimmed.png')
+        
+        try:
+            with open(temp_svg, 'w') as f:
+                f.write(svg_content)
+            
+            # Generate at larger size for quality
+            render_size = size * 3
+            subprocess.run([
+                'rsvg-convert',
+                '-w', str(render_size),
+                '-h', str(render_size),
+                '-o', temp_png,
+                temp_svg
+            ], check=True, capture_output=True, timeout=2)
+            
+            if not os.path.exists(temp_png):
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                return None
+            
+            # ============================================================
+            # TRIM TRANSPARENT BORDERS AND CENTER
+            # ============================================================
+            # Check if ImageMagick is available
+            if shutil.which('convert'):
+                # Trim transparent borders
+                subprocess.run([
+                    'convert', temp_png,
+                    '-trim',  # Remove transparent borders
+                    '-background', 'none',
+                    '-gravity', 'center',
+                    '-extent', f'{render_size}x{render_size}',  # Center in a square
+                    trimmed_png
+                ], check=True, capture_output=True, timeout=2)
+                
+                # Resize to final size
+                subprocess.run([
+                    'convert', trimmed_png,
+                    '-resize', f'{size}x{size}',
+                    '-background', 'none',
+                    '-gravity', 'center',
+                    '-extent', f'{size}x{size}',
+                    temp_png  # Overwrite with trimmed version
+                ], check=True, capture_output=True, timeout=2)
+            
+            # Load the final image
+            from PyQt6.QtGui import QPixmap
+            pix = QPixmap(temp_png)
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            return pix
+            
+        except Exception as e:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            return None
+        
+        return None
+    
+    def update_icon_preview(self):
+        """Update the floating icon preview when color or icon preset changes."""
+        hex_color = self.hex_input.text().strip()
+        icon_preset = self.icon_combo.currentText().lower()
+        
+        if not hex_color.startswith('#') or len(hex_color) != 7:
+            self.icon_preview.clear()
+            self.icon_preview.setText("🎨")
+            return
+        
+        pix = self.generate_icon_theme_preview(hex_color, icon_preset, 100)
+        if pix and not pix.isNull():
+            self.icon_preview.setPixmap(pix)
+            self.icon_preview.setText("")
+            self.icon_preview.setToolTip(f"Icon preview: {icon_preset} with {hex_color}")
+        else:
+            self.icon_preview.clear()
+            self.icon_preview.setText("🎨")
+            self.icon_preview.setToolTip("No preview available")
+            
     def show_accent_message(self, title, message, icon_type=QMessageBox.Icon.Information):
         """Show a QMessageBox with a styled OK button matching the accent color."""
         msg_box = QMessageBox(self)
@@ -1029,10 +1169,43 @@ class AWPBaker(QMainWindow):
             
             self.current_color_label.setText(f"WS{ws['num']}: {color} | {hsv_info}")
             self._update_progress_style(color)
+        
+            # ============================================================
+            # CHECK FOR COLOR CONFLICT ON WORKSPACE SELECTION
+            # ============================================================
+            has_conflict, conflicting = self.check_color_conflict(ws['num'], color)
+            
+            if has_conflict:
+                self.statusBar().showMessage(f"⚠️ Color {color} is shared with WS{conflicting}")
+                self.statusBar().setStyleSheet("color: #ff6b6b;")
+                # Highlight the hex input
+                self.hex_input.setStyleSheet(f"""
+                    QLineEdit {{
+                        background: #3c3c3c;
+                        color: #ff6b6b;
+                        border: 2px solid #ff6b6b;
+                        border-radius: 6px;
+                        padding: 4px 12px;
+                        font-size: 13px;
+                        font-family: monospace;
+                    }}
+                """)
+                self.bake_btn.setEnabled(False)
+                self.bake_btn.setToolTip("⚠️ Color conflict - this workspace shares a color with another")
+            else:
+                self.statusBar().showMessage("Ready")
+                self.statusBar().setStyleSheet("")
+                self.bake_btn.setEnabled(True)
+                self.bake_btn.setToolTip("")
+                # Only update hex input style if it's the current color
+                if color == self.hex_input.text().strip():
+                    self.hex_input.setStyleSheet(self._get_input_style(color))
         else:
             self.current_color_preview.setStyleSheet("background: #888; border-radius: 4px; border: 2px solid #555;")
             self.current_color_label.setText("No color set")
             self._update_progress_style(None)
+            self.bake_btn.setEnabled(True)
+            self.bake_btn.setToolTip("")
         
         # Update INI labels
         self._update_ini_labels(ws)
@@ -1182,19 +1355,63 @@ class AWPBaker(QMainWindow):
         if color.isValid():
             hex_val = color.name()
             self.hex_input.setText(hex_val)
-    
+
     def on_hex_changed(self):
         hex_val = self.hex_input.text().strip()
+        
+        # Reset status bar and enable bake button by default
+        self.bake_btn.setEnabled(True)
+        self.bake_btn.setToolTip("")
         
         if hex_val.startswith('#') and len(hex_val) == 7:
             self.current_hex = hex_val
             self._update_all_styles(hex_val)
             self._update_progress_style(hex_val)
+            
+            # Update icon preview
+            self.update_icon_preview()
+            
+            # Check for color conflicts (live)
+            ws_index = self.ws_combo.currentIndex()
+            if ws_index >= 0 and ws_index < len(self.workspaces):
+                ws_num = self.workspaces[ws_index]['num']
+                has_conflict, conflicting = self.check_color_conflict(ws_num, hex_val)
+                
+                if has_conflict:
+                    self.statusBar().showMessage(f"⚠️ Color {hex_val} already used by WS{conflicting}")
+                    self.statusBar().setStyleSheet("color: #ff6b6b;")
+                    self.hex_input.setStyleSheet(f"""
+                        QLineEdit {{
+                            background: #3c3c3c;
+                            color: #ff6b6b;
+                            border: 2px solid #ff6b6b;
+                            border-radius: 6px;
+                            padding: 4px 12px;
+                            font-size: 13px;
+                            font-family: monospace;
+                        }}
+                        QLineEdit:focus {{
+                            border: 2px solid #ff6b6b;
+                            background: #404040;
+                        }}
+                    """)
+                    self.bake_btn.setEnabled(False)
+                    self.bake_btn.setToolTip("⚠️ Color conflict detected - pick a different color")
+                else:
+                    self.statusBar().showMessage("Ready")
+                    self.statusBar().setStyleSheet("")
+                    self.hex_input.setStyleSheet(self._get_input_style(hex_val))
+                    self.bake_btn.setEnabled(True)
+                    self.bake_btn.setToolTip("")
         else:
             self.current_hex = None
             self._update_all_styles(None)
             self._update_progress_style(None)
-    
+            self.bake_btn.setEnabled(False)
+            self.bake_btn.setToolTip("Please enter a valid hex color (e.g., #b7004f)")
+            self.icon_preview.clear()
+            self.icon_preview.setText("🎨")
+        
     def _clean_workspace_themes(self, ws_num, gtk_theme, icon_theme, cursor_theme):
         """Remove old themes for a specific workspace from both global and preset locations."""
         theme_names = []
@@ -1242,6 +1459,30 @@ class AWPBaker(QMainWindow):
                     _printer.info(f"Removed from preset: {cursor_path}", backend="baker")
         
         return removed
+    
+    def check_color_conflict(self, ws_num, hex_color):
+        """
+        Check if the selected hex color is already used by another workspace.
+        
+        Args:
+            ws_num: The workspace number being checked (1-based)
+            hex_color: The hex color to check (with #)
+        
+        Returns:
+            tuple: (has_conflict, conflicting_workspaces)
+        """
+        conflicting = []
+        hex_lower = hex_color.lower()
+        
+        for ws in self.workspaces:
+            if ws['num'] == ws_num:
+                continue  # Skip current workspace
+            
+            ws_color = ws.get('color', '').lower()
+            if ws_color == hex_lower:
+                conflicting.append(ws['num'])
+        
+        return len(conflicting) > 0, conflicting
     
     def _update_ini_color_direct(self, ini_path, ws_num, new_color):
         """Update color in a specific INI file directly."""
@@ -1333,7 +1574,7 @@ class AWPBaker(QMainWindow):
         hex_color = self.hex_input.text().strip()
         if not hex_color.startswith('#') or len(hex_color) != 7:
             self.show_accent_message("Invalid Color", 
-                "Please enter a valid hex color (e.g., #b3004c)", QMessageBox.Icon.Warning)
+                "Please enter a valid hex color (e.g., #b7004f)", QMessageBox.Icon.Warning)
             return
         
         gtk_preset = self.gtk_combo.currentText().lower()
@@ -1637,7 +1878,7 @@ class AWPBaker(QMainWindow):
         hex_color = self.hex_input.text().strip()
         if not hex_color.startswith('#') or len(hex_color) != 7:
             self.show_accent_message("Invalid Color", 
-                "Please enter a valid hex color (e.g., #b3004c)", QMessageBox.Icon.Warning)
+                "Please enter a valid hex color (e.g., #b7004f)", QMessageBox.Icon.Warning)
             return
         
         # Get selected workspace
@@ -1649,6 +1890,21 @@ class AWPBaker(QMainWindow):
         ws = self.workspaces[ws_index]
         ws_num = ws['num']
         ws_name = ws['name']
+        
+        # ============================================================
+        # CHECK FOR COLOR CONFLICT (ENFORCE UNIQUE COLORS)
+        # ============================================================
+        has_conflict, conflicting = self.check_color_conflict(ws_num, hex_color)
+        
+        if has_conflict:
+            msg = f"❌ Color {hex_color} is already used by workspace(s): {conflicting}\n\n"
+            msg += "AWP requires each workspace to have a UNIQUE color.\n"
+            msg += "This prevents theme conflicts and keeps each workspace\n"
+            msg += "as a distinct visual identity.\n\n"
+            msg += "Please pick a different color for this workspace."
+            
+            self.show_accent_message("Color Conflict", msg, QMessageBox.Icon.Warning)
+            return  # Stop the baking process completely
         
         selected_preset = self.preset_combo.currentData()
         is_current_preset = selected_preset == self.current_preset

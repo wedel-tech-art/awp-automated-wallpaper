@@ -176,3 +176,66 @@ def generic_set_themes(ws_num: int, config):
         _printer.themes(ws_num, changes, backend="generic")
     else:
         _printer.info(f"No theme changes (WM may need manual theme tools)", backend="generic")
+
+
+def generic_get_current_themes():
+    """
+    Get current theme settings for generic WMs.
+    Uses gsettings as fallback (many WMs use it for GTK settings).
+    """
+    current = {
+        'gtk': None,
+        'icon': None,
+        'cursor': None,
+        'wm': None,
+        'desktop': None
+    }
+    
+    # Try gsettings (works for many GTK-based WMs)
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.gnome.desktop.interface", "gtk-theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['gtk'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.gnome.desktop.interface", "icon-theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['icon'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["gsettings", "get", "org.gnome.desktop.interface", "cursor-theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['cursor'] = result.stdout.strip().strip("'")
+    except:
+        pass
+    
+    # Check if gtkrc exists (fallback)
+    gtkrc_path = os.path.expanduser("~/.gtkrc-2.0")
+    if os.path.exists(gtkrc_path):
+        try:
+            with open(gtkrc_path, 'r') as f:
+                for line in f:
+                    if 'gtk-theme-name' in line:
+                        parts = line.split('"')
+                        if len(parts) >= 2:
+                            current['gtk'] = parts[1]
+                            break
+        except:
+            pass
+    
+    _printer.info(f"Current themes: GTK={current['gtk']}, Icons={current['icon']}, Cursor={current['cursor']}", backend="generic")
+    
+    return current

@@ -1176,7 +1176,7 @@ THEME_CAPABILITIES = {
         'has_icons': True,
         'has_cursor': True,
         'has_qt_accent': True,
-        'notes': 'Hybrid: Qtile + gnome-settings-daemon'
+        'notes': 'Hybrid: Qtile + gsd-xsettings'
     },
     'qtile_wayland': {
         'has_wm_theme': False,        # Qtile draws its own borders
@@ -1185,7 +1185,7 @@ THEME_CAPABILITIES = {
         'has_icons': True,
         'has_cursor': True,           # Wayland handles cursors differently but still works
         'has_qt_accent': True,        # Same Qt6 accent file works
-        'notes': 'Qtile Wayland + gnome-settings-daemon (no systray, no picom)'
+        'notes': 'Qtile Wayland + gsd-xsettings'
     },
     'cinnamon': {
         'has_wm_theme': True,

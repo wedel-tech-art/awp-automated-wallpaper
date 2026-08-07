@@ -14,68 +14,89 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 ## 🚀 Key Features
 
+### 🛁 Bath — "A Taste of AWP" Newbie-Friendly Baker-Themer (V3.15)
+
+**Bath** is a standalone tool that gives users a **taste** of what AWP can do — without the complexity of presets, workspaces, or INI files.
+
+- **One-Stop Shop:** GTK themes, icon themes, cursor themes, wallpaper, and screen blanking — all in one window
+- **On-the-Fly Theme Baking:** Pick any color and instantly bake a complete theme (GTK + Icons + Cursors)
+- **Live Icon Preview:** See exactly what your icon theme looks like before applying it
+- **Backend-Aware:** Automatically detects your DE and adapts theme application accordingly
+- **System-Level Only:** Works with your current system themes — no presets, no workspaces, no complexity
+- **Real-Time Feedback:** Color picker, previews, and immediate system updates
+
+> 💡 **Bath is the gateway drug to AWP.** It's designed to show new users the power of AWP's theming engine without overwhelming them. Once you need more control (multiple workspaces, different wallpapers, presets), you graduate to **DAB + Baker**.
+
+### 🔧 DAB — Pure Configurator (The Real Power Tool)
+
+**DAB** is the workhorse of AWP — full preset management, workspace configuration, and system control.
+
+- **Full Preset Access:** Switch between any preset from `presets/` directly from the dashboard
+- **Tab-Free UI:** Clean, modern single-window design with workspace combo box
+- **Live Theme Previews:** Color previews for GTK, Icon, and Cursor themes
+- **HUD Integration:** Toggle Vertical and Horizontal (Bottom) upgraded HUDs with real-time mount detection and screen size auto-detection as well
+- **Preset Indicator:** ✓ mark shows which preset is currently active in your system
+- **Screen Blanking:** Simple combo box control (unified, no confusing checkboxes)
+- **Modern Action Buttons:** Color-coded actions matching Baker's sleek style
+
+> 💡 **DAB is for power users.** It's the central control panel for managing multiple presets, configuring workspaces, and controlling the entire AWP ecosystem.
+
+### 🧁 AWP Baker — Ultimate Theme Generation
+
+**Baker** is a surgical theme generation tool with live previews and intelligent operations.
+
+- **Live Icon Preview:** See exactly what your chosen icon template + color will look like before baking
+- **Color Conflict Detection:** Prevents duplicate colors across workspaces
+- **INI Theme Labels:** Shows current INI configuration for full context
+- **Clean Workspace Mode:** Remove ONLY the current workspace's themes before baking
+- **Fool Bake Mode:** Pure theme baking without touching your config — perfect for testing
+- **Regenerate All:** Rebuild ALL themes from the INI file in one operation
+- **Progress Bar:** Visual feedback with dynamic accent color matching
+
+### 🎯 The Three Tools Work Together
+
+| Tool | Purpose | Best For | Complexity |
+|------|---------|----------|------------|
+| **Bath** | System-wide theming (taste of AWP) | New users, quick theme changes, "just make it look good" | 🟢 Low |
+| **DAB** | Configuration & presets | Power users managing multiple presets and workspaces | 🟡 Medium |
+| **Baker** | Theme generation | Creating custom themes from colors, surgical operations | 🟡 Medium |
+
+> 🔄 **The Workflow:** Try **Bath** first to see what AWP can do. If you like it, graduate to **DAB + Baker** for the full power of workspace-specific theming, presets, and automated wallpaper rotation.
+
 ## 🔧 Dashboard Upgrade & Baker Enhancements (V3.14)
 
-**DAB now features presets** — switch between any preset from the `presets/` directory directly from the Dashboard.
+**DAB now features presets** with a tab-free UI and preset indicator.
 
-### What Changed
+- **Preset Switching:** Select any preset from `presets/` directly from the dashboard
+- **Tab-Free UI:** Clean single-window design with workspace combo box
+- **Modern Action Buttons:** Color-coded actions matching Baker's style
+- **Preset Indicator:** ✓ mark shows active preset (from `/dev/shm/awp_active_preset`)
+- **HSV Display in Baker:** Better color understanding with Hue/Saturation/Value info
+- **Symlink Cleanup:** Consistent naming across backends
 
-- **DAB now features Presets:** Switch between any preset from the `presets/` directory (`qtile_xfce-debian`, `xfce-debian`, etc.) directly from the Dashboard. Edit workspace settings across different presets seamlessly.
-- **Tab-Free UI:** The old 9-tab interface has been replaced with a clean, modern single-window design. Select any workspace from a combo box and all settings update instantly.
-- **Modern Action Buttons:** Backup, Save, and Quit buttons now match Baker's sleek, modern style with color-coded actions.
-- **Preset Indicator:** A ✓ mark clearly shows which preset is currently active in your system (from `/dev/shm/awp_active_preset`).
-- **Renamed to `dab`:** Now matches Baker's naming convention for consistency.
-- **HSV Info Display in Baker:** Baker now shows HSV values (Hue, Saturation, Value) next to the color preview for better color understanding.
-- **Baker Floating Window Fix:** Baker now opens correctly in Qtile with proper window sizing.
-- **Symlink Cleanup:** Removed duplicate symlink in `~/.local/share/color-schemes/` — now uses consistent naming with backends.
-- **Mint Icon Theme:** Improved audio icons for better visual consistency.
+> 💡 **Recommended Workflow:** Use **DAB** for configuration and preset selection, **Baker** for theme generation.
 
-### Why This Matters
-
-- **Full Preset Access:** View and edit workspace settings from any preset in one interface.
-- **Cleaner UI:** No more tabs cluttering the screen.
-- **Professional Look:** Modern, cohesive design across all AWP tools.
-- **Better Color Understanding:** HSV values help you understand color relationships.
-
-> 💡 **Recommended Workflow:** Use **DAB** (Dashboard) for configuration and preset selection, and **Baker** for theme generation. They complement each other perfectly.
-
-## 🔧 DAB Pure Configurator & NEW TOOLS!!! preset_cloner.sh, awp_rotate.sh (V3.13)
+## 🔧 DAB Pure Configurator & New Tools (V3.13)
 
 **DAB is now exclusively a configuration tool** — no baking, no color detection.
 
-### What Changed
-
-- **DAB Pure Configurator:** Handles only wallpaper folders, timing, scaling, blanking, and system themes. All theme baking is now handled by **Baker**.
-- **preset_cloner.sh:** Clone your current preset to ALL or a specific preset with one command.
-- **awp_rotate.sh:** Toggle wallpaper rotation on/off (full ↔ light daemon).
-- **Icon Path Enforcement:** All workspace icons consistently point to `~/awp/logos/` — presets are now fully portable and clonable.
-- **New GTK Preset:** `mint` GTK theme based on Mint-Y-Dark-Aqua.
-- **New SVG Template:** `awp-firma` — AWP signature stroke with transparent background.
-- **Daemon Sync Fix:** Daemons now correctly capture wallpaper index changes from `nav.py`.
-
-### Why This Matters
-
-- **Clean separation:** DAB configures, Baker bakes.
-- **Consistency:** All presets share the same icon path structure.
-- **Portability:** Clone presets without modifying paths.
-- **Flexibility:** Toggle rotation on the fly.
-
-> 💡 **Recommended Workflow:** Use **DAB** for configuration (folders, timing, themes) and **Baker** for theme generation. They complement each other perfectly.
+- **DAB Pure Configurator:** Handles folders, timing, scaling, blanking, and system themes
+- **preset_cloner.sh:** Clone current preset to ALL or specific presets
+- **awp_rotate.sh:** Toggle wallpaper rotation (full ↔ light daemon)
+- **Icon Path Enforcement:** All icons point to `~/awp/logos/` — presets are fully portable
+- **New GTK Preset:** `mint` based on Mint-Y-Dark-Aqua
+- **New SVG Template:** `awp-firma` — AWP signature stroke with transparent background
 
 ## 🎨 Preset-Based Themes (V3.12)
 
-**Themes now live inside presets** - each preset is completely self-contained.
-
-### How It Works
+**Themes now live inside presets** — each preset is completely self-contained.
 
 - **Themes stored in** `presets/PRESET/themes/` (GTK, Icons, Cursors)
-- **Activation via symlinks** - `awp_start.sh` links to `~/.themes` and `~/.icons`
-- **Clean separation** - Baked themes never conflict with system themes
-- **Portable presets** - Share entire presets with baked themes included
+- **Activation via symlinks** — `awp_start.sh` links to `~/.themes` and `~/.icons`
+- **Clean separation** — Baked themes never conflict with system themes
+- **Portable presets** — Share entire presets with baked themes included
 
-### TEMPLATE Showcase
-
-TEMPLATE now demonstrates AWP's full power with **4 workspaces, 4 different themes**:
+**TEMPLATE Showcase:** 4 workspaces, 4 different themes demonstrating AWP's full power.
 
 | Workspace | Color | GTK | Icons | Cursors |
 |-----------|-------|-----|-------|---------|
@@ -84,170 +105,52 @@ TEMPLATE now demonstrates AWP's full power with **4 workspaces, 4 different them
 | ws3 | `#b3004c` | Breeze | Besgnulinux | Oxy |
 | ws4 | `#8300b3` | Breeze | Sweet | Oxy |
 
-### Benefits
+**Benefits:** No cluttering `~/.themes`/`~/.icons`, clean symlink management, portable/shareable presets, surgical updates.
 
-- No cluttering `~/.themes` and `~/.icons`
-- Clean symlink management
-- Presets are portable and shareable
-- Surgical updates - bake one workspace at a time
 
-## 🧁 AWP Baker — The Ultimate Theme Generation Tool (V3.11)
+## 🧬 Core Engine Evolution (V3.7 - V3.11)
 
-AWP Baker (`baker`) is a **standalone, surgical theme generation tool** that changes how you manage workspace colors forever.
+### V3.11 — AWP Baker Launch
+**Baker** debuted as a standalone surgical theme generation tool, introducing:
+- **Color-Driven Design:** Pick any hex → bake GTK + Icons + Cursors in one click
+- **Surgical Precision:** Update ONE workspace at a time — no rebuilding all 8
+- **Multi-Preset Support:** Work with ANY preset (current or not)
+- **SVG Template System:** 9 templates (AWP, Debian, Ubuntu, Mint, KDE, GNOME, Plasma, etc.)
+- **Fool Bake / Regenerate All / Clean Start / Clean Workspace** modes
 
-### ✨ What Makes Baker Special
+### V3.10 — Color Engine Evolution
+- **Smart Selection Dimmer:** Global brightness control (`SELECTION_BRIGHTNESS`) ensures white text remains readable with extreme colors
+- **Refactored Color Engine:** Pure color math extracted to `core/utils.py` (hex ↔ HSV conversions, hue shifts)
+- **Standardized Ratios:** All presets use unified `(hue_shift, sat_ratio, val_ratio)` format
+- **Independent Icon Presets:** Each preset has its own `colors` and `family_ratios` definition
+- **Mint Preset Rebuilt:** SVG-based rebuild with original artwork
+- **Sweet-Hollow Preset:** New neon-inspired variant
+- **Per-Preset Color Personalities:** Rich 5-color Mint to minimal 1-color Neon
 
-- **Color-Driven Design:** Pick ANY hex color → Instant SVG-based icon → Bake GTK + Icons + Cursors in one click.
-- **Surgical Precision:** Update ONE workspace at a time — no more waiting for all 8 workspaces to rebuild.
-- **Multi-Preset Support:** Work with ANY preset (current or not). Prepare themes for other DEs before switching.
-- **SVG Template System:** Beautiful folder-style icons with 7+ templates (AWP, Debian, Ubuntu, Mint, KDE, GNOME, Plasma).
-- **Fool Bake Mode:** Pure theme baking without touching your config — perfect for testing.
-- **Regenerate All:** Rebuild ALL themes from the INI file in one operation.
-- **Clean Start:** Remove ALL old themes before regenerating for a fresh start.
-- **Clean Workspace:** Remove ONLY the current workspace's themes before baking — surgical cleanup.
-- **Progress Bar:** Visual feedback with dynamic accent color matching.
-- **Dark Theme with Dynamic Accents:** The UI adapts to your selected hex color in real-time.
-- **INI Theme Labels:** Shows what themes are currently configured in the INI for full context.
+### V3.9 — Light Daemon Mode
+- `_light` preset suffix for no-rotation operation
+- Same backends, zero code duplication
+- Perfect for laptops or manual wallpaper control
 
-### 🆕 Recent Enhancements
+### V3.8 — GTK, Icon & Cursor Preset System
+- **Cursor Preset System:** `oxy` preset based on Oxygen cursors
+- **Multi-Preset Architecture:** Selectable GTK, Icon, and Cursor presets
+- **Dual-Phase Core Modulation:** PNG/SVG modulation preserving native gradients
+- **Dynamic Icon Reconstruction Engine:** RAM workspace (`/dev/shm`) for minimal disk usage
+- **Expanded Preset Library:** mint, slot-multicolor, rami, neon, adwaitaru, breeze, sweet
+- **Unified Icon Registry (`ICON_REGISTRY`):** Single source of truth for all icon metadata
+- **Hybrid PNG/SVG Pipeline:** PNG modulation + SVG direct color replacement
+- **GTK Preset Variants:** breeze, flat-remix, colloid, graphite with XFWM4 support
+- **Window Control Accent Logic:** Adaptive color progression for XFWM4 buttons
 
-- **Clean Workspace Mode:** New checkbox to remove ONLY the current workspace's themes before baking — surgical cleanup without affecting other workspaces.
-- **INI Theme Labels:** Theme presets now show what's currently configured in the INI file, giving you full context before making changes.
-- **Adwaitaru Redesign:** The Adwaitaru icon preset has been updated with a more AWP-style aesthetic, maintaining its clean look while fitting the AWP design language.
-- **Neon Preset Fixes:** All neon icons now have consistent color and opacity across the entire set for a more polished look.
-- **Progress Bar Accent Color:** The progress bar now dynamically matches your selected hex color for a cohesive visual experience.
-
-### 🎨 SVG Templates
-
-| Template | Description |
-|----------|-------------|
-| **awp** | Custom AWP logo (stylized "AWP" in one stroke) |
-| **awp-firma** | AWP signature stroke with transparent background |
-| **debian** | Debian swirl, classical |
-| **swirldeb** | Debian swirl + "debian" text (balanced design) |
-| **ubuntu** | Ubuntu circle of friends logo |
-| **mint** | Linux Mint leaf logo |
-| **kde** | KDE gear logo |
-| **gnome** | GNOME foot logo |
-| **plasma** | Plasma/KDE logo |
-
-### 🎮 Baker Workflow
-
-```bash
-# Launch baker from terminal
-python3 ~/awp/baker
-```
-
-## 🧬 Color Engine Evolution V3.10
-
-- **Smart Selection Dimmer:** A global brightness control (`SELECTION_BRIGHTNESS`) automatically darkens selection backgrounds across all GTK themes and Qt6/KDE apps to 75% (assignable) brightness. This ensures white text remains perfectly readable even with extreme accent colors (like bright yellow), while maintaining the color's personality. The dimmer is applied uniformly across Breeze, Colloid, Graphite, Flat-Remix, and the AWP Dashboard — a single variable controls everything, even QT/KDE accents as well.
-
-- **Refactored Color Engine:** Pure color math (hex ↔ HSV conversions, hue shifts, saturation/value scaling) has been extracted to `core/utils.py` for improved modularity and testability. Replacement logic is now split between `_build_gtk_replacements()` (with trap zone logic for XFWM buttons) and `_build_icon_replacements()` (pure color math with enhancer support).
-
-- **Standardized Ratios:** All `family_ratios` presets now use a unified 3-value format `(hue_shift, sat_ratio, val_ratio)`. This eliminates the "expected 3, got 2" error and simplifies the color calculation pipeline across GTK and icon themes.
-
-- **Independent Icon Preset Definitions:** Each icon preset now has its own dedicated `colors` and `family_ratios` definition in `ICON_PRESETS`. This replaces the shared `_PURPLE` dictionary, allowing each preset to express its unique color personality — from the rich 5-color Mint to the minimal 1-color Neon.
-
-- **Mint Preset Rebuilt (Mostly SVG):** The `mint` preset has been completely rebuilt from the ground up. Most assets were replaced with original SVG artwork, with only a few supplementary PNG assets retained for audio and emblem icons.
-
-- **Sweet-Hollow Preset:** A new modern variant of the `sweet` family featuring hollow-body folders and a neon-inspired aesthetic. Perfect for users who want the sweet icon style with a lighter, more transparent visual footprint.
-
-- **`deepest` Color Added:** A new ultra-dark decoration color (`#2c1e44`) has been added to the Mint preset for enhanced depth and contrast in decorative icon elements.
-
-- **Enhanced Icon Color Personalities:** Per-preset color analysis reveals distinct personalities:
-  - `mint`: 5 colors (richest palette with deep shadows)
-  - `rami`: 4 colors (balanced with warm highlights)
-  - `adwaitaru`: 3 colors (dark with bright and airy labels)
-  - `slot-multicolor`: 3 colors (dark and simple)
-  - `breeze`/`sweet`/`sweet-hollow`: 2 colors (clean and minimal)
-  - `neon`: 1 color (effect-based minimalism)
-
-## 🔆 Daemon Modes V3.9
-
-AWP offers two daemon operation modes for Desktop Environments:
-
-### Full Daemon (Default)
-- Rotates wallpapers based on timing settings
-- Preloads the next wallpaper for smooth transitions
-- Best for desktops where automated rotation is desired
-
-### Light Daemon (No Rotation)
-- Sets wallpaper once per workspace
-- No timer overhead and lower CPU usage (ideal for laptops)
-- Preserves the complete theming pipeline
-
-**How to use:** Create a preset with the `_light` suffix (for example `xfce_light-debian`) and AWP automatically switches to the light daemon while preserving all theming capabilities. Both modes share the same backend architecture with zero code duplication. The `_light` suffix instructs AWP to use `daemon-light.py` instead of `daemon.py`.
-
-Run either mode from `~/awp`:
-
-```bash
-# Full daemon preset
-./awp_start.sh xfce-debian
-
-# Light daemon preset (no rotation)
-./awp_start.sh xfce_light-debian
-```
-
-## 🎨 GTK, Icon & Cursor Preset System V3.8
-
-- **Cursor Preset System:** Added cursor baking support through `template-cursor-presets/`, introducing the `oxy` preset based on Oxygen cursors for synchronized workspace identity.
-
-- **Multi-Preset Architecture:** Replaces the original single-template model with selectable GTK, Icon and Cursor preset layers.
-
-- **Dual-Phase Core Modulation (Enhanced Color Fidelity):** The theme engine performs precise dual-phase calculations, dynamically extracting color relationships to modulate assets (PNG/SVG) while preserving native gradients and maximizing fidelity relative to the active workspace identity color.
-
-- **Dynamic Icon Reconstruction Engine:** Icon presets now store canonical PNG/SVG source assets and use a high-speed RAM workspace (`/dev/shm`) to minimize disk usage during generation.
-
-- **Expanded Preset Library:** Includes mint, `slot-multicolor`, rami, neon, adwaitaru, and the scalable `breeze` and `sweet` presets supporting hybrid PNG/SVG baking workflows.
-
-- **On-the-Fly Manifests:** Icon themes generate clean `index.theme` files and complete XDG directory structures during the bake process.
-
-- **Scalable SVG Support:** SVG-capable presets generate proper `scalable/` XDG icon directories alongside traditional PNG sizes.
-
-- **Expanded Coverage:** Presets extend beyond Places into Devices, Legacy and Mimetypes, including Debian packages (`.deb`), Writer/Word documents, Calc/Excel spreadsheets, and Impress/PowerPoint presentations across OpenDocument, OpenXML and Microsoft standards.
-
-- **Manifest-Driven Expansion:** New icons and categories are managed through centralized dictionaries in `core/constants.py`.
-
-- **Unified Icon Registry (`ICON_REGISTRY`):** All icon metadata — context, PNG actions, SVG originals and symlink aliases — lives in a single source-of-truth registry. Manifest generation derives directly from this structure for simplified expansion and maintenance.
-
-- **Hybrid PNG/SVG Pipeline:** The baking engine supports PNG modulation and SVG direct color replacement in a unified pass.
-
-- **SVG Encoding Normalization:** Template SVGs are validated for UTF-8 encoding and normalized dimensions to prevent silent GTK rendering failures.
-
-- **Unified Text Substitution (`gtkrc` & XFWM4 SVGs):** GTK2 configuration files and XFWM4 vector assets are normalized against a shared accent source to eliminate mismatched transitions and preserve visual continuity.
-
-- **Automated Artifact Cleanup:** Removes unnecessary generated artifacts (`thumbnail.png`, `preview.png`, etc.) to keep output themes lightweight.
-
-- **GTK Preset Variants:**
-  - `breeze` (default): PNG modulation + CSS/SVG replacement with full XFWM4 support.
-  - `flat-remix`: High-density layout with normalized asset scaling and accent-aware XFWM4 controls.
-  - `colloid` & `graphite`: CSS/SVG-first recoloring for GTK3/4 with selective GTK2 PNG support and improved XFWM4 inactive-state handling.
-
-- **Window Control Accent Logic:** XFWM4 controls apply adaptive color progression — Close uses the workspace accent, Maximize shifts ±25%, and Minimize ±50% depending on brightness to preserve contrast and balance.
-
-- **Preset-Based Theme Baking:** `bake_awp_theme()` supports preset generation using `awp-gtk-{preset}-{hex}` naming.
-
-- **Dashboard Integration:** GTK, Icon and Cursor presets can be selected per workspace in `dab.py`, with sorted preset selection and live HUD integration enabling synchronized visual identity across all theme layers.
-
-- **Lean & Maintainable:** Presets remain lightweight and act as the single source of truth.
-
-## ⚡ Low-Latency State Bridge & Logic V3.7
-
-- **RAM-Backed Sync:** The system now utilizes `/dev/shm/qtile_current_ws` as a high-speed "Single Source of Truth," allowing the Window Manager to push workspace states directly to AWP.
-
-- **Zero-Lag Transmutation:** By reading state from RAM, theme and wallpaper updates are triggered instantaneously upon workspace transition, eliminating polling delays and reducing CPU overhead.
-
-- **"Park" Action:** A new 7th navigation command in `nav.py` allows manual wallpaper application based on the current index without cycling through the library.
-
-- **Daemon-Less Mode:** Upgraded `awp_start.sh` with a conditional toggle to skip starting the background daemon, optimized for self-theming environments like Qtile.
-
-- **Backend-Driven Logic:** Core actions are now delegated to specific backends (like `qtile_xfce.py`), ensuring perfect synchronization between the WM and the AWP dashboard.
-
-- **Unified Qt6/GTK Aesthetics:** All backends now synchronize Qt6 accent colors in real-time via `/dev/shm` symlinks. This ensures Qt6 applications match your workspace's GTK "signature" with zero disk writes.
-
-- **Unified Printer System:** All terminal output now flows through `core/printer.py` – no more scattered color codes. Context-aware prefixes (`[AWP-backends]`, `[AWP-daemon]`, etc.) provide professional, color-coded logs across all components with zero duplication.
-
-- **Genetic Theme & Icon Generation:** Analyzes workspace icons to physically "bake" both custom GTK themes (`~/.themes`) and Icon themes (`~/.icons`) simultaneously. Uses the "Mom" inheritance (`awp-icon-mom`) for procedural hue-shifting based on Mint-Y architecture. Features real-time hover-to-hex color extraction in the dashboard.
+### V3.7 — Low-Latency State Bridge & Logic
+- **RAM-Backed Sync:** `/dev/shm/qtile_current_ws` as high-speed "Single Source of Truth"
+- **Zero-Lag Transmutation:** Theme/wallpaper updates trigger instantaneously
+- **"Park" Action:** Manual wallpaper application without cycling
+- **Backend-Driven Logic:** Core actions delegated to specific backends
+- **Unified Qt6/GTK Aesthetics:** Qt6 accent colors sync via `/dev/shm` symlinks
+- **Unified Printer System:** Professional color-coded logs across all components
+- **Genetic Theme & Icon Generation:** "Mom" inheritance (`awp-icon-mom`) for procedural hue-shifting
 
 ### 🚀 Desktop Environment Support
 
@@ -304,26 +207,111 @@ mv ~/awp/presets/xfce_light-debian/xfce-debian.ini \
 
 ## 🎮 Usage
 
-### Baker (New Theme Tool)
+## 🛁 Bath — "A Taste of AWP"
+
+Bath is AWP's **gateway drug** — a simple, brainless tool that shows new users what AWP can do without overwhelming them with presets, workspaces, or INI files.
+
+### ✨ Philosophy
+
+Bath is **not** a replacement for DAB + Baker. It's a **taste** — a showcase of the theming engine that powers AWP. 
+
+- **No Workspaces:** Just your current desktop
+- **No Presets:** Works with your system as-is
+- **No INI Files:** Everything is temporary and system-level
+- **One Window:** All theming controls in one place
+
+> 💡 **The Progression:** Bath → DAB → Baker. Start with Bath to see what's possible. When you need more control, move to DAB and Baker for the full AWP experience.
+
+### 🎮 Bath Workflow
+
 ```
-In ~/awp do "./baker" for surgical theme generation and color management.
+# Launch Bath
+~/awp ./bath
 ```
 
-> 💡 **Pro Tip:** For the full AWP experience, use **Baker** for theme generation and **DAB** for basic configuration (wallpaper folders, rotation timing, and workspace count). Baker handles the heavy lifting of theme creation, while DAB keeps things simple and clean.
+## 🔧 DAB — The Power User's Dashboard
 
+DAB is the central control panel for AWP. It's where you manage presets, configure workspaces, and control the entire AWP ecosystem.
 
-### Dashboard Qt6 (Pure Configurator)
+### 🆕 HUD Integration
 
-DAB is now a **pure configuration tool** — no baking, no color detection. It handles:
-- Wallpaper folders, timing, scaling
-- System themes (GTK, Icons, Cursors, Desktop, WM)
-- Screen blanking control
+DAB now features **two HUDs** that can be toggled on/off directly from the dashboard:
 
-All theme baking is handled exclusively by **Baker**. DAB and Baker complement each other perfectly.
+- **HUD-V (Vertical):** Sidebar display showing current wallpaper, workspace info, and system stats
+- **HUD-H (Horizontal):** Bottom dock display with real-time mount detection
+
+**Features:**
+- **One-Click Toggle:** Start/stop HUDs directly from DAB with the HUD-V and HUD-H buttons
+- **Automatic Mount Detection:** HUDs now automatically detect and display mount information
+- **State Persistence:** HUDs remember their state (on/off) across sessions
+- **Keyboard Shortcuts:** `Ctrl+Shift+V` (HUD-V), `Ctrl+Shift+H` (HUD-H)
+
+> 💡 **Why HUDs?** The HUDs provide at-a-glance information about your current workspace, wallpaper, and system state. Perfect for users who want real-time colorful feedback.
+
+**Keyboard Shortcuts:**
+- `Ctrl+B` — Backup INI
+- `Ctrl+R` — Reset to INI
+- `Ctrl+S` — Save INI
+- `Ctrl+T` — Toggle rotation
+- `Ctrl+Q` — Quit
+- `Ctrl+Shift+V` — Toggle Vertical HUD
+- `Ctrl+Shift+H` — Toggle Horizontal HUD
 
 ```
-In ~/awp do "./dab" or python3 dab
+# Launch Dab
+~/awp ./dab
 ```
+## 🧁 AWP Baker — The Ultimate Theme Generation Tool
+
+AWP Baker (`baker`) is a **standalone, surgical theme generation tool** that changes how you manage workspace colors forever.
+
+### ✨ What Makes Baker Special
+
+- **9 icon template presets** Pick from Adwaitaru, Neon, Mint, Breeze, Slot-Multicolor, Sweet, Sweet-Hollow, Rami, Besgnulinux.
+- **5 GTK template presets** Pick from Mint, Breeze, Colloid, Graphite and Flat-Remix.
+- **1 Cursor Template preset** Oxy Cursor Preset, based on Oxygen Cursors.
+- **Color-Driven Design:** Pick ANY hex color → Instant SVG-based icon → Bake GTK + Icons + Cursors in one click.
+- **Surgical Precision:** Update ONE workspace at a time — no more waiting for all 8 workspaces to rebuild.
+- **Multi-Preset Support:** Work with ANY preset (current or not). Prepare themes for other DEs before switching.
+- **SVG Template System:** Beautiful folder-style icons with 7+ templates (AWP, Debian, Ubuntu, Mint, KDE, GNOME, Plasma).
+- **Fool Bake Mode:** Pure theme baking without touching your config — perfect for testing.
+- **Regenerate All:** Rebuild ALL themes from the INI file in one operation.
+- **Clean Start:** Remove ALL old themes before regenerating for a fresh start.
+- **Clean Workspace:** Remove ONLY the current workspace's themes before baking — surgical cleanup.
+- **Progress Bar:** Visual feedback with dynamic accent color matching.
+- **Dark Theme with Dynamic Accents:** The UI adapts to your selected hex color in real-time.
+- **INI Theme Labels:** Shows what themes are currently configured in the INI for full context.
+
+### 🆕 Recent Enhancements
+
+- **Icon Preview to be baked** Baker generates directly from svg templates how the new icon is going to look.
+- **Clean Workspace Mode:** New checkbox to remove ONLY the current workspace's themes before baking — surgical cleanup without affecting other workspaces.
+- **INI Theme Labels:** Theme presets now show what's currently configured in the INI file, giving you full context before making changes.
+- **Adwaitaru Redesign:** The Adwaitaru icon preset has been updated with a more AWP-style aesthetic, maintaining its clean look while fitting the AWP design language.
+- **Neon Preset Fixes:** All neon icons now have consistent color and opacity across the entire set for a more polished look.
+- **Progress Bar Accent Color:** The progress bar now dynamically matches your selected hex color for a cohesive visual experience.
+
+### 🎨 SVG Templates
+
+| Template | Description |
+|----------|-------------|
+| **awp** | Custom AWP logo (stylized "AWP" in one stroke) |
+| **awp-firma** | AWP signature stroke with transparent background |
+| **debian** | Debian swirl, classical |
+| **swirldeb** | Debian swirl + "debian" text (balanced design) |
+| **ubuntu** | Ubuntu circle of friends logo |
+| **mint** | Linux Mint leaf logo |
+| **kde** | KDE gear logo |
+| **gnome** | GNOME foot logo |
+| **plasma** | Plasma/KDE logo |
+
+### 🎮 Baker Workflow
+
+```
+# Launch Baker
+~/awp ./baker
+```
+
 
 ### Preset Cloner Tool
 
@@ -390,6 +378,9 @@ python3 nav.py black
 
 ## Screenshots
 
+### Bath - Baker-Themer
+![Bath Main Window](screenshots/bath_main.png)
+
 ### Dab - Dashboard
 ![Dab Main Window](screenshots/dab_main.png)
 
@@ -403,7 +394,9 @@ python3 nav.py black
 ```
 awp-automated-wallpaper/
 ├── awp/                            # Main Application Directory
-│   ├── baker                       # 🧁 AWP Baker (Fast theme generator)
+│   ├── bath                         # 🛁 "Taste of AWP" — for newbies baker-themer
+│   ├── baker                        # 🧁 Surgical theme generator
+│   ├── dab                          # 🎛️ AWP Dashboard (presets, workspaces, HUDs)
 │   ├── core/                       # Centralized business logic
 │   │   ├── actions.py              # Core wallpaper operations
 │   │   ├── config.py               # Configuration management
@@ -448,7 +441,6 @@ awp-automated-wallpaper/
 │   ├── logos/                      # Active workspace icons (symlinks)
 │   ├── daemon.py                   # Full background service (with rotation)
 │   ├── daemon-light.py             # Light background service (no rotation)
-│   ├── dab                         # Qt6 Dashboard
 │   ├── nav.py                      # Navigation controller
 │   ├── hud_vertical.py             # Sidebar system monitor
 │   ├── hud_bottom.py               # Bottom dock monitor
@@ -464,7 +456,8 @@ awp-automated-wallpaper/
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
-| **V3.14** | Jul 2026 | 🔧 Dashboard Upgrade — DAB now features presets, tab-free UI, modern buttons, preset indicator, renamed to `dab`. HSV display in Baker. Floating window fix. Symlink cleanup. Mint audio icons updated.
+| **V3.15** | Aug 2026 | 🛁 **Bath Launch** — "Taste of AWP" newbie-friendly baker-themer. Live icon previews in Bath and Baker. Color previews in DAB. HUD integration with automatic mount detection and toggle buttons in DAB. Backend enhancements across all DEs. Executables renamed to `baker`, `dab`, `bath`. |
+| **V3.14** | Jul 2026 | 🔧 Dashboard Upgrade — DAB now features presets, tab-free UI, modern buttons, preset indicator, renamed to `dab`. HSV display in Baker. Floating window fix. Symlink cleanup. Mint audio icons updated. |
 | **V3.13** | Jul 2026 | 🔧 DAB Pure Configurator — Baking/color detection removed from DAB. New preset_cloner.sh and awp_rotate.sh utilities. Icon path enforcement to logos/. Daemon wallpaper index sync fixed. New GTK preset (mint) and SVG template (awp-firma). |
 | **V3.12** | Jul 2026 | 🎨 Preset-Based Themes — Self-contained presets with baked themes, symlink activation, TEMPLATE showcase |
 | **V3.11** | Jul 2026 | 🧁 AWP Baker — Standalone color & theme generator with SVG templates, multi-preset support, surgical operations, and progress bar |

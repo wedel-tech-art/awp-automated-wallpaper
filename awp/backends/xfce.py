@@ -207,6 +207,7 @@ def xfce_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     # XFCE-specific scaling (stays here, not in constants)
     SCALING_XFCE = {'centered': 1, 'scaled': 4, 'zoomed': 5}
     style_code = SCALING_XFCE.get(scaling, 5)
+    print(f"DEBUG: xfce_set_wallpaper_native - ws_num: {ws_num}, image: {image_path}, scaling: {scaling}")
     for mon in xfce_get_monitors_for_workspace(ws_num):
         subprocess.run([
             "xfconf-query", "--channel", "xfce4-desktop",
@@ -222,7 +223,18 @@ def xfce_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
 
 
 def xfce_set_wallpaper(ws_num: int, image_path: str, scaling: str):
-    """Set wallpaper using feh (Lean Mode compatible)."""
+    """Set wallpaper using native XFCE method."""
+    # Check if xfdesktop is running
+    try:
+        result = subprocess.run(["pgrep", "-x", "xfdesktop"], capture_output=True)
+        if result.returncode == 0:
+            # xfdesktop is running, use native
+            xfce_set_wallpaper_native(ws_num, image_path, scaling)
+            return
+    except:
+        pass
+    
+    # Fallback to feh
     style_flag = SCALING_FEH.get(scaling, '--bg-fill')
     wp_name = os.path.basename(image_path)
     
@@ -230,7 +242,7 @@ def xfce_set_wallpaper(ws_num: int, image_path: str, scaling: str):
         subprocess.run(["feh", style_flag, image_path], check=True)
         _printer.wallpaper(ws_num, wp_name, backend="xfce")
     except Exception as e:
-        _printer.warning(f"feh failed, falling back to native: {e}", backend="xfce")
+        _printer.warning(f"feh failed: {e}", backend="xfce")
         xfce_set_wallpaper_native(ws_num, image_path, scaling)
 
 
@@ -258,3 +270,57 @@ def xfce_set_icon(icon_path: str):
     except subprocess.CalledProcessError as e:
         _printer.error(f"Failed to set icon: {e.stderr}", backend="xfce")
         return False
+
+def xfce_get_current_themes():
+    """Get current theme settings from XFCE."""
+    current = {
+        'gtk': None,
+        'icon': None,
+        'cursor': None,
+        'wm': None
+    }
+    
+    try:
+        result = subprocess.run(
+            ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['gtk'] = result.stdout.strip()
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['icon'] = result.stdout.strip()
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["xfconf-query", "-c", "xsettings", "-p", "/Gtk/CursorThemeName"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['cursor'] = result.stdout.strip()
+    except:
+        pass
+    
+    try:
+        result = subprocess.run(
+            ["xfconf-query", "-c", "xfwm4", "-p", "/general/theme"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            current['wm'] = result.stdout.strip()
+    except:
+        pass
+    
+    _printer.info(f"Current themes: GTK={current['gtk']}, Icons={current['icon']}, Cursor={current['cursor']}", backend="xfce")
+    
+    return current
+

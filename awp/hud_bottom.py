@@ -20,7 +20,14 @@ class StudioBar(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
 
-        SCREEN_W, SCREEN_H = 1676, 943
+        # ============================================================
+        # AUTO-DETECT SCREEN SIZE
+        # ============================================================
+        screen = QApplication.primaryScreen()
+        screen_geometry = screen.availableGeometry()
+        SCREEN_W = screen_geometry.width()
+        SCREEN_H = screen_geometry.height()
+
         BAR_H    = 62
         GAP_SIDE = 10
         GAP_BOT  = 25
@@ -41,12 +48,34 @@ class StudioBar(QWidget):
         self.main_layout.addWidget(self.label)
         self.setLayout(self.main_layout)
 
-        self.target_mounts = ["/", "/mnt/internal1500", "/mnt/internal2000"]
+        # ============================================================
+        # USER-RELEVANT MOUNTS
+        # ============================================================
+        self.target_mounts = self.get_user_mounts()
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_ui)
         self.timer.start(3000)
         self.update_ui()
+
+    def get_user_mounts(self):
+        """Get user-relevant mounts (root + /mnt/* + /media/*)."""
+        mounts = []
+        try:
+            with open('/proc/mounts', 'r') as f:
+                for line in f:
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        device, mountpoint, fstype = parts[0], parts[1], parts[2]
+                        if fstype in ['ext2', 'ext3', 'ext4', 'xfs', 'btrfs', 'ntfs', 'vfat', 'exfat', 'f2fs']:
+                            # Only show root, /mnt/*, /media/*
+                            if (mountpoint == '/' or 
+                                mountpoint.startswith('/mnt/') or 
+                                mountpoint.startswith('/media/')):
+                                mounts.append(mountpoint)
+        except:
+            pass
+        return sorted(mounts)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -57,7 +86,7 @@ class StudioBar(QWidget):
 
     def update_ui(self):
         now = datetime.now()
-        time_str = now.strftime("%H:%M:%S")
+        time_str = now.strftime("%H:%M")
         date_str = now.strftime("%Y-%m-%d")
         ram_str = get_ram_info()
         swap_str = get_swap_info()
@@ -90,7 +119,7 @@ class StudioBar(QWidget):
                 mounts_str = " &nbsp;&nbsp;&nbsp; ".join(mount_parts)
 
                 line1 = (
-                    f'<span style="color:white;">〔 <span style="color:{color};">{ws}</span> 〉 </span>'
+                    f'<span style="color:white;">〔 <span style="color:{color};">{ws}</span> 〕 </span>'
                     f'<span style="color:#999;">{date_str} | {time_str}</span> &nbsp;&nbsp;&nbsp; '
                     f'{fmt("FLOW", data.get("flow", "?"), color)} &nbsp;&nbsp;&nbsp; '
                     f'{fmt("VIEW", data.get("view", "?"), color)} &nbsp;&nbsp;&nbsp; '

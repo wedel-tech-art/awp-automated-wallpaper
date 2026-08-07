@@ -160,6 +160,46 @@ def x11_blanking(timeout_seconds: int):
             _printer.info(f"Screen blanking: {timeout_seconds}s", backend="actions")
     except Exception as e:
         _printer.error(f"Blanking Error: {e}", backend="actions")
+
+def get_current_blanking():
+    """
+    Get current screen blanking timeout from the system.
+    
+    Returns:
+        str: Formatted blanking time (e.g., '20m', '1h', 'Disabled')
+    """
+    try:
+        result = subprocess.run(["xset", "q"], capture_output=True, text=True)
+        
+        # First check if blanking is completely disabled
+        for line in result.stdout.split('\n'):
+            if "timeout" in line.lower() and "dpms" not in line.lower():
+                # Check if it says "off"
+                if "off" in line.lower():
+                    return "Disabled"
+                
+                # Look for a number
+                for part in line.strip().split():
+                    if part.isdigit():
+                        timeout = int(part)
+                        if timeout == 0:
+                            return "Disabled"
+                        elif timeout >= 3600:
+                            return f"{timeout//3600}h"
+                        elif timeout >= 60:
+                            return f"{timeout//60}m"
+                        else:
+                            return f"{timeout}s"
+        
+        # If we couldn't parse, check if DPMS is off
+        for line in result.stdout.split('\n'):
+            if "dpms" in line.lower() and "off" in line.lower():
+                return "Disabled"
+                
+    except Exception as e:
+        _printer.warning(f"Failed to get blanking status: {e}", backend="actions")
+    
+    return "20m"  # Fallback
         
 # =============================================================================
 # RUNTIME STATE

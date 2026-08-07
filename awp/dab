@@ -15,6 +15,7 @@ All theme baking is handled by Baker.
 
 import os
 import sys
+import subprocess
 import shutil
 import json
 
@@ -34,7 +35,7 @@ from core.constants import (
     PRESETS_DIR, SHM_ACTIVE_PRESET, AVAILABLE_PRESETS, RUNTIME_STATE_PATH
 )
 from core.config import AWPConfig
-from core.themes import get_available_themes
+from core.themes import get_available_themes, extract_color_from_theme
 from core.utils import hex_to_hsv
 from backends import BACKEND_NAMES
 from core.printer import get_printer
@@ -129,7 +130,7 @@ class WorkspaceTab(QWidget):
         row = QHBoxLayout()
         row.setSpacing(10)
         lbl = QLabel("Folder:")
-        lbl.setFixedWidth(60)
+        lbl.setFixedWidth(61)
         lbl.setToolTip("Select folder containing wallpaper images for this workspace")
         row.addWidget(lbl)
         self.folder_edit = QLineEdit()
@@ -137,10 +138,29 @@ class WorkspaceTab(QWidget):
         self.folder_edit.setPlaceholderText(f"{BASE_FOLDER}/...")
         self.folder_edit.setToolTip("Path to folder containing JPEG/PNG wallpapers")
         row.addWidget(self.folder_edit)
+
+        # Browse Button (matching HUD button style)
         self.folder_btn = QPushButton("Browse")
-        self.folder_btn.setFixedWidth(80)
+        self.folder_btn.setFixedSize(77, 25)
         self.folder_btn.setToolTip("Browse for wallpaper folder")
         self.folder_btn.clicked.connect(self.on_browse_folder)
+        self.folder_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 11px;
+                background: #3a5a7a;
+                color: #ddd;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 8px;
+            }
+            QPushButton:hover {
+                background: #4a7a9a;
+            }
+            QPushButton:pressed {
+                background: #2a4a5a;
+            }
+        """)
         row.addWidget(self.folder_btn)
         row.addStretch(1)
         identity_layout.addLayout(row)
@@ -300,18 +320,13 @@ class WorkspaceTab(QWidget):
         ]
         
         for label, key, theme_type, tooltip in theme_settings:
-            row = QHBoxLayout()
-            row.setSpacing(5)
-            lbl = QLabel(f"{label}:")
-            lbl.setFixedWidth(120)
-            lbl.setToolTip(tooltip)
-            row.addWidget(lbl)
-            
+            # Create combo
             combo = create_theme_like_combo([("(Not set)", "")])
             combo.setToolTip(f"Select {label.lower()} for this workspace")
-
-            row.addWidget(combo)
-            row.addStretch(1)
+            
+            # Create row with color preview using the new method
+            row = self.create_theme_row(label, combo)
+            
             self.theme_controls[key] = combo
             theme_layout.addLayout(row)
 
@@ -404,6 +419,10 @@ class WorkspaceTab(QWidget):
                     combo.setCurrentText(theme_value)
             else:
                 combo.setCurrentIndex(0)  # "(Not set)"
+        
+        # Update color previews for all theme combos
+        for combo in self.theme_controls.values():
+            self.update_theme_color(combo)
         
         self.update_theme_availability()
         self.update_icon_preview()
@@ -544,6 +563,57 @@ class WorkspaceTab(QWidget):
             """)
             self.icon_preview.setEnabled(True)
 
+    def update_theme_color(self, combo):
+        """Update the color preview for a combo when selection changes."""
+        theme_name = combo.currentText()
+        color = extract_color_from_theme(theme_name)
+        
+        if hasattr(combo, 'color_preview'):
+            if color:
+                combo.color_preview.setStyleSheet(f"""
+                    background-color: {color}; 
+                    border: 2px solid {color}; 
+                    border-radius: 4px;
+                """)
+                combo.color_preview.setToolTip(f"Color: {color}")
+            else:
+                combo.color_preview.setStyleSheet("""
+                    background-color: #888; 
+                    border: 1px solid #555; 
+                    border-radius: 4px;
+                """)
+                combo.color_preview.setToolTip("No color detected")
+    
+    def create_theme_row(self, label_text, combo):
+        """Create a row with label, combo, and color preview."""
+        row = QHBoxLayout()
+        row.setSpacing(5)
+        
+        # Label
+        lbl = QLabel(f"{label_text}:")
+        lbl.setFixedWidth(120)
+        lbl.setToolTip(f"Select {label_text.lower()} for this workspace")
+        row.addWidget(lbl)
+        
+        # Combo
+        row.addWidget(combo)
+        
+        # Color preview square
+        color_preview = QLabel()
+        color_preview.setFixedSize(20, 20)
+        color_preview.setStyleSheet("background-color: #888; border: 1px solid #555; border-radius: 4px;")
+        color_preview.setToolTip("Theme accent color")
+        row.addWidget(color_preview)
+        
+        # Store reference to update later
+        combo.color_preview = color_preview
+        
+        # Connect signal to update color when selection changes
+        combo.currentTextChanged.connect(lambda: self.update_theme_color(combo))
+        
+        row.addStretch(1)
+        return row
+
     # --- CONFIG LOAD / SAVE ---
     
     def load_from_config(self, ws_num: int):
@@ -679,10 +749,47 @@ class AWPDashboard(QWidget):
             self.config = AWPConfig()
             self.current_preset = self.config.de
         
+        self._hud_v_process = None
+        self._hud_h_process = None
         self.setup_ui()
         self.setup_keybindings()
         self.load_config()
+        self.check_hud_status()
 
+    def _get_hud_on_style(self):
+        """Style for HUD toggle buttons when ON."""
+        return """
+            QPushButton {
+                font-weight: bold;
+                font-size: 11px;
+                background: #2d7d2d;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 8px;
+            }
+            QPushButton:hover {
+                background: #3d9d3d;
+            }
+        """
+
+    def _get_hud_off_style(self):
+        """Style for HUD toggle buttons when OFF."""
+        return """
+            QPushButton {
+                font-weight: bold;
+                font-size: 11px;
+                background: #3a5a7a;
+                color: #ddd;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 8px;
+            }
+            QPushButton:hover {
+                background: #4a7a9a;
+            }
+        """
+    
     def _get_current_preset(self):
         """Read the active preset from /dev/shm/awp_active_preset."""
         if os.path.exists(SHM_ACTIVE_PRESET):
@@ -698,6 +805,93 @@ class AWPDashboard(QWidget):
         # Fallback to first available preset
         return AVAILABLE_PRESETS[0] if AVAILABLE_PRESETS else "qtile_xfce-debian"
 
+    def check_hud_status(self):
+        """Check if HUDs are running and update buttons accordingly."""
+        import subprocess
+        
+        # Check vertical HUD
+        result = subprocess.run(["pgrep", "-f", "hud_vertical.py"], capture_output=True)
+        if result.returncode == 0:
+            self.hud_v_btn.setChecked(True)
+            self.hud_v_btn.setStyleSheet(self._get_hud_on_style())
+        else:
+            self.hud_v_btn.setChecked(False)
+            self.hud_v_btn.setStyleSheet(self._get_hud_off_style())
+        
+        # Check horizontal HUD
+        result = subprocess.run(["pgrep", "-f", "hud_bottom.py"], capture_output=True)
+        if result.returncode == 0:
+            self.hud_h_btn.setChecked(True)
+            self.hud_h_btn.setStyleSheet(self._get_hud_on_style())
+        else:
+            self.hud_h_btn.setChecked(False)
+            self.hud_h_btn.setStyleSheet(self._get_hud_off_style())
+    
+    def toggle_hud_v(self):
+        """Toggle vertical HUD on/off."""
+        if self.hud_v_btn.isChecked():
+            # Start vertical HUD
+            hud_path = os.path.expanduser("~/awp/hud_vertical.py")
+            if os.path.exists(hud_path):
+                # Kill any existing vertical HUD first
+                subprocess.run(["pkill", "-f", "hud_vertical.py"], stderr=subprocess.DEVNULL)
+                self._hud_v_process = subprocess.Popen(["python3", hud_path])
+                _printer.info("Vertical HUD started", backend="dab")
+                self.hud_v_btn.setStyleSheet(self._get_hud_on_style())
+            else:
+                _printer.error("hud_vertical.py not found", backend="dab")
+                self.hud_v_btn.setChecked(False)
+        else:
+            # Stop vertical HUD
+            subprocess.run(["pkill", "-f", "hud_vertical.py"], stderr=subprocess.DEVNULL)
+            if hasattr(self, '_hud_v_process'):
+                self._hud_v_process = None
+            _printer.info("Vertical HUD stopped", backend="dab")
+            self.hud_v_btn.setStyleSheet(self._get_hud_off_style())
+
+    def toggle_hud_h(self):
+        """Toggle horizontal HUD on/off."""
+        if self.hud_h_btn.isChecked():
+            # Start horizontal HUD
+            hud_path = os.path.expanduser("~/awp/hud_bottom.py")
+            if os.path.exists(hud_path):
+                # Kill any existing horizontal HUD first
+                subprocess.run(["pkill", "-f", "hud_bottom.py"], stderr=subprocess.DEVNULL)
+                self._hud_h_process = subprocess.Popen(["python3", hud_path])
+                _printer.info("Horizontal HUD started", backend="dab")
+                self.hud_h_btn.setStyleSheet(self._get_hud_on_style())
+            else:
+                _printer.error("hud_bottom.py not found", backend="dab")
+                self.hud_h_btn.setChecked(False)
+        else:
+            # Stop horizontal HUD
+            subprocess.run(["pkill", "-f", "hud_bottom.py"], stderr=subprocess.DEVNULL)
+            if hasattr(self, '_hud_h_process'):
+                self._hud_h_process = None
+            _printer.info("Horizontal HUD stopped", backend="dab")
+            self.hud_h_btn.setStyleSheet(self._get_hud_off_style())
+    
+    def closeEvent(self, event):
+        """Clean up HUD processes when DAB exits."""
+        import subprocess
+        
+        # Kill vertical HUD
+        subprocess.run(["pkill", "-f", "hud_vertical.py"], stderr=subprocess.DEVNULL)
+        _printer.info("Vertical HUD terminated", backend="dab")
+        
+        # Kill horizontal HUD
+        subprocess.run(["pkill", "-f", "hud_bottom.py"], stderr=subprocess.DEVNULL)
+        _printer.info("Horizontal HUD terminated", backend="dab")
+        
+        # Clear process references
+        if hasattr(self, '_hud_v_process'):
+            self._hud_v_process = None
+        if hasattr(self, '_hud_h_process'):
+            self._hud_h_process = None
+        
+        # Accept the close event (proceed with closing)
+        event.accept()
+    
     def update_info_labels(self):
         """Update the info labels with current config values."""
         if hasattr(self, 'de_label'):
@@ -788,13 +982,6 @@ class AWPDashboard(QWidget):
         preset_layout.addStretch()
         general_layout.addLayout(preset_layout)
 
-        # Separator line after preset selector
-        sep_line1 = QFrame()
-        sep_line1.setFrameShape(QFrame.Shape.HLine)
-        sep_line1.setFrameShadow(QFrame.Shadow.Sunken)
-        sep_line1.setStyleSheet("background-color: #444; max-height: 1px;")
-        general_layout.addWidget(sep_line1)
-
         # Row 1: System Info (read-only)
         info_layout = QHBoxLayout()
         info_layout.setSpacing(10)
@@ -806,7 +993,7 @@ class AWPDashboard(QWidget):
         self.de_label.setStyleSheet("color: #6a8cff; font-size: 11px; font-weight: bold;")
         info_layout.addWidget(self.de_label)
 
-        info_layout.addSpacing(15)
+        info_layout.addSpacing(50)
 
         session_label_text = QLabel("Session:")
         session_label_text.setFixedWidth(60)
@@ -815,10 +1002,10 @@ class AWPDashboard(QWidget):
         self.session_label.setStyleSheet("color: #6a8cff; font-size: 11px; font-weight: bold;")
         info_layout.addWidget(self.session_label)
 
-        info_layout.addSpacing(15)
+        info_layout.addSpacing(50)
 
         ws_label_text = QLabel("Workspaces:")
-        ws_label_text.setFixedWidth(75)
+        ws_label_text.setFixedWidth(78)
         info_layout.addWidget(ws_label_text)
         self.ws_count_label = QLabel(str(self.config.workspaces_count))
         self.ws_count_label.setStyleSheet("color: #6a8cff; font-size: 11px; font-weight: bold;")
@@ -826,13 +1013,6 @@ class AWPDashboard(QWidget):
 
         info_layout.addStretch()
         general_layout.addLayout(info_layout)
-
-        # Separator line within the GroupBox
-        sep_line2 = QFrame()
-        sep_line2.setFrameShape(QFrame.Shape.HLine)
-        sep_line2.setFrameShadow(QFrame.Shadow.Sunken)
-        sep_line2.setStyleSheet("background-color: #444; max-height: 1px;")
-        general_layout.addWidget(sep_line2)
 
         # Row 2: Screen Blanking (editable)
         blanking_layout = QHBoxLayout()
@@ -848,13 +1028,7 @@ class AWPDashboard(QWidget):
             ]
         )
         self.blanking_combo.setToolTip("Time before screen blanks/sleeps (X11)")
-        self.blanking_combo.currentTextChanged.connect(self.on_blanking_changed)
         blanking_layout.addWidget(self.blanking_combo)
-
-        self.blanking_pause_cb = QCheckBox("Paused")
-        self.blanking_pause_cb.setToolTip("Temporarily disable screen blanking")
-        self.blanking_pause_cb.toggled.connect(self.on_blanking_pause_toggled)
-        blanking_layout.addWidget(self.blanking_pause_cb)
 
         blanking_layout.addStretch()
         general_layout.addLayout(blanking_layout)
@@ -863,12 +1037,15 @@ class AWPDashboard(QWidget):
         layout.addWidget(general_group)
 
         # --- Workspace Selector ---
+        layout.addSpacing(10)
         top_bar = QHBoxLayout()
-        top_bar.setSpacing(12)
+        top_bar.addStretch(0)
+        top_bar.setSpacing(10)
 
         ws_label = QLabel("Workspace:")
         ws_label.setFixedWidth(75)
         top_bar.addWidget(ws_label)
+
         self.ws_combo = QComboBox()
         self.ws_combo.setMinimumWidth(200)
         self.ws_combo.setEditable(False)
@@ -877,6 +1054,63 @@ class AWPDashboard(QWidget):
             self.ws_combo.addItem(f"WS{i + 1}")
         self.ws_combo.currentIndexChanged.connect(self.on_workspace_changed)
         top_bar.addWidget(self.ws_combo)
+
+        # ============================================================
+        # HUD TOGGLES
+        # ============================================================
+        top_bar.addSpacing(10)
+
+        # Vertical HUD Toggle
+        self.hud_v_btn = QPushButton("HUD-V")
+        self.hud_v_btn.setFixedSize(70, 25)
+        self.hud_v_btn.setCheckable(True)
+        self.hud_v_btn.setToolTip("Toggle vertical HUD")
+        self.hud_v_btn.clicked.connect(self.toggle_hud_v)
+        self.hud_v_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 11px;
+                background: #3a5a7a;
+                color: #ddd;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 8px;
+            }
+            QPushButton:checked {
+                background: #2d7d2d;
+                color: white;
+            }
+            QPushButton:hover {
+                background: #4a7a9a;
+            }
+        """)
+        top_bar.addWidget(self.hud_v_btn)
+
+        # Horizontal HUD Toggle
+        self.hud_h_btn = QPushButton("HUD-H")
+        self.hud_h_btn.setFixedSize(70, 25)
+        self.hud_h_btn.setCheckable(True)
+        self.hud_h_btn.setToolTip("Toggle horizontal HUD")
+        self.hud_h_btn.clicked.connect(self.toggle_hud_h)
+        self.hud_h_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 11px;
+                background: #3a5a7a;
+                color: #ddd;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 8px;
+            }
+            QPushButton:checked {
+                background: #2d7d2d;
+                color: white;
+            }
+            QPushButton:hover {
+                background: #4a7a9a;
+            }
+        """)
+        top_bar.addWidget(self.hud_h_btn)
 
         top_bar.addStretch()
         layout.addLayout(top_bar)
@@ -889,12 +1123,11 @@ class AWPDashboard(QWidget):
         button_layout = QHBoxLayout()
         button_layout.addStretch(0)
 
-        BTN_W = 118
-        BTN_H = 34
-        GAP = 8
+        BTN_W = 85
+        BTN_H = 40
 
-        # 1. Backup Button (neutral/blue)
-        self.backup_btn = QPushButton("Backup ini")
+        # 1. Backup Button
+        self.backup_btn = QPushButton("Backup\nini")
         self.backup_btn.setFixedSize(BTN_W, BTN_H)
         self.backup_btn.setToolTip("Create backup of current configuration (Ctrl+B)")
         self.backup_btn.clicked.connect(self.backup_config)
@@ -916,10 +1149,34 @@ class AWPDashboard(QWidget):
             }
         """)
         button_layout.addWidget(self.backup_btn)
-        button_layout.addSpacing(GAP)
 
-        # 2. Save Button (green - like Baker's bake)
-        self.save_btn = QPushButton("Save Changes")
+        # 2. Reset Button
+        self.reset_btn = QPushButton("Reset\nto ini")
+        self.reset_btn.setFixedSize(BTN_W, BTN_H)
+        self.reset_btn.setToolTip("Discard all unsaved changes and reload from INI (Ctrl+R)")
+        self.reset_btn.clicked.connect(self.reset_config)
+        self.reset_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 12px;
+                background: #8a6a2a;
+                color: #ddd;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 16px;
+            }
+            QPushButton:hover {
+                background: #aa8a3a;
+                color: white;
+            }
+            QPushButton:pressed {
+                background: #6a4a1a;
+            }
+        """)
+        button_layout.addWidget(self.reset_btn)
+
+        # 3. Save Button
+        self.save_btn = QPushButton("Save\nini")
         self.save_btn.setFixedSize(BTN_W, BTN_H)
         self.save_btn.setToolTip("Save configuration to .ini (Ctrl+S)")
         self.save_btn.clicked.connect(self.save_config)
@@ -941,9 +1198,33 @@ class AWPDashboard(QWidget):
             }
         """)
         button_layout.addWidget(self.save_btn)
-        button_layout.addSpacing(GAP)
 
-        # 3. Exit Button (red - like Baker's quit)
+        # 4. Rotation Toggle Button
+        self.rotate_btn = QPushButton("Rotate\non/off")
+        self.rotate_btn.setFixedSize(BTN_W, BTN_H)
+        self.rotate_btn.setToolTip("Toggle wallpaper rotation on/off (via awp_rotate.sh)")
+        self.rotate_btn.clicked.connect(self.toggle_rotation)
+        self.rotate_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 12px;
+                background: #7a5a2a;
+                color: #ddd;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 16px;
+            }
+            QPushButton:hover {
+                background: #9a7a3a;
+                color: white;
+            }
+            QPushButton:pressed {
+                background: #5a3a1a;
+            }
+        """)
+        button_layout.addWidget(self.rotate_btn)
+
+        # 5. Exit Button
         self.exit_btn = QPushButton("Quit")
         self.exit_btn.setFixedSize(BTN_W, BTN_H)
         self.exit_btn.setToolTip("Exit application (Ctrl+Q)")
@@ -967,7 +1248,7 @@ class AWPDashboard(QWidget):
             }
         """)
         button_layout.addWidget(self.exit_btn)
-        
+
         button_layout.addStretch()
         layout.addLayout(button_layout)
         self.setLayout(layout)
@@ -1105,9 +1386,13 @@ class AWPDashboard(QWidget):
             
     def setup_keybindings(self):
         """Configure keyboard shortcuts."""
+        self.backup_btn.setShortcut("Ctrl+B")
+        self.reset_btn.setShortcut("Ctrl+R")
         self.save_btn.setShortcut("Ctrl+S")
-        self.backup_btn.setShortcut("Ctrl+B")  
+        self.rotate_btn.setShortcut("Ctrl+T") 
         self.exit_btn.setShortcut("Ctrl+Q")
+        self.hud_v_btn.setShortcut("Ctrl+Shift+V")
+        self.hud_h_btn.setShortcut("Ctrl+Shift+H")
         
     def create_standard_combo(self, items=None, width=200, editable=True):
         """Create a standardized combo box used across all tabs."""
@@ -1132,39 +1417,16 @@ class AWPDashboard(QWidget):
         """Get current desktop environment from config."""
         return self.config.de  # Read directly from config
 
-    def on_de_changed(self, text):
-        """Handle DE change and update UI availability."""
-        # This is a legacy method - kept for compatibility
-        pass
-
-    def on_blanking_changed(self, text):
-        """Handle blanking timeout changes."""
-        if text == "Disabled":
-            self.blanking_pause_cb.setChecked(True)
-            self.blanking_pause_cb.setEnabled(True)
-        else:
-            self.blanking_pause_cb.setChecked(False)
-            self.blanking_pause_cb.setEnabled(True)
-
-    def on_blanking_pause_toggled(self, checked):
-        """Handle blanking pause toggle."""
-        if checked:
-            self.blanking_combo.setCurrentText("Disabled")
-        else:
-            self.blanking_combo.setCurrentText("20 minutes")
-
     def load_config(self):
         """Load all settings from AWPConfig into cache."""
         # Load blanking settings
-        if self.config.blanking_pause or self.config.blanking_timeout == 0:
+        if self.config.blanking_timeout == 0:
             self.blanking_combo.setCurrentText("Disabled")
-            self.blanking_pause_cb.setChecked(True)
         else:
             for i in range(self.blanking_combo.count()):
                 if str(self.blanking_combo.itemData(i)) == str(self.config.blanking_timeout):
                     self.blanking_combo.setCurrentIndex(i)
                     break
-            self.blanking_pause_cb.setChecked(False)
 
         # Update info labels
         self.update_info_labels()
@@ -1189,18 +1451,42 @@ class AWPDashboard(QWidget):
             # Update info colors with system accent (reads from SHM)
             self.update_info_colors()
 
+    def reset_config(self):
+        """Discard ALL unsaved changes and reload everything from INI."""
+        # Clear the cache
+        if hasattr(self, 'workspace_widget'):
+            self.workspace_widget.ws_cache = {}
+        
+        # Reload everything from INI
+        preset_path = os.path.join(PRESETS_DIR, self.current_preset)
+        ini_path = os.path.join(preset_path, f"{self.current_preset}.ini")
+        
+        if os.path.exists(ini_path):
+            self.config = AWPConfig(ini_path)
+            _printer.info(f"Reloaded preset: {self.current_preset}", backend="dab")
+        else:
+            _printer.warning(f"Preset INI not found: {ini_path}", backend="dab")
+            self.config = AWPConfig()
+        
+        # Reload everything
+        self.load_config()
+        
+        _printer.success("Reset to saved state", backend="dab")
+    
     def save_config(self):
         """Save all cached data to INI."""
         try:
             _printer.info(f"Saving to preset: {self.current_preset}", backend="dab")
             
             # Save blanking settings
-            if self.blanking_pause_cb.isChecked():
-                self.config.set('general', 'blanking_timeout', '0')
+            timeout_val = str(self.blanking_combo.currentData() or '0')
+            self.config.set('general', 'blanking_timeout', timeout_val)
+            
+            # Set blanking_pause based on whether blanking is disabled
+            # This maintains compatibility with daemons that check blanking_pause
+            if timeout_val == '0':
                 self.config.set('general', 'blanking_pause', 'true')
             else:
-                timeout_val = str(self.blanking_combo.currentData() or '0')
-                self.config.set('general', 'blanking_timeout', timeout_val)
                 self.config.set('general', 'blanking_pause', 'false')
             
             # Save all workspace data from cache
@@ -1229,14 +1515,52 @@ class AWPDashboard(QWidget):
             _printer.warning("No configuration file found to backup.", backend="dab")
             QMessageBox.warning(self, "No Config", "No configuration file found.")
 
+    def toggle_rotation(self):
+        """Toggle wallpaper rotation via awp_rotate.sh."""
+        awp_rotate = os.path.expanduser("~/awp/awp_rotate.sh")
+        if os.path.exists(awp_rotate):
+            try:
+                subprocess.run([awp_rotate], check=False)
+                _printer.info("Rotation toggled", backend="dab")
+                #QMessageBox.information(self, "Rotation", "Wallpaper rotation toggled successfully!")
+            except Exception as e:
+                _printer.error(f"Failed to toggle rotation: {e}", backend="dab")
+                QMessageBox.warning(self, "Error", f"Failed to toggle rotation: {e}")
+        else:
+            QMessageBox.warning(self, "Error", "awp_rotate.sh not found at ~/awp/awp_rotate.sh")
+
 
 # =============================================================================
 # APPLICATION ENTRY POINT
 # =============================================================================
 
 if __name__ == "__main__":
-    """Main application entry point - Qt6 style."""
     app = QApplication([])
+    
+    from PyQt6.QtGui import QPalette, QColor
+    
+    palette = QPalette()
+    
+    # Active colors
+    palette.setColor(QPalette.ColorRole.Window, QColor(46, 46, 46))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.Base, QColor(36, 36, 36))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(46, 46, 46))
+    palette.setColor(QPalette.ColorRole.Text, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.Button, QColor(58, 58, 58))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+    
+    # Disabled colors (greyed-out)
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, QColor(120, 120, 120))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(120, 120, 120))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(100, 100, 100))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, QColor(46, 46, 46))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, QColor(46, 46, 46))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(46, 46, 46))
+    
+    app.setPalette(palette)
+    
     window = AWPDashboard()
     window.show()
     sys.exit(app.exec())

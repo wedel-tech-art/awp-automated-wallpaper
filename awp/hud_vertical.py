@@ -24,8 +24,18 @@ class StudioHUD(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
 
-        self.resize(560, 570)
+        # ============================================================
+        # AUTO-DETECT SCREEN SIZE
+        # ============================================================
+        screen = QApplication.primaryScreen()
+        screen_geometry = screen.availableGeometry()
+        SCREEN_W = screen_geometry.width()
+        SCREEN_H = screen_geometry.height()
+
+        # Position: 10px from left, 40px from top
         self.move(10, 40)
+        # Size: 560px wide, 570px tall (adjust as needed)
+        self.resize(560, 570)
 
         self.main_layout = QVBoxLayout()
         self.main_layout.setContentsMargins(25, 20, 20, 20)
@@ -42,12 +52,34 @@ class StudioHUD(QWidget):
         self.main_layout.addWidget(self.label)
         self.setLayout(self.main_layout)
 
-        self.target_mounts = ["/", "/mnt/internal1500", "/mnt/internal2000"]
+        # ============================================================
+        # USER-RELEVANT MOUNTS (Option 2)
+        # ============================================================
+        self.target_mounts = self.get_user_mounts()
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_ui)
         self.timer.start(3000)
         self.update_ui()
+
+    def get_user_mounts(self):
+        """Get user-relevant mounts (root + /mnt/* + /media/*)."""
+        mounts = []
+        try:
+            with open('/proc/mounts', 'r') as f:
+                for line in f:
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        device, mountpoint, fstype = parts[0], parts[1], parts[2]
+                        if fstype in ['ext2', 'ext3', 'ext4', 'xfs', 'btrfs', 'ntfs', 'vfat', 'exfat', 'f2fs']:
+                            # Only show root, /mnt/*, /media/*
+                            if (mountpoint == '/' or 
+                                mountpoint.startswith('/mnt/') or 
+                                mountpoint.startswith('/media/')):
+                                mounts.append(mountpoint)
+        except:
+            pass
+        return sorted(mounts)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -57,7 +89,7 @@ class StudioHUD(QWidget):
         painter.drawRoundedRect(self.rect(), 15, 15)
 
     def update_ui(self):
-        now_time = datetime.now().strftime("%H:%M:%S")
+        now_time = datetime.now().strftime("%H:%M")
         now_date = datetime.now().strftime("%Y-%m-%d")
 
         if not os.path.exists(RUNTIME_STATE_PATH):
