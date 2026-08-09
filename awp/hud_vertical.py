@@ -190,7 +190,6 @@ class StudioHUD(QWidget):
                 f'{divider}'
                 f'{fmt("MEMR", ram_val)}'
                 f'{fmt("SWAP", swap_val)}'
-                f'{fmt("BLNK", data.get("blanking_timeout", "??"))}'
                 f'{divider}'
                 f'{mount_rows}'
                 f'{divider}'

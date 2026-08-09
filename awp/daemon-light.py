@@ -30,7 +30,6 @@ from core.actions import (
     set_backend,
     set_wallpaper,
     set_panel_icon,
-    x11_blanking
 )
 from core.printer import get_printer
 
@@ -54,10 +53,6 @@ def set_themes(ws_num: int, config=None):
         func = backend.get("themes")
         if func:
             func(ws_num, config)
-
-def configure_screen_blanking(config):
-    """Standard AWP Blanking configuration."""
-    x11_blanking(config.blanking_timeout)
 
 # =============================================================================
 # WORKSPACE MODEL (Modified - No Rotation Timer)
@@ -147,7 +142,7 @@ class Workspace:
 
 def main_loop(workspaces: dict, config: AWPConfig):
     """Refactored daemon: NO rotation timer, only workspace switch handling."""
-    global DE, BLANKING_PAUSE, BLANKING_TIMEOUT
+    global DE
     last_ws = None
     
     # Track config file changes
@@ -177,9 +172,6 @@ def main_loop(workspaces: dict, config: AWPConfig):
                 DE = config.de
                 set_backend(DE)
                 optimize_desktop_environment()
-            
-            # Screen blanking
-            configure_screen_blanking(config)
             
             # Reload all workspace internal state
             for ws in workspaces.values():
@@ -244,17 +236,13 @@ def main():
         _printer.error(f"Startup RAM Config failed: {e}")
 
     # Set globals
-    global DE, SESSION_TYPE, BLANKING_PAUSE, BLANKING_TIMEOUT, BLANKING_FORMATTED
+    global DE, SESSION_TYPE
     DE = config.de
     SESSION_TYPE = config.session_type
-    BLANKING_PAUSE = config.blanking_pause
-    BLANKING_TIMEOUT = config.blanking_timeout
-    BLANKING_FORMATTED = config.blanking_formatted
 
     set_backend(DE)
 
     optimize_desktop_environment()
-    configure_screen_blanking(config)
     
     n_ws = config.workspaces_count
     workspaces = {}

@@ -6,7 +6,6 @@ Configuration Dashboard - Pure Configurator Edition
 DAB is now a PURE configuration tool:
 - Configure wallpaper folders, timing, scaling
 - Configure system themes (GTK, Icons, Cursors, Desktop, WM)
-- Configure screen blanking
 - Icon preview with tooltip info (read-only, from INI)
 - NO baking, NO color detection, NO icon copying, NO icon saving
 
@@ -717,7 +716,6 @@ class AWPDashboard(QWidget):
     
     Provides comprehensive interface for managing all AWP settings:
     - Desktop environment and session configuration
-    - Screen blanking controls
     - Workspace management and count
     - Individual workspace configuration tabs
     
@@ -729,7 +727,7 @@ class AWPDashboard(QWidget):
         super().__init__()
         _printer.info("Starting AWP Dashboard...", backend="dab")
         self.setWindowTitle("AWP Dashboard - Configuration Editor")
-        self.setFixedSize(528, 830)
+        self.setFixedSize(528, 800)
         
         # Get system active preset from SHM
         self.system_preset = self._get_current_preset()
@@ -1013,25 +1011,6 @@ class AWPDashboard(QWidget):
 
         info_layout.addStretch()
         general_layout.addLayout(info_layout)
-
-        # Row 2: Screen Blanking (editable)
-        blanking_layout = QHBoxLayout()
-        blanking_layout.setSpacing(10)
-
-        blanking_layout.addWidget(QLabel("Screen Blanking:"))
-        self.blanking_combo = self.create_standard_combo(
-            width=180,
-            items=[
-                ("Disabled", "0"), ("30 seconds", "30"), ("1 minute", "60"),
-                ("5 minutes", "300"), ("10 minutes", "600"), ("20 minutes", "1200"),
-                ("30 minutes", "1800"), ("1 hour", "3600")
-            ]
-        )
-        self.blanking_combo.setToolTip("Time before screen blanks/sleeps (X11)")
-        blanking_layout.addWidget(self.blanking_combo)
-
-        blanking_layout.addStretch()
-        general_layout.addLayout(blanking_layout)
 
         general_group.setLayout(general_layout)
         layout.addWidget(general_group)
@@ -1419,15 +1398,6 @@ class AWPDashboard(QWidget):
 
     def load_config(self):
         """Load all settings from AWPConfig into cache."""
-        # Load blanking settings
-        if self.config.blanking_timeout == 0:
-            self.blanking_combo.setCurrentText("Disabled")
-        else:
-            for i in range(self.blanking_combo.count()):
-                if str(self.blanking_combo.itemData(i)) == str(self.config.blanking_timeout):
-                    self.blanking_combo.setCurrentIndex(i)
-                    break
-
         # Update info labels
         self.update_info_labels()
         
@@ -1477,17 +1447,6 @@ class AWPDashboard(QWidget):
         """Save all cached data to INI."""
         try:
             _printer.info(f"Saving to preset: {self.current_preset}", backend="dab")
-            
-            # Save blanking settings
-            timeout_val = str(self.blanking_combo.currentData() or '0')
-            self.config.set('general', 'blanking_timeout', timeout_val)
-            
-            # Set blanking_pause based on whether blanking is disabled
-            # This maintains compatibility with daemons that check blanking_pause
-            if timeout_val == '0':
-                self.config.set('general', 'blanking_pause', 'true')
-            else:
-                self.config.set('general', 'blanking_pause', 'false')
             
             # Save all workspace data from cache
             if hasattr(self, 'workspace_widget'):

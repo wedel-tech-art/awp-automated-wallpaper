@@ -21,26 +21,6 @@ PRESETS_DIR="$AWP_DIR/presets"
 ACTIVE_PRESET=$(cat /dev/shm/awp_active_preset 2>/dev/null)
 
 # ============================================================
-# BLANKING DISABLE LIST (Wayland and others)
-# ============================================================
-# Add any preset patterns here that should have blanking disabled
-# These can be partial matches (e.g., "wayland" matches any preset with "wayland")
-BLANKING_DISABLE_PATTERNS=(
-    "wayland"           # All Wayland presets
-    "qtile_wayland"     # Qtile Wayland presets
-    "sway"              # Sway WM
-    "hyprland"          # Hyprland WM
-)
-
-# Or use exact matches for specific presets
-BLANKING_DISABLE_EXACT=(
-    "gnome_wayland-debian"
-    "gnome_wayland-cachyos"
-    "gnome_wayland-arch"
-    "qtile_wayland-debian"
-)
-
-# ============================================================
 # DETECT ALL PRESETS (AUTO)
 # ============================================================
 detect_presets() {
@@ -91,29 +71,6 @@ get_desktop_name() {
     fi
     
     echo "${name%-*}"
-}
-
-# ============================================================
-# CHECK IF BLANKING SHOULD BE DISABLED
-# ============================================================
-should_disable_blanking() {
-    local preset="$1"
-    
-    # Check exact matches first
-    for exact in "${BLANKING_DISABLE_EXACT[@]}"; do
-        if [ "$preset" == "$exact" ]; then
-            return 0  # True - disable blanking
-        fi
-    done
-    
-    # Check patterns
-    for pattern in "${BLANKING_DISABLE_PATTERNS[@]}"; do
-        if [[ "$preset" == *"$pattern"* ]]; then
-            return 0  # True - disable blanking
-        fi
-    done
-    
-    return 1  # False - keep blanking
 }
 
 # ============================================================
@@ -204,19 +161,11 @@ clone_to_target() {
     enforce_icon_paths "$TARGET_DIR/$TARGET.ini"
     echo -e "  ${CLR_GREEN}✅${CLR_RESET} icon paths enforced to logos/"
     
+     
     # ============================================================
-    # BLANKING DISABLE (Wayland and others)
+    # SESSION_TYPE = wayland (for Wayland presets)
     # ============================================================
-    if should_disable_blanking "$TARGET"; then
-        sed -i 's/blanking_timeout = .*/blanking_timeout = 0/' "$TARGET_DIR/$TARGET.ini"
-        sed -i 's/blanking_pause = .*/blanking_pause = true/' "$TARGET_DIR/$TARGET.ini"
-        echo -e "  ${CLR_GREEN}✅${CLR_RESET} blanking disabled (Wayland/Wayland-like)"
-    fi
-    
-    # ============================================================
-    # SESSION_TYPE = wayland (for any preset that needs blanking disabled)
-    # ============================================================
-    if should_disable_blanking "$TARGET"; then
+    if [[ "$TARGET" == *"wayland"* ]]; then
         sed -i 's/session_type = .*/session_type = wayland/' "$TARGET_DIR/$TARGET.ini"
         echo -e "  ${CLR_GREEN}✅${CLR_RESET} session_type = wayland"
     fi

@@ -132,7 +132,6 @@ class StudioBar(QWidget):
                 line2 = (
                     f'{fmt("MEMR", ram_str, color)} &nbsp;&nbsp;&nbsp; '
                     f'{fmt("SWAP", swap_str, color)} &nbsp;&nbsp;&nbsp; '
-                    f'{fmt("BLNK", data.get("blanking_timeout", "??"), color)} &nbsp;&nbsp;&nbsp; '
                     f'{mounts_str}'
                 )
 

@@ -6,7 +6,7 @@ Responsible for writing unified runtime state.
 
 import os
 import json
-from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH, AWP_CONFIG_RAM
+from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH, AWP_CONFIG_RAM, SHM_ACTIVE_PRESET
 
 def update_runtime_state(state_dict: dict):
     tmp = RUNTIME_STATE_PATH + ".tmp"
@@ -173,3 +173,15 @@ def get_dynamic_mount_labels(target_mounts=None):
                     mount_labels[mount] = os.path.basename(mount).upper()[:8]
     
     return mount_labels
+    
+def get_preset_from_shm():
+    """Read the current preset name from RAM-based session state."""
+    shm_path = SHM_ACTIVE_PRESET
+    if os.path.exists(shm_path):
+        try:
+            with open(shm_path, 'r') as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return None
+

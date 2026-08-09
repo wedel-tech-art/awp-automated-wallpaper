@@ -124,32 +124,6 @@ class AWPConfig:
             self._global_cache['workspaces_count'] = self.getint('general', 'workspaces', 4)
         return self._global_cache['workspaces_count']
 
-    @property
-    def blanking_pause(self) -> bool:
-        """Screen blanking paused."""
-        return self.getbool('general', 'blanking_pause', False)
-
-    @property
-    def blanking_timeout(self) -> int:
-        """Screen blanking timeout in seconds."""
-        timeout_str = self.get('general', 'blanking_timeout', '0')
-        return int(timeout_str) if timeout_str.isdigit() else 0
-
-    @property
-    def blanking_formatted(self) -> str:
-        """Formatted blanking timeout for display."""
-        if self.blanking_pause or self.blanking_timeout == 0:
-            return "off"
-        
-        timeout_sec = self.blanking_timeout
-        if timeout_sec < 60:
-            return f"{timeout_sec}s"
-        elif timeout_sec < 3600:
-            return f"{timeout_sec//60}m"
-        else:
-            hours = timeout_sec // 3600
-            minutes = (timeout_sec % 3600) // 60
-            return f"{hours}h{minutes}m" if minutes > 0 else f"{hours}h"
 
     # === WORKSPACE HELPERS (Replaces Workspace config reloading) ===
     
@@ -199,8 +173,6 @@ class AWPConfig:
             'flow': ws_config['mode'],
             'sort': ws_config['order'],
             'view': ws_config['scaling'],
-            'blanking_timeout': self.blanking_formatted,
-            'blanking_paused': str(self.blanking_pause),
         }
 
     # === MUTATORS (For dashboards and runtime updates) ===

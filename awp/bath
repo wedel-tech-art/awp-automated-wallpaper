@@ -17,8 +17,6 @@ from PyQt6.QtCore import Qt
 from backends import get_backend
 from core.actions import (
     get_backend_func,
-    x11_blanking,
-    get_current_blanking,
     set_themes,
     set_wallpaper,
     set_backend
@@ -589,27 +587,6 @@ class Bath(QWidget):
         self.apply_btn.clicked.connect(self.apply_themes)
         
         # ============================================================
-        # SCREEN BLANKING
-        # ============================================================
-        blanking_group = QGroupBox(" Screen Blanking ")
-        blanking_group.setStyleSheet(GROUPBOX_STYLE)
-        blanking_layout = QHBoxLayout()
-        blanking_layout.setSpacing(10)
-        blanking_layout.setContentsMargins(15, 8, 15, 8)
-        
-        blanking_layout.addWidget(self.create_label("Timeout:", 110))
-        self.blanking_combo = self.create_standard_combo(
-            items=["Disabled", "30s", "1m", "5m", "10m", "20m", "30m", "1h"],
-            width=200,
-            default="20m"
-        )
-        blanking_layout.addWidget(self.blanking_combo)
-        blanking_layout.addStretch()
-        
-        blanking_group.setLayout(blanking_layout)
-        layout.addWidget(blanking_group)
-        
-        # ============================================================
         # ACTION BUTTONS (Colorful like DAB/Baker)
         # ============================================================
         layout.addSpacing(8)
@@ -648,7 +625,7 @@ class Bath(QWidget):
         # 2. Apply All Button (Green - like Baker's bake)
         self.apply_all_btn = QPushButton("Apply All")
         self.apply_all_btn.setFixedSize(100, 32)
-        self.apply_all_btn.setToolTip("Apply wallpaper, themes, and blanking settings")
+        self.apply_all_btn.setToolTip("Apply wallpaper and theme settings")
         self.apply_all_btn.clicked.connect(self.apply_all)
         self.apply_all_btn.setStyleSheet("""
             QPushButton {
@@ -717,7 +694,7 @@ class Bath(QWidget):
         # ADJUST THESE VALUES TO POSITION THE PREVIEW
         # ============================================================
         PREVIEW_X = 451  # Horizontal position (adjust as needed)
-        PREVIEW_Y = 440   # Vertical position (adjust as needed)
+        PREVIEW_Y = 496   # Vertical position (adjust as needed)
         # ============================================================
         
         self.apply_icon_preview.move(PREVIEW_X, PREVIEW_Y)
@@ -746,14 +723,14 @@ class Bath(QWidget):
         # Generate button
         if hasattr(self, 'generate_btn') and hasattr(self, 'gen_group'):
             btn_x = self.gen_group.width() - 156
-            btn_y = 139 
+            btn_y = 145 
             self.generate_btn.move(btn_x, btn_y)
             self.generate_btn.raise_()
         
         # Apply button
         if hasattr(self, 'apply_btn') and hasattr(self, 'apply_group'):
             btn_x = self.apply_group.width() - 75
-            btn_y = 139
+            btn_y = 145
             self.apply_btn.move(btn_x, btn_y)
             self.apply_btn.raise_()
     
@@ -802,17 +779,6 @@ class Bath(QWidget):
                 self.apply_window_combo.addItem(current['wm'])
                 self.apply_window_combo.setCurrentText(current['wm'])
             self.update_theme_color(self.apply_window_combo)
-        
-        # Load blanking from system
-        blanking = get_current_blanking()
-        idx = self.blanking_combo.findText(blanking)
-        if idx >= 0:
-            self.blanking_combo.setCurrentIndex(idx)
-        else:
-            # If the exact string isn't found, try to add it
-            self.blanking_combo.addItem(blanking)
-            self.blanking_combo.setCurrentText(blanking)
-    
     
     def populate_theme_lists(self):
         """Populate theme combos using core.themes.get_available_themes()."""
@@ -1097,22 +1063,6 @@ class Bath(QWidget):
             set_themes(ws_num, fake_config)
             _printer.info("Applied themes", backend="bath")
         
-        # Apply blanking
-        blanking_text = self.blanking_combo.currentText()
-        if blanking_text == "Disabled":
-            x11_blanking(0)
-        else:
-            try:
-                value = int(blanking_text[:-1])
-                unit = blanking_text[-1]
-                if unit == 'm':
-                    value *= 60
-                elif unit == 'h':
-                    value *= 3600
-                x11_blanking(value)
-            except:
-                x11_blanking(1800)
-        
         QMessageBox.information(self, "Success", "All settings applied successfully!")    
     
     def reset_settings(self):
@@ -1132,7 +1082,6 @@ class Bath(QWidget):
         self.folder_edit.setText("")
         self.style_combo.setCurrentText("Zoomed")
         
-        # Reset Blanking section (will be reloaded by load_current_settings)
         # But we also reset to system value via load_current_settings
         self.load_current_settings()
         

@@ -18,7 +18,7 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 **Bath** is a standalone tool that gives users a **taste** of what AWP can do — without the complexity of presets, workspaces, or INI files.
 
-- **One-Stop Shop:** GTK themes, icon themes, cursor themes, wallpaper, and screen blanking — all in one window
+- **One-Stop Shop:** GTK themes, icon themes, cursor themes, wallpaper — all in one window
 - **On-the-Fly Theme Baking:** Pick any color and instantly bake a complete theme (GTK + Icons + Cursors)
 - **Live Icon Preview:** See exactly what your icon theme looks like before applying it
 - **Backend-Aware:** Automatically detects your DE and adapts theme application accordingly
@@ -36,7 +36,6 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 - **Live Theme Previews:** Color previews for GTK, Icon, and Cursor themes
 - **HUD Integration:** Toggle Vertical and Horizontal (Bottom) upgraded HUDs with real-time mount detection and screen size auto-detection as well
 - **Preset Indicator:** ✓ mark shows which preset is currently active in your system
-- **Screen Blanking:** Simple combo box control (unified, no confusing checkboxes)
 - **Modern Action Buttons:** Color-coded actions matching Baker's sleek style
 
 > 💡 **DAB is for power users.** It's the central control panel for managing multiple presets, configuring workspaces, and controlling the entire AWP ecosystem.
@@ -80,7 +79,7 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 **DAB is now exclusively a configuration tool** — no baking, no color detection.
 
-- **DAB Pure Configurator:** Handles folders, timing, scaling, blanking, and system themes
+- **DAB Pure Configurator:** Handles folders, timing, scaling, and system themes
 - **preset_cloner.sh:** Clone current preset to ALL or specific presets
 - **awp_rotate.sh:** Toggle wallpaper rotation (full ↔ light daemon)
 - **Icon Path Enforcement:** All icons point to `~/awp/logos/` — presets are fully portable
