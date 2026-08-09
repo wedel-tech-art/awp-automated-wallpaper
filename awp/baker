@@ -54,7 +54,8 @@ from core.constants import (
 )
 from core.config import AWPConfig
 from core.utils import hex_to_hsv
-from core.actions import run_awp_start, get_preset_from_shm
+from core.runtime import get_preset_from_shm
+from core.actions import run_awp_start
 from core.printer import get_printer
 
 _printer = get_printer()
