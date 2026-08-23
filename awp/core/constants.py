@@ -25,6 +25,7 @@ SHM_ACTIVE_PRESET = "/dev/shm/awp_active_preset"
 AVAILABLE_PRESETS = [
     "qtile_xfce-debian", "qtile_gnome-debian", "qtile_wayland-debian",
     "xfce-debian", "xfce_light-debian",
+    "cinnamon-debian", "cinnamon_light-debian",
     "TEMPLATE",
 ]
 
@@ -472,10 +473,8 @@ GTK2_ASSETS = [
     "spin-rtl-down-active.png", "spin-rtl-up-active.png", "tab.png", "treeview-ltr-button-active.png", "treeview-rtl-button-active.png"
 ]
 
-# ==============================================================================
-# TARGET ASSETS FOR MINT THEME
-# ==============================================================================
-MINT_ASSETS = [
+
+MINT_RELAX_ASSETS = [
     # --- GTK2 (23 files) ---
     'checkbox-checked.png',
     'checkbox-checked-insensitive.png',
@@ -501,19 +500,25 @@ MINT_ASSETS = [
     'trough-horizontal-active.png',
     'trough-vertical-active.png',
 
-    # --- GTK3/GTK4 (checkbox, radio, switch) ---
+    # --- GTK2 Menubar Toolbar (4 files) ---
+    'menubar_button.png',
+    'menubar_button-dark.png',
+    'toolbar-entry-border-active-bg.png',
+    'toolbar-entry-border-active-bg-dark.png',
 
+    # --- GTK3/GTK4 (checkbox, radio, switch) ---
+    'checkbox-checked.png',
     'checkbox-checked@2.png',
     'checkbox-checked-dark.png',
     'checkbox-checked-dark@2.png',
-
+    'checkbox-checked-insensitive.png',
     'checkbox-checked-insensitive@2.png',
     'checkbox-checked-insensitive-dark.png',
     'checkbox-checked-insensitive-dark@2.png',
     'checkbox-checked-insensitive-selected.png',
     'checkbox-checked-insensitive-selected@2.png',
     'checkbox-checked-selected.png',
-    'checkbox-checked-selected@2.png',    
+    'checkbox-checked-selected@2.png',
     'checkbox-checked-selectionmode.png',
     'checkbox-checked-selectionmode@2.png',
     'checkbox-checked-selectionmode-dark.png',
@@ -530,11 +535,11 @@ MINT_ASSETS = [
     'checkbox-mixed-insensitive-selected@2.png',
     'checkbox-mixed-selected.png',
     'checkbox-mixed-selected@2.png',
-
+    'radio-checked.png',
     'radio-checked@2.png',
     'radio-checked-dark.png',
     'radio-checked-dark@2.png',
-
+    'radio-checked-insensitive.png',
     'radio-checked-insensitive@2.png',
     'radio-checked-insensitive-dark.png',
     'radio-checked-insensitive-dark@2.png',
@@ -574,13 +579,7 @@ MINT_ASSETS = [
     'switch-active-insensitive-selected@2.png',
     'switch-active-selected.png',
     'switch-active-selected@2.png',
-
-    # --- xfwm4 ---
-    'close-active.png',
-    'close-prelight.png',
-    'close-pressed.png',
 ]
-
 
 ICON_PRESETS = {
     'mint': {
@@ -820,15 +819,35 @@ THEME_PRESETS = {
 
             # --- Window buttons ---
             ('cc241d', 'hex'),
+            ('fb4934', 'close_hover'),
+            ('9d1e15', 'close_active'),
+            
             ('d79921', 'hide_gold'),
+            ('f2b84b', 'hide_gold_hover'),
+            ('b57614', 'hide_gold_active'),
+            
             ('98971a', 'maximize_blue'),
+            ('b8b73a', 'maximize_blue_hover'),
+            ('79740e', 'maximize_blue_active'),
+            
             ('2673a8', 'selection_bg'),
+            
+            # --- NEW: Dark accent variant (same hue as source_hex, matching #102b68 darkness) ---
+            ('10447a', 'dark_accent'),      # Same hue as 3daee9 but darkened to match #102b68
         ],
         'family_ratios': {
-            'source_hex':     (0.0, 1.0, 1.0),
-            'maximize_blue':  (-25, 1.00, 1.00),
-            'hide_gold':      (-50, 1.00, 1.00),
-            'selection_bg':   (0, 1.0, SELECTION_BRIGHTNESS),
+            'source_hex':           (0.0, 1.0, 1.0),
+            'close_hover':          (0, 1.15, 1.10),
+            'close_active':         (0, 0.95, 0.85),
+            'hide_gold':            (-50, 1.00, 1.00),
+            'hide_gold_hover':      (-50, 1.15, 1.10),
+            'hide_gold_active':     (-50, 0.95, 0.85),
+            'maximize_blue':        (-25, 1.00, 1.00),
+            'maximize_blue_hover':  (-25, 1.15, 1.10),
+            'maximize_blue_active': (-25, 0.95, 0.85),
+            'selection_bg':         (0, 1.0, SELECTION_BRIGHTNESS),
+            # NEW: Dark accent ratio (keep hue, slightly tweak if needed)
+            'dark_accent':          (0.0, 1.0, 0.27),    # Hue offset 0, Saturation 1.0, Lightness 0.27
         },
         'assets': TARGET_ASSETS,
     },
@@ -851,17 +870,31 @@ THEME_PRESETS = {
 
             # --- Window buttons ---
             ('cc241d', 'hex'),
+            ('fb4934', 'close_hover'),
+            ('9d1e15', 'close_active'),
             ('d79921', 'hide_gold'),
+            ('f2b84b', 'hide_gold_hover'),
+            ('b57614', 'hide_gold_active'),
             ('98971a', 'maximize_blue'),
+            ('b8b73a', 'maximize_blue_hover'),
+            ('79740e', 'maximize_blue_active'),
             ('b35a12', 'selection_bg'),
         ],
         'family_ratios': {
-            'source_hex':     (0.0, 1.0, 1.0),
-            'dark_shade':     (0, 1.0, 0.78),
-            'shade':          (0, 1.0, 0.93),
-            'lighter':        (0, 0.85, 1.10),
-            'maximize_blue':  (-25, 1.00, 1.00),
-            'hide_gold':      (-50, 1.00, 1.00),
+            'source_hex':           (0.0, 1.0, 1.0),
+            'dark_shade':           (0, 1.0, 0.78),
+            'shade':                (0, 1.0, 0.93),
+            'close_hover':          (0, 1.15, 1.10),
+            'close_active':         (0, 0.95, 0.85),
+            'lighter':              (0, 0.85, 1.10),
+            'hide_gold':            (-50, 1.00, 1.00),
+            'hide_gold_hover':      (-50, 1.15, 1.10),
+            'hide_gold_active':     (-50, 0.95, 0.85),
+            'maximize_blue':        (-25, 1.00, 1.00),
+            'maximize_blue_hover':  (-25, 1.15, 1.10),
+            'maximize_blue_active': (-25, 0.95, 0.85),
+            
+            
             'selection_bg':   (0, 1.00, SELECTION_BRIGHTNESS),
         },
         'assets': GTK2_ASSETS,
@@ -881,22 +914,26 @@ THEME_PRESETS = {
             # --- Derived colors ---
             ('d65d0e', 'dark_shade'),
             ('fe9137', 'shade'),
-            ('fda24d', 'lighter'),
+            ('fda24d', 'lighter'), # used also for active close button
             ('b35a12', 'selection_bg'),
             
             ('cc241d', 'hex'),
             
             ('d79921', 'hide_gold'),
+            ('f2b84b', 'hide_gold_active'),
             ('98971a', 'maximize_blue'),
+            ('b8b73a', 'maximize_blue_active'),
         ],
         'family_ratios': {
-            'source_hex':     (0.0, 1.0, 1.0),
-            'dark_shade':     (0, 1.0, 0.78),
-            'shade':          (0, 1.0, 0.93),
-            'lighter':        (0, 0.85, 1.10),
-            'hide_gold':     (-50, 1.00, 1.00),
-            'maximize_blue': (-25, 1.00, 1.00),            
-            'selection_bg':   (0, 1.00, SELECTION_BRIGHTNESS),
+            'source_hex':           (0.0, 1.0, 1.0),
+            'dark_shade':           (0, 1.0, 0.78),
+            'shade':                (0, 1.0, 0.93),
+            'lighter':              (0, 0.85, 1.25),
+            'hide_gold':            (-50, 1.00, 1.00),
+            'hide_gold_active':     (-50, 0.85, 1.20),
+            'maximize_blue':        (-25, 1.00, 1.00),            
+            'maximize_blue_active': (-25, 0.85, 1.20),
+            'selection_bg':         (0, 1.00, SELECTION_BRIGHTNESS),
         },
         'assets': GTK2_ASSETS,
     },
@@ -921,6 +958,7 @@ THEME_PRESETS = {
             ('377cf1', 'hex'),
             ('3b83fd', 'hex'),
             ('468aff', 'hex'),
+            ('005af3', 'hex'),            
             ('00348d', 'dark_border'),
             ('00215a', 'dark_border'),
             ('0047c0', 'dark_border'),
@@ -939,61 +977,52 @@ THEME_PRESETS = {
             ('337fdc', 'hover_light'),
             ('999911', 'hide_gold'),
             ('999922', 'maximize_blue'),
+            ('596eb5', 'workspace_border'),
+            ('102b68', 'workspace_shadow'),
             ('1a5599', 'selection_bg'),
         ],
         'family_ratios': {
-            'source_hex':    (0.0, 1.0, 1.0),
-            'dark_border':   (0, 1.00, 0.45),
-            'hover_light':   (0, 0.50, 1.00),
-            'hide_gold':     (-50, 1.00, 1.00),
-            'maximize_blue': (-25, 1.00, 1.00),
-            'selection_bg':  (0, 1.00, SELECTION_BRIGHTNESS),
+            'source_hex':       (0.0, 1.0, 1.0),
+            'dark_border':      (0, 1.00, 0.45),
+            'hover_light':      (0, 0.50, 1.00),
+            'hide_gold':        (-50, 1.00, 1.00),
+            'maximize_blue':    (-25, 1.00, 1.00),
+            'workspace_border': (0, 0.60, 0.71),
+            'workspace_shadow': (0, 1.00, 0.41),
+            'selection_bg':     (0, 1.00, SELECTION_BRIGHTNESS),
         },
         'assets': FLAT_REMIX_ASSETS,
     },
-
-    'mint': {
-        'path': 'template-theme-presets/mint',
+    
+    'mint-relax': {
+        'path': 'template-theme-presets/mint-relax',
         'source_hex': '1f9ede',
-        'rebrand': ['Mint-Y-Dark-Aqua', 'Mint-Y'],
+        'rebrand': ['Mint-Relaxed'],
         'colors': [
-            # --- Main accent ---
             ('1f9ede', 'source_hex'),
             ('1f9ede', 'hex'),
-
-            # --- Derived colors ---
             ('1c8ec8', 'hover_active'),
             ('197eb1', 'entry_border'),
-            ('166e9b', 'entry_border_dark'),
             ('1d91cc', 'entry_border_alt'),
-
-            # --- Window buttons ---
-            ('135e84', 'close_active'),
-            ('12587b', 'close_active_dark'),
-            ('cc241d', 'hex'),
+            ('135e84', 'close_active2'),
+            ('34a8e3', 'hex'),
             ('d79921', 'hide_gold'),
             ('98971a', 'maximize_blue'),
-
-            # --- Tooltip background (RGB only, no hex) ---
-            ('29, 150, 211', 'tooltip_bg_rgb'),
-
-            # --- Selection background ---
+            ('dd1711', 'close_active'),
             ('999777', 'selection_bg'),
         ],
         'family_ratios': {
             'source_hex':        (0.0, 1.0, 1.0),
             'hover_active':      (0, 0.95, 0.92),
             'entry_border':      (0, 0.90, 0.85),
-            'entry_border_dark': (0, 0.85, 0.80),
             'entry_border_alt':  (0, 0.92, 0.88),
-            'close_active':      (0, 1.0, 0.80),
-            'close_active_dark': (0, 1.0, 0.75),
-            'tooltip_bg':        (0, 1.0, 0.75),
+            'close_active2':     (0, 1.0, 0.80),
             'maximize_blue':     (-25, 1.00, 1.00),
             'hide_gold':         (-50, 1.00, 1.00),
+            'close_active':      (0, 0.8, 1.1),
             'selection_bg':      (0, 1.00, SELECTION_BRIGHTNESS),
         },
-        'assets': MINT_ASSETS,
+        'assets': MINT_RELAX_ASSETS,
     },
 }
 
@@ -1188,7 +1217,7 @@ THEME_CAPABILITIES = {
         'notes': 'Qtile Wayland + gsd-xsettings'
     },
     'cinnamon': {
-        'has_wm_theme': True,
+        'has_wm_theme': False,
         'has_desktop_theme': True,
         'has_gtk': True,
         'has_icons': True,

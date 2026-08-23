@@ -779,6 +779,15 @@ class Bath(QWidget):
                 self.apply_window_combo.addItem(current['wm'])
                 self.apply_window_combo.setCurrentText(current['wm'])
             self.update_theme_color(self.apply_window_combo)
+            
+        if current.get('desktop'):
+            idx = self.apply_desktop_combo.findText(current['desktop'])
+            if idx >= 0:
+                self.apply_desktop_combo.setCurrentIndex(idx)
+            else:
+                self.apply_desktop_combo.addItem(current['desktop'])
+                self.apply_desktop_combo.setCurrentText(current['desktop'])
+            self.update_theme_color(self.apply_desktop_combo)
     
     def populate_theme_lists(self):
         """Populate theme combos using core.themes.get_available_themes()."""

@@ -651,9 +651,13 @@ class AWPBaker(QMainWindow):
         with open(svg_path, 'r') as f:
             svg_content = f.read()
         
-        # Build color replacements
+        # Build color replacements with safety check for invalid hex values
         clean_hex = hex_color.lstrip('#')
-        r, g, b = int(clean_hex[0:2], 16), int(clean_hex[2:4], 16), int(clean_hex[4:6], 16)
+        try:
+            r, g, b = int(clean_hex[0:2], 16), int(clean_hex[2:4], 16), int(clean_hex[4:6], 16)
+        except ValueError:
+            return None  # Gracefully catch invalid hex characters (like 'v') without crashing
+            
         new_rgb = f"{r}, {g}, {b}"
         
         replacements = _build_icon_replacements(preset_config, clean_hex, new_rgb)
@@ -1533,6 +1537,7 @@ class AWPBaker(QMainWindow):
         config.set(section, 'icon_theme', new_icon_theme)
         config.set(section, 'cursor_theme', new_cursor_theme)
         config.set(section, 'wm_theme', new_gtk_theme)
+        config.set(section, 'desktop_theme', new_gtk_theme)
         
         with open(ini_path, 'w') as f:
             config.write(f)
@@ -1542,12 +1547,14 @@ class AWPBaker(QMainWindow):
         _printer.info(f"  icon_theme = {new_icon_theme}", backend="baker")
         _printer.info(f"  cursor_theme = {new_cursor_theme}", backend="baker")
         _printer.info(f"  wm_theme = {new_gtk_theme}", backend="baker")
+        _printer.info(f"  desktop_theme = {new_gtk_theme}", backend="baker")
         
         return {
             'gtk_theme': new_gtk_theme,
             'icon_theme': new_icon_theme,
             'cursor_theme': new_cursor_theme,
-            'wm_theme': new_gtk_theme
+            'wm_theme': new_gtk_theme,
+            'desktop_theme': new_gtk_theme
         }
     
     def _copy_to_preset(self, icon_path, ws_num):
@@ -2038,6 +2045,7 @@ class AWPBaker(QMainWindow):
                 results.append(f"   icon_theme = {theme_updates['icon_theme']}")
                 results.append(f"   cursor_theme = {theme_updates['cursor_theme']}")
                 results.append(f"   wm_theme = {theme_updates['wm_theme']}")
+                results.append(f"   desktop_theme = {theme_updates['desktop_theme']}")
             else:
                 errors.append("Failed to update INI themes")
             

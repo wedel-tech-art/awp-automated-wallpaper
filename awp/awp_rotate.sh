@@ -2,6 +2,13 @@
 # Toggle auto-rotation (ADAPTIVE to current workspace + preset-aware)
 # Polls /dev/shm/awp_full_state.json every 2 seconds for workspace/interval changes
 
+# DETACH FROM TERMINAL IF RUN INTERACTIVELY
+if [ -t 0 ] && [ -t 1 ]; then
+    # We're in a terminal, detach
+    setsid "$0" "$@" </dev/null >/dev/null 2>&1 &
+    exit 0
+fi
+
 FLAG="/tmp/awp_rotate"
 PID_FILE="/tmp/awp_rotate.pid"
 SLEEP_PID_FILE="/tmp/awp_rotate_sleep.pid"

@@ -1397,6 +1397,7 @@ searchbar > revealer > box {
   min-width: 24px;
   margin: 0;
   padding: 0;
+  background-size: 24px 24px;
 }
 
 .background.csd .titlebar.default-decoration {
@@ -2178,29 +2179,29 @@ scrollbar.right {
 
 scrollbar slider {
   transition: background-color 75ms cubic-bezier(0, 0, 0.2, 1);
-  min-width: 8px;
-  min-height: 8px;
+  min-width: 10px;
+  min-height: 10px;
   border: 4px solid transparent;
   border-radius: 9999px;
   background-clip: padding-box;
-  background-color: rgba(251, 241, 199, 0.5);
+  background-color: rgba(254, 128, 25, 0.5);
 }
 
 scrollbar slider:hover {
-  background-color: rgba(251, 241, 199, 0.7);
+  background-color: rgba(254, 128, 25, 0.7);
 }
 
 scrollbar slider:active {
-  background-color: #fbf1c7;
+  background-color: #fe8019;
 }
 
 scrollbar slider:disabled {
-  background-color: rgba(251, 241, 199, 0.32);
+  background-color: rgba(254, 128, 25, 0.32);
 }
 
 scrollbar.fine-tune slider {
-  min-width: 4px;
-  min-height: 4px;
+  min-width: 10px;
+  min-height: 10px;
 }
 
 scrollbar.fine-tune.horizontal slider {
@@ -2221,15 +2222,15 @@ scrollbar.overlay-indicator:not(.dragging):not(.hovering) {
 }
 
 scrollbar.overlay-indicator:not(.dragging):not(.hovering) slider {
-  min-width: 4px;
-  min-height: 4px;
+  min-width: 10px;
+  min-height: 10px;
   margin: 3px;
   border: 1px solid rgba(40, 37, 36, 0.3);
 }
 
 scrollbar.overlay-indicator:not(.dragging):not(.hovering) button {
-  min-width: 4px;
-  min-height: 4px;
+  min-width: 10px;
+  min-height: 10px;
   margin: 3px;
   border: 1px solid rgba(40, 37, 36, 0.3);
   border-radius: 9999px;
@@ -3936,10 +3937,10 @@ messagedialog.background.csd decoration {
 }
 
 button.titlebutton:not(.suggested-action):not(.destructive-action) {
-  min-height: 16px;
-  min-width: 16px;
-  padding: 0;
-  margin: 0 4px;
+  min-height: 24px;
+  min-width: 24px;
+  padding: 0px;
+  margin: 0 2px;
 }
 
 button.minimize.titlebutton:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:not(.suggested-action):not(.destructive-action), button.close.titlebutton:not(.suggested-action):not(.destructive-action) {
@@ -3956,7 +3957,7 @@ button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-actio
 }
 
 button.minimize.titlebutton:hover:not(.suggested-action):not(.destructive-action), button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:hover:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:active:not(.suggested-action):not(.destructive-action), button.close.titlebutton:hover:not(.suggested-action):not(.destructive-action), button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) {
-  color: white;
+  color: #242220;
 }
 
 button.minimize.titlebutton:backdrop:not(.suggested-action):not(.destructive-action), button.maximize.titlebutton:backdrop:not(.suggested-action):not(.destructive-action), button.close.titlebutton:backdrop:not(.suggested-action):not(.destructive-action) {
@@ -3972,7 +3973,7 @@ button.minimize.titlebutton:not(.suggested-action):not(.destructive-action) {
 }
 
 button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
-  background-color: #e0af4b;
+  background-color: #b57614;
 }
 
 button.maximize.titlebutton:not(.suggested-action):not(.destructive-action) {
@@ -3980,7 +3981,7 @@ button.maximize.titlebutton:not(.suggested-action):not(.destructive-action) {
 }
 
 button.maximize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
-  background-color: #b1ae45;
+  background-color: #79740e;
 }
 
 button.close.titlebutton:not(.suggested-action):not(.destructive-action) {
@@ -3988,12 +3989,12 @@ button.close.titlebutton:not(.suggested-action):not(.destructive-action) {
 }
 
 button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) {
-  background-color: #d85748;
+  background-color: #9d1e15;
 }
 
 #MozillaGtkWidget.background headerbar.titlebar.default-decoration button.minimize.titlebutton, .background.csd headerbar.titlebar.default-decoration button.minimize.titlebutton:not(.suggested-action):not(.destructive-action), #MozillaGtkWidget.background headerbar.titlebar.default-decoration button.maximize.titlebutton, .background.csd headerbar.titlebar.default-decoration button.maximize.titlebutton:not(.suggested-action):not(.destructive-action), #MozillaGtkWidget.background headerbar.titlebar.default-decoration button.close.titlebutton, .background.csd headerbar.titlebar.default-decoration button.close.titlebutton:not(.suggested-action):not(.destructive-action) {
   background-repeat: no-repeat;
-  background-size: 16px 16px;
+  background-size: contain;
   background-position: center;
 }
 
@@ -4004,20 +4005,34 @@ button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) 
   transition: all 75ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-#MozillaGtkWidget.background headerbar.titlebar.default-decoration button.minimize.titlebutton:hover, .background.csd headerbar.titlebar.default-decoration button.minimize.titlebutton:hover:not(.suggested-action):not(.destructive-action), #MozillaGtkWidget.background headerbar.titlebar.default-decoration button.minimize.titlebutton:active, .background.csd headerbar.titlebar.default-decoration button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
-  background-image: -gtk-scaled(url("assets/minimize-symbolic.svg"), url("assets/minimize-symbolic@2.svg"));
+#MozillaGtkWidget.background headerbar.titlebar.default-decoration button.minimize.titlebutton:hover,
+.background.csd headerbar.titlebar.default-decoration button.minimize.titlebutton:hover:not(.suggested-action):not(.destructive-action),
+#MozillaGtkWidget.background headerbar.titlebar.default-decoration button.minimize.titlebutton:active,
+.background.csd headerbar.titlebar.default-decoration button.minimize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-image: url("assets/minimize-symbolic.svg");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
-#MozillaGtkWidget.background headerbar.titlebar.default-decoration button.maximize.titlebutton:hover, .background.csd headerbar.titlebar.default-decoration button.maximize.titlebutton:hover:not(.suggested-action):not(.destructive-action), #MozillaGtkWidget.background headerbar.titlebar.default-decoration button.maximize.titlebutton:active, .background.csd headerbar.titlebar.default-decoration button.maximize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
-  background-image: -gtk-scaled(url("assets/maximize-symbolic.svg"), url("assets/maximize-symbolic@2.svg"));
+#MozillaGtkWidget.background headerbar.titlebar.default-decoration button.maximize.titlebutton:hover,
+.background.csd headerbar.titlebar.default-decoration button.maximize.titlebutton:hover:not(.suggested-action):not(.destructive-action),
+#MozillaGtkWidget.background headerbar.titlebar.default-decoration button.maximize.titlebutton:active,
+.background.csd headerbar.titlebar.default-decoration button.maximize.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-image: url("assets/maximize-symbolic.svg");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
-#MozillaGtkWidget.background headerbar.titlebar.default-decoration button.close.titlebutton:hover, .background.csd headerbar.titlebar.default-decoration button.close.titlebutton:hover:not(.suggested-action):not(.destructive-action), #MozillaGtkWidget.background headerbar.titlebar.default-decoration button.close.titlebutton:active, .background.csd headerbar.titlebar.default-decoration button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) {
-  background-image: -gtk-scaled(url("assets/close-symbolic.svg"), url("assets/close-symbolic@2.svg"));
-}
-
-.background.csd.maximized headerbar.titlebar.default-decoration button.titlebutton:not(.suggested-action):not(.destructive-action).maximize:hover, .background.csd.maximized headerbar.titlebar.default-decoration button.titlebutton:not(.suggested-action):not(.destructive-action).maximize:active {
-  background-image: -gtk-scaled(url("assets/unmaximize-symbolic.svg"), url("assets/unmaximize-symbolic@2.svg"));
+#MozillaGtkWidget.background headerbar.titlebar.default-decoration button.close.titlebutton:hover,
+.background.csd headerbar.titlebar.default-decoration button.close.titlebutton:hover:not(.suggested-action):not(.destructive-action),
+#MozillaGtkWidget.background headerbar.titlebar.default-decoration button.close.titlebutton:active,
+.background.csd headerbar.titlebar.default-decoration button.close.titlebutton:active:not(.suggested-action):not(.destructive-action) {
+  background-image: url("assets/close-symbolic.svg");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 .monospace {
@@ -8339,11 +8354,11 @@ read if you used those and something break with a version upgrade you're on your
 @define-color wm_unfocused_bg #282524;
 @define-color wm_button_icon white;
 @define-color wm_button_close_hover_bg #cc241d;
-@define-color wm_button_close_active_bg #961b15;
+@define-color wm_button_close_active_bg #9d1e15;
 @define-color wm_button_max_hover_bg #98971a;
-@define-color wm_button_max_active_bg #646311;
+@define-color wm_button_max_active_bg #79740e;
 @define-color wm_button_min_hover_bg #d79921;
-@define-color wm_button_min_active_bg #a27319;
+@define-color wm_button_min_active_bg #b57614;
 /*
 FIXME this is really an API */
 @define-color content_view_bg #282524;

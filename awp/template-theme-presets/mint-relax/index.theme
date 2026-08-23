@@ -1,0 +1,21 @@
+# ==============================================================================
+# AWP HYBRID ARCHITECTURE MANIFEST
+# ==============================================================================
+# BASE FRAMEWORK: Mint-Y-Dark-Aqua from Mint-Relaxed custom theme
+# GTK+ 3.0 / 4.0 / Cinnamon: Tweaked SVG Layouts and CSS
+# GTK+ 2.0 (LEGACY): Integrated Mint-Style Control Assets (PNG Matrix)
+# TARGET COMPATIBILITY: XFCE 4.18+ / Cinnamon Desktop Framework Unification
+# ==============================================================================
+
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Mint-Relaxed
+Comment=AWP Hybrid Engine • Based in Mint-Y-Dark-Aqua from Dr-Mccoy Mint-Relaxed Theme with additional AWP tweaks
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=Mint-Relaxed
+MetacityTheme=Mint-Y
+IconTheme=AWP-Icons
+CursorTheme=AWP-Cursor
+ButtonLayout=menu:minimize,maximize,close

@@ -2976,32 +2976,28 @@ scrollbar > range > trough {
 
 scrollbar > range > trough > slider {
   transition: background-color 75ms cubic-bezier(0, 0, 0.2, 1);
-  min-width: 8px;
-  min-height: 8px;
+  min-width: 10px;
+  min-height: 10px;
   margin: -6px;
-  border: 6px solid transparent;
+  border: 5px solid transparent;
   border-radius: 9999px;
   background-clip: padding-box;
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(254, 128, 25, 0.5);
   box-shadow: none;
   outline: none;
 }
-
 scrollbar > range > trough > slider:hover {
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(254, 128, 25, 0.75);
 }
-
 scrollbar > range > trough > slider:active {
-  background-color: white;
+  background-color: #fe8019;
 }
-
 scrollbar > range > trough > slider:disabled {
   background-color: rgba(255, 255, 255, 0.3);
 }
-
 scrollbar > range.fine-tune > trough > slider {
-  min-width: 4px;
-  min-height: 4px;
+  min-width: 10px;
+  min-height: 10px;
 }
 
 scrollbar > range.fine-tune.horizontal > trough > slider {
@@ -3026,15 +3022,15 @@ scrollbar.overlay-indicator:not(.dragging):not(.hovering) > range > trough {
 }
 
 scrollbar.overlay-indicator:not(.dragging):not(.hovering) > range > trough > slider {
-  min-width: 4px;
-  min-height: 4px;
+  min-width: 10px;
+  min-height: 10px;
   margin: 0;
   border: none;
 }
 
 scrollbar.overlay-indicator:not(.dragging):not(.hovering) button {
-  min-width: 4px;
-  min-height: 4px;
+  min-width: 10px;
+  min-height: 10px;
   margin: 3px;
   border: none;
   border-radius: 9999px;
@@ -6319,13 +6315,35 @@ windowcontrols > button:not(.suggested-action):not(.destructive-action) image {
   background: none;
 }
 
+windowcontrols > button:not(.suggested-action):not(.destructive-action).minimize:hover {
+  background-color: #d79921;
+  color: #2C2C2C;
+}
+
+windowcontrols > button:not(.suggested-action):not(.destructive-action).minimize:active {
+  background-color: #f2b84b;
+  color: #2C2C2C;
+}
+
+windowcontrols > button:not(.suggested-action):not(.destructive-action).maximize:hover,
+windowcontrols > button:not(.suggested-action):not(.destructive-action).maximize.toggled:hover {
+  background-color: #98971a;
+  color: #2C2C2C;
+}
+
+windowcontrols > button:not(.suggested-action):not(.destructive-action).maximize:active,
+windowcontrols > button:not(.suggested-action):not(.destructive-action).maximize.toggled:active {
+  background-color: #b8b73a;
+  color: #2C2C2C;
+}
+
 windowcontrols > button:not(.suggested-action):not(.destructive-action).close:hover {
   background-color: #fe8019;
   color: #2C2C2C;
 }
 
 windowcontrols > button:not(.suggested-action):not(.destructive-action).close:active {
-  background-color: #2679db;
+  background-color: #fda24d;
   color: #2C2C2C;
 }
 

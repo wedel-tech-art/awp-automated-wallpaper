@@ -2089,10 +2089,11 @@ toolbarview > .bottom-bar .collapse-spacing headerbar, window.shortcuts headerba
  * GtkWindowControls *
  *********************/
 windowcontrols {
-  border-spacing: 3px; }
+  border-spacing: 2px; }
   windowcontrols > button {
-    min-width: 24px;
-    padding: 5px;
+    min-width: 22px;
+    min-height: 22px;
+    padding: 0;
     box-shadow: none; }
     windowcontrols > button > image {
       background-color: alpha(currentColor,0.1);
@@ -3835,10 +3836,10 @@ scrollbar > range > trough {
   transition: all 200ms linear;
   border-radius: 10px; }
   scrollbar > range > trough > slider {
-    min-width: 8px;
-    min-height: 8px;
+    min-width: 10px;
+    min-height: 10px;
     margin: -6px;
-    border: 6px solid transparent;
+    border: 5px solid transparent;
     border-radius: 10px;
     background-clip: padding-box;
     transition: all 200ms linear;
@@ -3871,8 +3872,8 @@ scrollbar.overlay-indicator {
       .osd scrollbar.overlay-indicator > range > trough > slider {
         outline: 1px solid alpha(rgba(0, 0, 0, 0.5),0.6); }
   scrollbar.overlay-indicator:not(.hovering) > range > trough > slider {
-    min-width: 3px;
-    min-height: 3px;
+    min-width: 10px;
+    min-height: 10px;
     outline-color: alpha(@scrollbar_outline_color,0.35); }
     .osd scrollbar.overlay-indicator:not(.hovering) > range > trough > slider {
       outline-color: alpha(rgba(0, 0, 0, 0.5),0.35); }
@@ -3883,15 +3884,15 @@ scrollbar.overlay-indicator {
   scrollbar.overlay-indicator.horizontal.hovering > range > trough > slider {
     min-height: 8px; }
   scrollbar.overlay-indicator.horizontal:not(.hovering) > range > trough {
-    margin-top: 3px;
-    margin-bottom: 3px; }
+    margin-top: 10px;
+    margin-bottom: 10px; }
   scrollbar.overlay-indicator.vertical > range > trough > slider {
     min-height: 40px; }
   scrollbar.overlay-indicator.vertical.hovering > range > trough > slider {
     min-width: 8px; }
   scrollbar.overlay-indicator.vertical:not(.hovering) > range > trough {
-    margin-left: 3px;
-    margin-right: 3px; }
+    margin-left: 10px;
+    margin-right: 10px; }
 
 scrollbar.horizontal > range > trough > slider {
   min-width: 40px; }

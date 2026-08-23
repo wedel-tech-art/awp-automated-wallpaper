@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.9%2B-green)](https://python.org)
 [![Qt](https://img.shields.io/badge/Qt-6-purple)](https://qt.io)
 [![Refactored](https://img.shields.io/badge/status-desktop--alchemy-brightgreen)](https://github.com/wedel-tech-art/awp-automated-wallpaper)
-[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT%2BGPLv3-lightgrey)](LICENSE)
 
 ## 🎯 What is Desktop Alchemy?
 
@@ -13,6 +13,27 @@ AWP **transmutes** your entire desktop environment.
 Each workspace becomes a distinct visual identity — with its own themes, icons, cursors, and wallpapers — all synchronized through a unified, intelligent architecture. From a single color, AWP **bakes** complete GTK and icon themes, creating harmony across your entire system.
 
 ## 🚀 Key Features
+
+### 🎨 Theme Polishing & Cinnamon Support (V3.16)
+
+- **5 GTK Presets Polished:** Scrollbars now feature accent color "personality" — in general I used a idle (40% tint), hover (70%), and active (100%) opacity rule — with smooth transitions. All 5 themes now consistently use accent-driven scrollbars in GTK3 and GTK4.
+
+| Preset | Status | Notes |
+|--------|--------|-------|
+| **Breeze** | ✅ Active | Classic, clean |
+| **Mint-Relax** | ✅ Active | Darker, simpler (replaces Mint) |
+| **Colloid** | ✅ Active | Gruvbox-inspired |
+| **Graphite** | ✅ Active | Modern, clean |
+| **Flat-Remix** | ✅ Active | Vibrant, colorful |
+| ~~Mint~~ | ❌ Deprecated | Replaced by Mint-Relax |
+
+- **Cinnamon Desktop Theme Support:** All presets now include full Cinnamon shell support. Scrollbars in Cinnamon menus and windows now match GTK behavior with accent-tinted sliders. The menu category "split" issue has been fixed with strategic padding adjustments.
+
+- **New `mint-relax` GTK Preset:** Introduced a darker, simpler variant based on Mint-Relaxed by Dr-Mccoy (GPLv3). Mint is now deprecated in favor of mint-relax.
+
+- **XFWM4 Polishing:** All xfwm4 themes have been refined for better consistency and visual quality.
+
+- **Backend Fixes:** Cinnamon workspace detection improved, theme application streamlined.
 
 ### 🛁 Bath — "A Taste of AWP" Newbie-Friendly Baker-Themer (V3.15)
 
@@ -56,9 +77,9 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 | Tool | Purpose | Best For | Complexity |
 |------|---------|----------|------------|
-| **Bath** | System-wide theming (taste of AWP) | New users, quick theme changes, "just make it look good" | 🟢 Low |
+| **BATH** | System-wide theming (taste of AWP) | New users, quick theme changes, "just make it look good" | 🟢 Low |
 | **DAB** | Configuration & presets | Power users managing multiple presets and workspaces | 🟡 Medium |
-| **Baker** | Theme generation | Creating custom themes from colors, surgical operations | 🟡 Medium |
+| **BAKER** | Theme generation | Creating custom themes from colors, surgical operations | 🟡 Medium |
 
 > 🔄 **The Workflow:** Try **Bath** first to see what AWP can do. If you like it, graduate to **DAB + Baker** for the full power of workspace-specific theming, presets, and automated wallpaper rotation.
 
@@ -206,7 +227,7 @@ mv ~/awp/presets/xfce_light-debian/xfce-debian.ini \
 
 ## 🎮 Usage
 
-## 🛁 Bath — "A Taste of AWP"
+## 🛁 BATH — "A Taste of AWP"
 
 Bath is AWP's **gateway drug** — a simple, brainless tool that shows new users what AWP can do without overwhelming them with presets, workspaces, or INI files.
 
@@ -260,7 +281,7 @@ DAB now features **two HUDs** that can be toggled on/off directly from the dashb
 # Launch Dab
 ~/awp ./dab
 ```
-## 🧁 AWP Baker — The Ultimate Theme Generation Tool
+## 🧁 BAKER — The Ultimate Theme Generation Tool
 
 AWP Baker (`baker`) is a **standalone, surgical theme generation tool** that changes how you manage workspace colors forever.
 
@@ -455,6 +476,7 @@ awp-automated-wallpaper/
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
+| **V3.16** | Aug 2026 | 🎨 **Theme Polishing & Cinnamon Support** — Full Cinnamon desktop theme support with scrollbar consistency. New `mint-relax` GTK preset (based on Mint-Relaxed by Dr-Mccoy, GPLv3). Mint preset deprecated. XFWM4 polishing. Backend fixes for Cinnamon workspace detection. |
 | **V3.15** | Aug 2026 | 🛁 **Bath Launch** — "Taste of AWP" newbie-friendly baker-themer. Live icon previews in Bath and Baker. Color previews in DAB. HUD integration with automatic mount detection and toggle buttons in DAB. Backend enhancements across all DEs. Executables renamed to `baker`, `dab`, `bath`. |
 | **V3.14** | Jul 2026 | 🔧 Dashboard Upgrade — DAB now features presets, tab-free UI, modern buttons, preset indicator, renamed to `dab`. HSV display in Baker. Floating window fix. Symlink cleanup. Mint audio icons updated. |
 | **V3.13** | Jul 2026 | 🔧 DAB Pure Configurator — Baking/color detection removed from DAB. New preset_cloner.sh and awp_rotate.sh utilities. Icon path enforcement to logos/. Daemon wallpaper index sync fixed. New GTK preset (mint) and SVG template (awp-firma). |
@@ -517,7 +539,17 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ## 📄 License
 
-This project is licensed under the MIT License — see the LICENSE file for details.
+AWP is licensed under the MIT License. However, AWP includes and integrates code and visual assets from various third-party projects under their respective licenses:
+
+- **MIT License:** AWP core code, AWP original artwork, AWP-Firma SVG template, AWP logo designs, and the `mint` icon preset (original AWP creation).
+
+- **GPLv3:** GTK themes (breeze, colloid, flat-remix, graphite, mint, mint-relax), icon themes (slot-multicolor, breeze, sweet, sweet-hollow, adwaitaru, neon, rami, besgnulinux), and the Oxygen Cursors theme. See the Visual Preset Credits table for full attribution.
+
+- **LGPL:** Breeze GTK theme from KDE Community.
+
+All bundled assets remain under their respective upstream licenses. Modified assets are redistributed in compliance with their original license terms.
+
+See the LICENSE file for the full MIT license text and the Visual Preset Credits section for complete attribution details of all bundled third-party assets.
 
 ### 📦 AWP Logos Asset Package
 
@@ -583,6 +615,7 @@ AWP includes modified and adapted visual presets derived from the following open
 | flat-remix | GTK | Flat Remix GTK | daniruiz | GPLv3 | [GitHub](https://github.com/daniruiz/flat-remix-gtk) |
 | graphite | GTK | Graphite GTK | vinceliuice | GPLv3 | [GitHub](https://github.com/vinceliuice/Graphite-gtk-theme) |
 | mint | GTK | Mint-Y-Dark-Aqua | Linux Mint Team | GPLv3 | [Website](https://linuxmint.com) |
+| mint-relax | GTK | Mint-Relaxed | Dr-Mccoy | GPLv3 | [OpenDesktop](https://www.opendesktop.org/p/2302153) |
 | oxy | Cursor | Oxygen Cursors | KDE Community | LGPL / GPL | [Website](https://kde.org) |
 
 > ℹ️ **Mint Icon Preset (AWP Original):** The `mint` preset included in AWP is **not** a direct copy of Mint-Y-Purple. It is a **completely original SVG-based rebuild** created from scratch and made to resemble Mint-Y-Purple but using svg folder structures inspired by `slot-multicolor` and label/emblem design language from `adwaitaru`. While the name pays homage to the Linux Mint aesthetic, the artwork, gradients, and color relationships are original AWP creations.
@@ -600,10 +633,19 @@ AWP does not claim ownership of bundled visual assets. Icon, GTK and cursor pres
 - Built with Python 3 and PyQt6.
 - Tested on Linux Mint XFCE, Debian, and other major distributions.
 - Theme, cursor and visual preset workflows are inspired by the excellent work of the KDE, Linux Mint, XFCE, GNOME and wider Linux desktop communities.
+
 - **Visual Preset Credits:** slot-multicolor (L4ki), breeze (L4ki/KDE), sweet & sweet-hollow (EliverLara), adwaitaru (ricardoherreramx), neon (SethStormR), rami (Rami author), **besgnulinux (besgnulinux)**, **deepmacos (mirabellalorenzo03)**, colloid (vinceliuice), flat-remix (daniruiz), graphite (vinceliuice), and Oxygen Cursors (KDE Community). See the License section for full attribution details.
+
+- **Special Thanks to Dr-Mccoy** for the Mint-Relaxed GTK theme ([OpenDesktop](https://www.opendesktop.org/p/2302153)), which served as the foundation for the `mint-relax` preset. Dr-Mccoy is a retired CG artist and front-end developer who creates open-source themes for Linux as a way to share their passion and contribute to the community. Mint-Relaxed is a modern, 4k-ready GTK theme based on Mint-Y-Dark-Aqua, optimized for Cinnamon desktop, and distributed under GPLv3.
+
 - **Special Credit:** The AWP `mint` icon preset is an **original AWP creation** — rebuilt from scratch with most assets converted to original SVG artwork. Distributed under the MIT License as part of AWP.
+
 - **GTK Mint Theme Credit:** The AWP `mint` GTK theme is based on Mint-Y-Dark-Aqua from the Linux Mint project. Modified and enhanced for AWP's color-driven baking engine. Distributed under GPLv3.
+
 - **AWP-Firma SVG Template:** Original AWP creation — the signature stroke design with transparent background. Available as an SVG template in Baker.
+
 - **AWP Logo Designs:** The 3 AWP logo designs in `awp-logos.tar.gz` are original creations. Available in SVG and PNG formats across 360 colors.
+
 - **SVG Templates:** The AWP Baker SVG templates (awp, debian, swirldeb, ubuntu, mint, kde, gnome, plasma) are artistic reinterpretations created as tributes to the open-source projects that inspire us.
+
 - Special thanks to the open-source community and all AWP users.

@@ -9,7 +9,7 @@ import os
 import subprocess
 import json
 import configparser
-from core.constants import SCALING_FEH
+import time
 from backends import ensure_qt6_kde_symlinks, write_qt6_kde_accent
 from core.printer import get_printer
 
@@ -24,34 +24,19 @@ SCALING_CINNAMON = {'centered': 'centered', 'scaled': 'scaled', 'zoomed': 'zoom'
 
 def cinnamon_current_ws():
     """
-    Cinnamon Workspace Detection via D-Bus.
-    Works on X11 and is the 'Passport' for Cinnamon's Wayland future.
+    Standard X11 Workspace Detection via xprop for Cinnamon.
+    Clean, reliable, and avoids invalid D-Bus property errors.
     """
     try:
-        import subprocess
-        # We ask Cinnamon directly for the active workspace index
-        cmd = [
-            "dbus-send", "--print-reply", "--dest=org.Cinnamon",
-            "/org/Cinnamon", "org.freedesktop.DBus.Properties.Get",
-            "string:org.Cinnamon", "string:active-workspace-index"
-        ]
+        ws_num = subprocess.check_output(
+            ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
+            text=True
+        ).strip().split()[-1]
         
-        result = subprocess.check_output(cmd, text=True)
-        
-        # Extract the integer from the reply (e.g., variant int32 1)
-        ws_num = result.split()[-1]
         return int(ws_num)
-        
     except Exception as e:
-        # Fallback to xprop if D-Bus is stubborn on older Mint versions
-        try:
-            ws_num = subprocess.check_output(
-                ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
-                text=True).strip().split()[-1]
-            return int(ws_num)
-        except:
-            _printer.error(f"Cinnamon detection failed: {e}", backend="cinnamon")
-            return 0
+        _printer.error(f"Cinnamon workspace detection failed: {e}", backend="cinnamon")
+        return 0
 
 
 def _get_current_gsetting(schema, key):
@@ -107,7 +92,7 @@ def cinnamon_set_themes(ws_num: int, config):
             ], check=False)
             changes.append("icons")
     
-    # Check Cursor theme
+    # Check Cursor theme - IMPROVED with XFCE approach
     if should_cursor:
         current = _get_current_gsetting("org.cinnamon.desktop.interface", "cursor-theme")
         if current != should_cursor:
@@ -120,12 +105,41 @@ def cinnamon_set_themes(ws_num: int, config):
     
     # Force cursor refresh if it changed (fixes stubborn apps)
     if cursor_changed:
+        # Small delay to let the setting propagate
         time.sleep(0.5)
+        
+        # Method 1: Tell X to reload the cursor (same as XFCE)
         subprocess.run(["xsetroot", "-cursor_name", "left_ptr"], check=False)
+        
+        # Method 2: Broadcast Xsettings change (same as XFCE)
         subprocess.run([
             "xprop", "-root", "-f", "_XSETTINGS_SETTINGS", "8s",
             "-set", "_XSETTINGS_SETTINGS", ""
         ], check=False)
+        
+        # Method 3: Cinnamon-specific - restart cinnamon-settings-daemon
+        #subprocess.run(["pkill", "-HUP", "cinnamon-settings-daemon"], check=False)
+        
+        # Method 4: Force GTK to reload via cursor size toggle
+        current_size = subprocess.run(
+            ["gsettings", "get", "org.cinnamon.desktop.interface", "cursor-size"],
+            capture_output=True, text=True
+        ).stdout.strip()
+        
+        if current_size:
+            # Change size slightly to force reload
+            new_size = int(current_size) + 1 if current_size.isdigit() else 25
+            subprocess.run([
+                "gsettings", "set", "org.cinnamon.desktop.interface", 
+                "cursor-size", str(new_size)
+            ], check=False)
+            time.sleep(0.1)
+            # Restore original size
+            subprocess.run([
+                "gsettings", "set", "org.cinnamon.desktop.interface", 
+                "cursor-size", current_size
+            ], check=False)
+        
         _printer.info("Cursor refresh triggered", backend="cinnamon")
     
     # Check Desktop theme (Cinnamon shell theme)
@@ -148,23 +162,20 @@ def cinnamon_set_themes(ws_num: int, config):
             ], check=False)
             changes.append("wm")
     
-    # ========================================================================
-    # Qt6 Accent Color (via /dev/shm - RAM, no disk writes!)
-    # ========================================================================
+    # Qt6 Accent Color
     if should_accent:
         write_qt6_kde_accent(should_accent)
         changes.append(f"qt6:{should_accent}")
     
-    # Use printer with explicit backend
+    # Report changes
     _printer.themes(ws_num, changes, backend="cinnamon")
-
 
 def cinnamon_lean_mode():
     """
-    Cinnamon already uses native wallpaper methods.
-    This is a compatibility placeholder.
+    Cinnamon uses native gsettings for wallpapers, 
+    so lean mode acts as a clean bypass.
     """
-    _printer.info("Cinnamon uses native wallpaper methods", backend="cinnamon")
+    _printer.lean_mode("Bypassed (Native Engine Active)", backend="cinnamon")
 
 
 def cinnamon_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
