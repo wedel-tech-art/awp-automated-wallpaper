@@ -1690,7 +1690,6 @@ class AWPBaker(QMainWindow):
         
         confirm_msg += f"Proceed?"
         
-        # Use custom question dialog
         if not self.show_question_dialog("Regenerate All Themes", confirm_msg):
             return
         
@@ -1713,29 +1712,23 @@ class AWPBaker(QMainWindow):
             # Step 1: Clean old themes if requested
             if self.clean_cb.isChecked():
                 _printer.info("🧹 Cleaning old themes...", backend="baker")
-                
-                # 1a. Remove global themes
-                removed_global = clean_themes()  # No args = remove ALL awp-* themes
-                
-                # 1b. Remove preset themes
+                removed_global = clean_themes()
                 removed_preset = []
                 themes_dir = os.path.join(self.presets_dir, selected_preset, 'themes')
                 if os.path.exists(themes_dir):
-                    import shutil
                     shutil.rmtree(themes_dir)
                     removed_preset.append(f"preset/{selected_preset}/themes/")
                     _printer.info(f"Removed preset themes: {themes_dir}", backend="baker")
                 
                 removed = removed_global + removed_preset
-                
                 if removed:
                     results.append(f"🧹 Removed {len(removed)} old themes (global + preset)")
-                    for item in removed[:5]:  # Show first 5
+                    for item in removed[:5]:
                         results.append(f"   - {item}")
                     if len(removed) > 5:
                         results.append(f"   ... and {len(removed) - 5} more")
                 else:
-                    results.append("🧹 No old themes found to remove")            
+                    results.append("🧹 No old themes found to remove")
             
             # Get workspace count
             num_workspaces = 8
@@ -1750,7 +1743,7 @@ class AWPBaker(QMainWindow):
             total_icons = 0
             total_cursors = 0
             total_ws_icons = 0
-            total_steps = num_workspaces * 3  # GTK + Icons + Cursors per workspace
+            total_steps = num_workspaces * 3
             processed = 0
             
             for i in range(1, num_workspaces + 1):
@@ -1759,16 +1752,21 @@ class AWPBaker(QMainWindow):
                     continue
                 
                 hex_color = config.get(section, 'icon_color', fallback='')
+                
+                # ============================================================
+                # FIX 1: If icon_color is missing, use fallback
+                # ============================================================
                 if not hex_color or not hex_color.startswith('#'):
-                    _printer.warning(f"WS{i}: No valid color, skipping", backend="baker")
-                    continue
+                    hex_color = '#b7004f'  # Debian-like default
+                    _printer.warning(f"WS{i}: icon_color missing, using fallback: {hex_color}", backend="baker")
+                    config.set(section, 'icon_color', hex_color)
                 
                 # Get themes from INI
                 gtk_theme = config.get(section, 'gtk_theme', fallback='awp-gtk-breeze-000000')
                 icon_theme = config.get(section, 'icon_theme', fallback='awp-icons-mint-000000')
                 cursor_theme = config.get(section, 'cursor_theme', fallback='awp-cursor-oxy-000000')
                 
-                # Extract presets using utility function
+                # Extract presets
                 gtk_preset = extract_preset_from_theme(gtk_theme, 'awp-gtk-')
                 icon_preset = extract_preset_from_theme(icon_theme, 'awp-icons-')
                 cursor_preset = extract_preset_from_theme(cursor_theme, 'awp-cursor-')
@@ -1785,7 +1783,6 @@ class AWPBaker(QMainWindow):
                 
                 # Generate icon
                 icon_path = generate_icon_from_svg(hex_color, 'awp')
-                
                 if not icon_path:
                     errors.append(f"WS{i}: Failed to generate icon")
                     continue
@@ -1827,11 +1824,33 @@ class AWPBaker(QMainWindow):
                 else:
                     errors.append(f"WS{i}: Failed to copy icon to preset")
                 
-                # Clean up
                 cleanup_temp_icon(icon_path)
-                
-                # Add workspace summary
                 results.append(f"WS{i}: {hex_color} → GTK+WM: {gtk_preset}, Icons: {icon_preset}, Cursors: {cursor_preset}")
+                
+                # ============================================================
+                # FIX 2: Force-update wm_theme and desktop_theme in INI
+                # ============================================================
+                clean_hex = hex_color.lstrip('#')
+                new_gtk_theme = f"awp-gtk-{gtk_preset}-{clean_hex}"
+                new_icon_theme = f"awp-icons-{icon_preset}-{clean_hex}"
+                new_cursor_theme = f"awp-cursor-{cursor_preset}-{clean_hex}"
+                
+                config.set(section, 'gtk_theme', new_gtk_theme)
+                config.set(section, 'icon_theme', new_icon_theme)
+                config.set(section, 'cursor_theme', new_cursor_theme)
+                config.set(section, 'wm_theme', new_gtk_theme)
+                config.set(section, 'desktop_theme', new_gtk_theme)
+                
+                _printer.info(f"  WS{i}: wm_theme = {new_gtk_theme}", backend="baker")
+                _printer.info(f"  WS{i}: desktop_theme = {new_gtk_theme}", backend="baker")
+            
+            # ============================================================
+            # WRITE THE UPDATED INI
+            # ============================================================
+            with open(ini_path, 'w') as f:
+                config.write(f)
+            
+            _printer.info("✅ INI updated with all fields (wm_theme, desktop_theme, icon_color)", backend="baker")
             
             # Recreate symlinks if requested
             if self.symlink_cb.isChecked() and self.symlink_cb.isEnabled():

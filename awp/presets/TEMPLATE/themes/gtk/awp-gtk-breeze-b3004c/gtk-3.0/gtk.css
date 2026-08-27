@@ -153,9 +153,9 @@ these are pretty self explicative */
 /*
 * Tooltips
 */
-@define-color tooltip_text_breeze #fcfcfc;
-@define-color tooltip_background_breeze #31363b;
-@define-color tooltip_border_breeze #64686b;
+@define-color tooltip_text_breeze #ffffff;
+@define-color tooltip_background_breeze #860039;
+@define-color tooltip_border_breeze #860039;
 /*
 * Misc
 */
@@ -3419,127 +3419,90 @@ scrollbar {
   -GtkScrollbar-has-backward-stepper: false;
   -GtkScrollbar-has-forward-stepper: false;
   background-color: @theme_bg_color_breeze;
-  border-width: 0px;
-  border-color: @theme_bg_color_breeze;
-  padding: 5px 0px; }
-  scrollbar.vertical:dir(rtl) {
-    border-right: 1px solid @borders_breeze; }
-  scrollbar.vertical:dir(ltr) {
-    border-left: 1px solid @borders_breeze; }
-  scrollbar.vertical.right {
-    border-left: 1px solid @borders_breeze; }
-    scrollbar.vertical.right:dir(rtl) {
-      border-right: none; }
-  scrollbar.vertical.left {
-    border-right: 1px solid @borders_breeze; }
-    scrollbar.vertical.left:dir(ltr) {
-      border-left: none; }
-  scrollbar.horizontal {
-    border-top: 1px solid @borders_breeze;
-    padding: 0px 5px; }
-    scrollbar.horizontal.bottom {
-      border-top: 1px solid @borders_breeze; }
-    scrollbar.horizontal.top {
-      border-top: none;
-      border-bottom: 1px solid @borders_breeze; }
-  scrollbar button {
-    min-width: 14px;
-    min-height: 14px;
-    margin: 0px;
-    padding: 0px 0px;
-    border: none;
-    border-radius: 0px;
-    background-image: none;
-    background-color: transparent;
-    color: transparent;
-    box-shadow: none; }
-    scrollbar button:hover {
-      border: none;
-      background-image: none;
-      background-color: @theme_bg_color_breeze;
-      color: transparent; }
-    scrollbar button:active, scrollbar button:active:hover {
-      border: none;
-      background-image: none;
-      background-color: @theme_bg_color_breeze;
-      color: transparent; }
-    scrollbar button:disabled {
-      border: none;
-      background-color: @theme_bg_color_breeze;
-      background-image: none;
-      color: transparent; }
-  scrollbar.dragging, scrollbar.hovering {
-    opacity: 0.991; }
-  scrollbar.overlay-indicator:not(.dragging):not(.hovering) {
-    opacity: 0.999; }
-  scrollbar.overlay-indicator:not(.dragging):not(.hovering) {
-    -GtkScrollbar-has-backward-stepper: false;
-    -GtkScrollbar-has-forward-stepper: false; }
-  scrollbar.overlay-indicator {
-    border: none;
-    background: none; }
-    scrollbar.overlay-indicator.vertical {
-      border: none; }
-    scrollbar.overlay-indicator.horizontal {
-      border: none; }
-    scrollbar.overlay-indicator slider {
-      background-image: linear-gradient(alpha(alpha(@theme_button_foreground_normal_breeze,0.175),0.75),alpha(alpha(@theme_button_foreground_normal_breeze,0.175),0.75)), linear-gradient(alpha(@theme_bg_color_breeze,0.75),alpha(@theme_bg_color_breeze,0.75)); }
-  scrollbar trough {
-    margin: 0px 4px;
-    transition-duration: 0.1s;
-    min-width: 11px;
-    min-height: 14px;
-    border-radius: 8px;
-    background-color: transparent;
-    border: 1px solid transparent; }
-  scrollbar:hover trough {
-    background-color: alpha(@theme_button_foreground_normal_breeze,0.1);
-    border: 1px solid alpha(@theme_button_foreground_normal_breeze,0.2); }
-    scrollbar:hover trough slider {
-      background-image: linear-gradient(alpha(#b3004c, 0.6),alpha(#b3004c, 0.6)), linear-gradient(@theme_bg_color_breeze,@theme_bg_color_breeze);
-      box-shadow: 0 0 0 1px alpha(#b3004c, 0.6) inset; }
-      scrollbar:hover trough slider:hover {
-        background-image: linear-gradient(alpha(#b3004c, 0.8),alpha(#b3004c, 0.8)), linear-gradient(@theme_bg_color_breeze,@theme_bg_color_breeze);
-        box-shadow: 0 0 0 1px alpha(#b3004c, 0.9) inset; }
-  scrollbar.horizontal trough {
-    margin: 4px 0px;
-    min-width: 14px;
-    min-height: 11px; }
-  *:focus ~ scrollbar:hover slider, button:focus:link ~ scrollbar:hover slider,
-  button:focus:visited ~ scrollbar:hover slider, scrollbar ~ *:focus:hover slider, scrollbar ~ button:focus:hover:link slider,
-  scrollbar ~ button:focus:hover:visited slider {
-    background-image: linear-gradient(alpha(@theme_button_decoration_hover_breeze,0.5),alpha(@theme_button_decoration_hover_breeze,0.5)), linear-gradient(@theme_bg_color_breeze,@theme_bg_color_breeze);
-    box-shadow: 0 0 0 1px alpha(@theme_button_decoration_hover_breeze,0.9) inset; }
-  *:focus ~ scrollbar.overlay-indicator slider, button:focus:link ~ scrollbar.overlay-indicator slider,
-  button:focus:visited ~ scrollbar.overlay-indicator slider, scrollbar ~ *:focus.overlay-indicator slider, scrollbar ~ button:focus.overlay-indicator:link slider,
-  scrollbar ~ button:focus.overlay-indicator:visited slider {
-    background-image: linear-gradient(alpha(alpha(@theme_button_decoration_focus_breeze,0.35),0.75),alpha(alpha(@theme_button_decoration_focus_breeze,0.35),0.75)), linear-gradient(alpha(@theme_bg_color_breeze,0.75),alpha(@theme_bg_color_breeze,0.75)); }
-  *:focus ~ scrollbar.overlay-indicator:hover slider, button:focus:link ~ scrollbar.overlay-indicator:hover slider,
-  button:focus:visited ~ scrollbar.overlay-indicator:hover slider, scrollbar ~ *:focus.overlay-indicator:hover slider, scrollbar ~ button:focus.overlay-indicator:hover:link slider,
-  scrollbar ~ button:focus.overlay-indicator:hover:visited slider {
-    background-image: linear-gradient(alpha(@theme_button_decoration_hover_breeze,0.5),alpha(@theme_button_decoration_hover_breeze,0.5)), linear-gradient(@theme_bg_color_breeze,@theme_bg_color_breeze);
-    box-shadow: 0 0 0 1px alpha(@theme_button_decoration_hover_breeze,0.9) inset; }
-  scrollbar slider {
-    transition-duration: 0.1s;
-    min-width: 11px;
-    min-height: 30px;
-    border-radius: 15px;
-    background-clip: padding-box;
-    background-image: linear-gradient(alpha(#b3004c, 0.4),alpha(#b3004c, 0.4)), linear-gradient(@theme_bg_color_breeze,@theme_bg_color_breeze);
-    box-shadow: 0 0 0 1px alpha(#b3004c, 0.4) inset; }
-  :not(webkitwebview) scrollbar slider {
-    margin: -9px;
-    margin-bottom: -6px;
-    margin-top: -6px;
-    border: 5px solid transparent; }
-  scrollbar.horizontal slider {
-    transition-duration: 0.1s;
-    min-width: 30px;
-    min-height: 11px; }
-  :not(webkitwebview) scrollbar.horizontal slider {
-    margin: -9px;
-    margin-left: -6px;
-    margin-right: -6px; }
+  border: none;
+  padding: 4px 0px;
+}
+
+scrollbar.vertical:dir(rtl) {
+  border-right: 1px solid @borders_breeze;
+}
+
+scrollbar.vertical:dir(ltr) {
+  border-left: 1px solid @borders_breeze;
+}
+
+scrollbar.horizontal {
+  border-top: 1px solid @borders_breeze;
+  padding: 0px 4px;
+}
+
+scrollbar.horizontal.top {
+  border-top: none;
+  border-bottom: 1px solid @borders_breeze;
+}
+
+scrollbar button {
+  min-width: 14px;
+  min-height: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: transparent;
+  box-shadow: none;
+}
+
+scrollbar button:hover {
+  background: transparent;
+  color: transparent;
+}
+
+scrollbar trough {
+  min-width: 8px;
+  min-height: 30px;
+  border-radius: 8px;
+  background-color: alpha(@theme_bg_color_breeze, 0.4);
+  border: 1px solid transparent;
+}
+
+scrollbar.horizontal trough {
+  min-width: 30px;
+  min-height: 8px;
+}
+
+/* ============================================================
+   SLIDER STATES - 3-State Pattern
+   ============================================================ */
+
+/* IDLE: 40% accent tint */
+scrollbar slider {
+  min-width: 12px;
+  min-height: 30px;
+  border-radius: 8px;
+  background-clip: padding-box;
+  background-color: alpha(#b3004c, 0.4);
+  border: 3px solid transparent;
+  transition: background-color 150ms ease-out;
+}
+
+scrollbar.horizontal slider {
+  min-width: 30px;
+  min-height: 8px;
+}
+
+/* HOVER: 70% accent tint */
+scrollbar slider:hover {
+  background-color: alpha(#b3004c, 0.7);
+}
+
+/* ACTIVE: 100% full accent */
+scrollbar slider:active {
+  background-color: #b3004c;
+}
+
+scrollbar slider:disabled {
+  background-color: alpha(@theme_bg_color_breeze, 0.3);
+}
 
 /***********
  * Sidebar *
@@ -3547,7 +3510,8 @@ scrollbar {
 .sidebar {
   border-radius: 0px;
   border-style: none;
-  background-color: @theme_base_color_breeze; }
+  background-color: @theme_base_color_breeze;
+  -gtk-icon-style: regular; }
   .sidebar:not(separator):dir(ltr), .sidebar:not(separator).left, .sidebar:not(separator).left:dir(rtl) {
     border-right: 1px solid mix(#2a2e32,#fcfcfc,0.07);
     border-left: none; }

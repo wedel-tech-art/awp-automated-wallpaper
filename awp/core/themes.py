@@ -344,7 +344,84 @@ def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze', pre
             subprocess.run(["find", target_path, "-type", "f", "(", "-name", "*.css", "-o", "-name", "*.svg", ")",
                             "-exec", "sed", "-i", "s/##/#/g", "{}", "+"])
 
-            _printer.success(f"Theme {theme_name} baked successfully!", backend="themes")
+            # --- 7. Thumbnail Handling (GTK) ---
+            # Convert thumbnail.svg to thumbnail.png using rsvg-convert
+            thumbnail_svg = os.path.join(target_path, "gtk-3.0", "thumbnail.svg")
+            thumbnail_png = os.path.join(target_path, "gtk-3.0", "thumbnail.png")
+            if os.path.exists(thumbnail_svg):
+                try:
+                    import re
+                    with open(thumbnail_svg, 'r') as f:
+                        svg_content = f.read()
+                    
+                    width_match = re.search(r'width="(\d+)"', svg_content)
+                    height_match = re.search(r'height="(\d+)"', svg_content)
+                    
+                    width = int(width_match.group(1)) if width_match else 215
+                    height = int(height_match.group(1)) if height_match else 60
+                    
+                    subprocess.run([
+                        "rsvg-convert",
+                        "-w", str(width),
+                        "-h", str(height),
+                        "-o", thumbnail_png,
+                        thumbnail_svg
+                    ], check=True, capture_output=True, timeout=10)
+                    _printer.info(f"GTK thumbnail generated: thumbnail.svg → thumbnail.png ({width}x{height})", backend="themes")
+                except subprocess.CalledProcessError as e:
+                    _printer.warning(f"Failed to convert thumbnail.svg: {e}", backend="themes")
+                except Exception as e:
+                    _printer.warning(f"Failed to convert thumbnail.svg: {e}", backend="themes")
+
+            # --- 8. Cinnamon Thumbnail Handling ---
+            # Create a 215x60 canvas with tinted panel background and left-aligned icon
+            folder_icon = os.path.join(target_path, "folder.png")
+            cinnamon_dir = os.path.join(target_path, "cinnamon")
+            cinnamon_thumbnail = os.path.join(cinnamon_dir, "thumbnail.png")
+
+            if not os.path.exists(cinnamon_dir):
+                os.makedirs(cinnamon_dir, exist_ok=True)
+
+            if os.path.exists(folder_icon):
+                try:
+                    # First, resize the icon to 60x60
+                    temp_icon = os.path.join(cinnamon_dir, "temp_icon.png")
+                    subprocess.run([
+                        "convert",
+                        folder_icon,
+                        "-resize", "50x50!",
+                        "-strip",
+                        temp_icon
+                    ], check=True, capture_output=True, timeout=10)
+                    
+                    # Convert hex_color to RGB using existing utility
+                    r, g, b = hex_to_rgb(clean_hex)  # clean_hex is already available from earlier
+                    
+                    # Create panel background with the accent color at 85% opacity
+                    panel_color = f"rgba({r}, {g}, {b}, 0.25)"
+                    
+                    # Create canvas with panel background
+                    subprocess.run([
+                        "convert",
+                        "-size", "215x60",
+                        f"xc:{panel_color}",
+                        temp_icon,
+                        "-gravity", "west",
+                        "-geometry", "+5+0",
+                        "-composite",
+                        "-strip",
+                        cinnamon_thumbnail
+                    ], check=True, capture_output=True, timeout=10)
+                    
+                    # Clean up temp file
+                    if os.path.exists(temp_icon):
+                        os.remove(temp_icon)
+                    
+                    _printer.info(f"Cinnamon thumbnail created: 215x60 with left-aligned 60x60 icon on tinted panel", backend="themes")
+                except subprocess.CalledProcessError as e:
+                    _printer.warning(f"Failed to create cinnamon thumbnail: {e.stderr.decode() if e.stderr else str(e)}", backend="themes")
+                except Exception as e:
+                    _printer.warning(f"Failed to create cinnamon thumbnail: {e}", backend="themes")
 
         except Exception as e:
             _printer.error(f"System Error (Theme): {e}", backend="themes")

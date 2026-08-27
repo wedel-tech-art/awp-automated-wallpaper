@@ -48,8 +48,8 @@ popover.background .menuitem.button.flat:selected, .csd treeview.view:selected, 
 }
 
 .nemo-window .view selection, .nemo-window .view:selected, .nautilus-window notebook .view:not(treeview) selection, .nautilus-window notebook .view:not(treeview):selected, .nautilus-window flowboxchild:selected .icon-item-background, label selection, flowbox flowboxchild:selected {
-  color: #fe8019;
-  background-color: rgba(254, 128, 25, 0.2);
+  color: #ffffff;
+  background-color: #b35a12;
 }
 
 .nemo-window .nemo-window-pane widget.entry:selected, window.background.csd evview.view.content-view:selected, window.background.csd evview.view.content-view:selected:backdrop, .nautilus-window.background.csd notebook widget.view:selected, entry selection, textview text selection:focus, textview text selection, widget.view:selected, .view:selected {
@@ -3719,8 +3719,8 @@ tooltip {
 }
 
 tooltip.background {
-  background-color: rgba(25, 23, 23, 0.9);
-  color: #fbf1c7;
+  background-color: #b35a12;
+  color: #ffffff;
   border-radius: 6px;
 }
 
@@ -8245,7 +8245,7 @@ menubar.-vala-panel-background > menuitem:disabled {
 
 .nemo-window .nemo-window-pane widget.entry {
   border-radius: 6px;
-  background-color: #b35a12;
+  background-color: rgba(251, 241, 199, 0.04);
 }
 
 .nemo-window .toolbar {
@@ -8268,6 +8268,11 @@ menubar.-vala-panel-background > menuitem:disabled {
 
 .nemo-window.background.csd.maximized .toolbar {
   border-radius: 0;
+}
+
+/* Force regular icons in Nemo sidebar */
+.nemo-window paned > .sidebar > scrolledwindow.frame treeview.view {
+    -gtk-icon-style: regular;
 }
 
 .places-treeview {

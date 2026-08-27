@@ -1600,7 +1600,8 @@ treeview spinbutton:not(.vertical) {
 
 .sidebar:not(separator):dir(ltr), .sidebar:not(separator).left, .sidebar:not(separator).left:dir(rtl) {
   border-right: 1px solid alpha(currentColor,0.15);
-  border-left-style: none; }
+  border-left-style: none;
+  -gtk-icon-style: regular; }
 
 .sidebar:not(separator):dir(rtl), .sidebar:not(separator).right {
   border-left: 1px solid alpha(currentColor,0.15);
@@ -4729,10 +4730,10 @@ tooltip {
   border-radius: 9px;
   box-shadow: none; }
   tooltip.background {
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: #867400;
     background-clip: padding-box;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white; }
+    border: 1px solid #867400;
+    color: #ffffff; }
   tooltip > box {
     border-spacing: 6px; }
 

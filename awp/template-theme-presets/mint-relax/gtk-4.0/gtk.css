@@ -2654,7 +2654,8 @@ filechooserbutton:drop(active) {
 
 .sidebar {
   border-style: none;
-  background-color: #3d3d3d; }
+  background-color: #3d3d3d;
+  -gtk-icon-style: regular; }
   .sidebar:not(separator):dir(ltr), .sidebar:not(separator).left, .sidebar:not(separator).left:dir(rtl) {
     border-right: 1px solid #292929;
     border-left-style: none; }
@@ -2874,11 +2875,11 @@ row:selected button:disabled, infobar.info button:disabled, infobar.question but
     border-color: rgba(255, 255, 255, 0.4); }
 
 tooltip {
-  color: #4a4a4a;
+  color: #ffffff;
   border-radius: 2px;
-  border: 1px solid #d0d0d0; }
+  border: 1px solid #999777; }
   tooltip.background {
-    background-color: #fbeaa0;
+    background-color: #999777;
     background-clip: padding-box; }
     tooltip.background label {
       padding: 4px; }

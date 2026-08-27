@@ -110,13 +110,15 @@ StScrollBar {
     border-radius: 8px; }
   StScrollBar StButton#vhandle, StScrollBar StButton#hhandle {
     border-radius: 10px;
-    background-color:rgba(62, 62, 62, 0.94);
+    background-color: rgba(31, 158, 222, 0.4);  /* ← Accent tint at 40% */
     border: 0px solid;
-    margin: 0px; }
-    StScrollBar StButton#vhandle:hover, StScrollBar StButton#hhandle:hover {
-      background-color:rgba(62, 62, 62, 0.89); }
-    StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
-      background-color: #1f9ede; }
+  }
+  StScrollBar StButton#vhandle:hover, StScrollBar StButton#hhandle:hover {
+    background-color: rgba(31, 158, 222, 0.7);  /* ← Accent tint at 70% */
+  }
+  StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
+    background-color: #1f9ede;  /* ← Full accent */
+  }
 
 .separator {
   -gradient-height: 1px;
@@ -1132,7 +1134,7 @@ StScrollBar {
   padding: 10px; }
 
 .menu-categories-box {
-  padding: 10px 30px 10px 30px; }
+  padding: 10px 1px 10px 1px; }
 
 .menu-applications-inner-box, .menu-applications-outer-box {
   margin: 10px 10px 0 10px; }

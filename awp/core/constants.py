@@ -74,7 +74,7 @@ ICON_SIZES = ["16", "22", "24", "32", "48", "64", "96"]
 # 0.70 = 70% brightness (safe, works with ALL colors including extreme yellow)
 # 0.75 = 75% brightness (balanced, works with most colors)
 # 0.80 = 80% brightness (vibrant, works with dark/medium colors only)
-SELECTION_BRIGHTNESS = 0.75  # Default: 70% - maximum readability
+SELECTION_BRIGHTNESS = 0.75  # Default: 75% - maximum readability
 
 
 ICON_REGISTRY = {

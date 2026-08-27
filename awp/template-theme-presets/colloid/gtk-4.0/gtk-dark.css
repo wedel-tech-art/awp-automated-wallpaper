@@ -7466,10 +7466,10 @@ tooltip {
 }
 
 tooltip.background {
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: #b35a12;
   background-clip: padding-box;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
+  border: 1px solid #b35a12;
+  color: #ffffff;
 }
 
 tooltip > box {
@@ -7499,8 +7499,9 @@ textview > text:selected,
 dialog-host > dialog.view sheet:selected,
 window.print dialog-host > dialog.dialog-action-box sheet:selected,
 iconview:selected {
-  background-color: alpha(@accent_color,0.25);
-  border-radius: 6px;
+    background-color: #b35a12;
+    color: #ffffff;
+    border-radius: 6px;
 }
 
 textview {
@@ -8605,6 +8606,12 @@ windowtitle .nautilus-grid-view child.activatable #NautilusViewCell .subtitle, .
   min-width: 24px;
   padding: 3px;
   border-radius: 9999px;
+}
+
+/* Force regular icons in Nautilus sidebar */
+.nautilus-window placessidebar treeview.view,
+.nautilus-window .sidebar treeview.view {
+    -gtk-icon-style: regular;
 }
 
 #NautilusQueryEditor > menubutton {

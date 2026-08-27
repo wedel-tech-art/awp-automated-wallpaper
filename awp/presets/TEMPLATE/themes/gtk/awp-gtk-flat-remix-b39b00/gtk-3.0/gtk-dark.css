@@ -4222,18 +4222,17 @@ tooltip {
   padding: 4px;
   /* not working */
   border-radius: 5px;
-  box-shadow: none;
-  text-shadow: 0 1px black; }
+  box-shadow: none; }
   tooltip.background {
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: #867400;
     background-clip: padding-box;
-    border: 1px solid rgba(255, 255, 255, 0.1); }
+    border: 1px solid #867400; }
   tooltip decoration {
     background-color: transparent; }
   tooltip * {
     padding: 4px;
     background-color: transparent;
-    color: white; }
+    color: #ffffff; }
 
 /*****************
  * Color Chooser *
@@ -5967,7 +5966,8 @@ messagedialog .titlebar:backdrop {
  * Sidebar *
  ***********/
 .sidebar {
-  background-color: #0d0d0d; }
+  background-color: #0d0d0d;
+  -gtk-icon-style: regular; }
 
 stacksidebar row {
   padding: 7px 3px; }
@@ -6092,7 +6092,8 @@ filechooser placessidebar.sidebar row.sidebar-row,
       filechooser placessidebar.sidebar row.sidebar-row:selected revealer .sidebar-icon, filechooser placessidebar.sidebar row.sidebar-row:selected revealer .sidebar-label,
       .nautilus-window placessidebar.sidebar row.sidebar-row:selected revealer .sidebar-icon,
       .nautilus-window placessidebar.sidebar row.sidebar-row:selected revealer .sidebar-label {
-        color: #ffffff; }
+        color: #ffffff;
+        -gtk-icon-style: regular; }
     filechooser placessidebar.sidebar row.sidebar-row:selected:backdrop,
     .nautilus-window placessidebar.sidebar row.sidebar-row:selected:backdrop {
       background-image: none;
@@ -6100,7 +6101,8 @@ filechooser placessidebar.sidebar row.sidebar-row,
   filechooser placessidebar.sidebar row.sidebar-row .sidebar-icon,
   .nautilus-window placessidebar.sidebar row.sidebar-row .sidebar-icon {
     padding-right: 20px;
-    opacity: 1; }
+    opacity: 1;
+    -gtk-icon-style: regular; }
   filechooser placessidebar.sidebar row.sidebar-row .sidebar-button,
   .nautilus-window placessidebar.sidebar row.sidebar-row .sidebar-button {
     border: 0; }
@@ -6978,6 +6980,8 @@ statusbar {
 .nautilus-window notebook > stack {
     background: @theme_base_color;
 }
+
+
 
 .nautilus-empty-state-icon {
     opacity: 0.50;

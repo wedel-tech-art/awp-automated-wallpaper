@@ -48,8 +48,8 @@ XfdesktopIconView.view:active, calendar.raven-calendar:selected, .budgie-popover
 }
 
 .nemo-window .view selection, .nemo-window .view:selected, .nautilus-window notebook .view:not(treeview) selection, .nautilus-window notebook .view:not(treeview):selected, .nautilus-window flowboxchild:selected .icon-item-background, flowbox flowboxchild:selected, .background.csd .view:selected {
-  color: #b35a12;
-  background-color: rgba(254, 128, 25, 0.2);
+  color: #ffffff;
+  background-color: #b35a12;
 }
 
 .nemo-window .nemo-window-pane widget.entry:selected, window.background.csd evview.view.content-view:selected, window.background.csd evview.view.content-view:selected:backdrop, spinbutton.vertical selection, spinbutton:not(.vertical) selection,
@@ -4006,8 +4006,8 @@ tooltip {
 }
 
 tooltip.background {
-  background-color: rgba(25, 25, 25, 0.9);
-  color: white;
+  background-color: #b35a12;
+  color: #ffffff;
 }
 
 tooltip.background.csd {
@@ -4434,7 +4434,7 @@ popover.emoji-completion .emoji:hover {
 }
 
 .nautilus-window.background.csd placessidebar > viewport.frame {
-  background-color: #b35a12;
+  background-color: #2C2C2C;
   color: white;
   margin: 0 15px 12px 0;
   border-radius: 0 12px 12px 0;
@@ -4466,7 +4466,7 @@ popover.emoji-completion .emoji:hover {
 }
 
 .nautilus-window.background.csd placessidebar > viewport.frame > list > row.activatable:selected, .nautilus-window.background.csd placessidebar > viewport.frame > list > row.activatable:selected image.sidebar-icon, .nautilus-window.background.csd placessidebar > viewport.frame > list > row.activatable:selected label.sidebar-label, .nautilus-window.background.csd placessidebar > viewport.frame > list > row.activatable:selected button.sidebar-button {
-  color: #b35a12;
+  color: #ffffff;
 }
 
 .nautilus-window.background.csd placessidebar > viewport.frame > list > row.activatable:disabled, .nautilus-window.background.csd placessidebar > viewport.frame > list > row.activatable:disabled image.sidebar-icon, .nautilus-window.background.csd placessidebar > viewport.frame > list > row.activatable:disabled label.sidebar-label {
@@ -8009,7 +8009,7 @@ window.background.csd.thunar > grid.horizontal > paned.horizontal > scrolledwind
 
 .nemo-window paned > .sidebar {
   padding: 0;
-  background-color: #b35a12;
+  background-color: #2c2c2c;
   color: white;
   border-radius: 0 12px 12px 0;
 }
@@ -8041,7 +8041,7 @@ window.background.csd.thunar > grid.horizontal > paned.horizontal > scrolledwind
 }
 
 .nemo-window paned > .sidebar > scrolledwindow.frame treeview.view {
-  -gtk-icon-style: symbolic;
+  -gtk-icon-style: regular;
 }
 
 .nemo-window paned > .sidebar > scrolledwindow.frame treeview.view:not(:selected) {
