@@ -5,11 +5,16 @@ Uses AWP's existing backends, core functions, and theme engine.
 No workspaces, no presets, no INI files.
 """
 
+import json
 import os
-import sys
+import shutil
 import subprocess
-from PyQt6.QtWidgets import *
+import sys
+import traceback
+
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor, QPalette, QPixmap
+from PyQt6.QtWidgets import *
 
 # ============================================================
 # REUSE AWP'S EXISTING CODE
@@ -21,6 +26,11 @@ from core.actions import (
     set_wallpaper,
     set_backend
 )
+from core.constants import (
+    THEME_PRESETS, ICON_PRESETS, CURSOR_PRESETS, SVG_TEMPLATES,
+    THEME_CAPABILITIES, AWP_FALLBACK_ACCENT, RUNTIME_STATE_PATH
+)
+from core.printer import get_printer
 from core.themes import (
     generate_icon_from_svg,
     bake_awp_theme,
@@ -30,13 +40,74 @@ from core.themes import (
     get_available_themes,
     extract_color_from_theme
 )
-from core.constants import (
-    THEME_PRESETS, ICON_PRESETS, CURSOR_PRESETS, SVG_TEMPLATES,
-    THEME_CAPABILITIES
-)
-from core.printer import get_printer
+from core.utils import load_images, sort_images
 
 _printer = get_printer()
+
+def get_awp_accent(fallback=AWP_FALLBACK_ACCENT):
+    """
+    Read the currently active AWP accent color (Qt selection color) from
+    the RAM-bridge state at /dev/shm/awp-qt-color.conf.
+
+    active_colors is a CSV list of ARGB/RGB hex values; index 12 is the
+    selection/accent color (e.g. #008e8e). Falls back to AWP_FALLBACK_ACCENT
+    if the file is missing, unreadable, or malformed.
+    """
+    try:
+        from core.constants import QT6_ACCENT_SHM
+        path = QT6_ACCENT_SHM
+    except ImportError:
+        path = "/dev/shm/awp-qt-color.conf"
+
+    try:
+        with open(path, "r") as f:
+            for line in f:
+                if line.strip().startswith("active_colors"):
+                    _, _, value = line.partition("=")
+                    fields = [v.strip() for v in value.split(",")]
+                    if len(fields) > 12:
+                        raw = fields[12].lstrip("#")
+                        # Strip leading alpha channel if present (8 hex digits -> last 6)
+                        if len(raw) == 8:
+                            raw = raw[2:]
+                        if len(raw) == 6:
+                            return f"#{raw}"
+    except (FileNotFoundError, OSError, IndexError, ValueError):
+        pass
+
+    return fallback
+
+def get_awp_real_accent(fallback=None):
+    """
+    Read the "real" (undimmed) AWP accent color from the RAM-bridge state
+    at /dev/shm/awp_full_state.json (icon_color field, e.g. #00bebe).
+
+    This is the true workspace accent before the 0.75-brightness safety
+    dimming applied for QToolTip/QSS use in awp-qt-color.conf. Falls back
+    to get_awp_accent()'s result (dimmed accent or brand pink) if the
+    state file is missing, unreadable, or malformed.
+    """
+    if fallback is None:
+        fallback = get_awp_accent()
+
+    try:
+        path = RUNTIME_STATE_PATH
+    except ImportError:
+        path = "/dev/shm/awp_full_state.json"
+
+    try:
+        with open(path, "r") as f:
+            state = json.load(f)
+        color = state.get("icon_color", "")
+        raw = color.lstrip("#")
+        if len(raw) == 8:
+            raw = raw[2:]
+        if len(raw) == 6:
+            return f"#{raw}"
+    except (FileNotFoundError, OSError, ValueError, KeyError, AttributeError):
+        pass
+
+    return fallback
 
 # Simple GroupBox style
 GROUPBOX_STYLE = """
@@ -57,22 +128,30 @@ GROUPBOX_STYLE = """
 """
 
 class SimpleConfig:
-    """Minimal config object that mimics AWPConfig for Bath."""
-    def __init__(self, theme_config):
+    def __init__(self, theme_config, section="ws1", de="qtile_xfce"):
         self.theme_config = theme_config
-    
+        self._section = section
+        self._de = de
+
     def get(self, section, key, fallback=None):
-        result = self.theme_config.get(key, fallback)
-        return result
-    
+        if section == 'general' and key == 'os_detected':
+            return self._de
+        return self.theme_config.get(key, fallback)
+
     def has_section(self, section):
         return True
-    
+
     def set(self, section, key, value):
         pass
-    
+
     def getint(self, section, key, fallback=0):
         return fallback
+
+    def sections(self):
+        return [self._section]
+
+    def items(self, section):
+        return list(self.theme_config.items())
 
 class Bath(QWidget):
     def __init__(self):
@@ -107,8 +186,6 @@ class Bath(QWidget):
         
     def detect_de(self):
         """Enhanced DE detection matching backends/__init__.py logic."""
-        import subprocess
-        
         xdg_de = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
         desktop_session = os.environ.get("DESKTOP_SESSION", "").lower()
         wayland_display = os.environ.get("WAYLAND_DISPLAY", "")
@@ -318,21 +395,24 @@ class Bath(QWidget):
 
         row1.addWidget(QLabel("DE:"))
         self.de_label = QLabel(self.de)
-        self.de_label.setStyleSheet("color: #6a8cff; font-weight: bold;")
+        self.de_label.setStyleSheet(f"QLabel {{ color: {get_awp_real_accent()}; font-weight: bold; }}")
+        self.de_label.setToolTip("Detected desktop environment")
         row1.addWidget(self.de_label)
 
         row1.addSpacing(70)
 
         row1.addWidget(QLabel("Session:"))
         self.session_label = QLabel(self.session_type)
-        self.session_label.setStyleSheet("color: #6a8cff; font-weight: bold;")
+        self.session_label.setStyleSheet(f"QLabel {{ color: {get_awp_real_accent()}; font-weight: bold; }}")
+        self.session_label.setToolTip("Display server session type\nx11 or wayland")
         row1.addWidget(self.session_label)
 
         row1.addSpacing(70)
 
         row1.addWidget(QLabel("Workspaces:"))
         self.ws_label = QLabel(self.workspace_count)
-        self.ws_label.setStyleSheet("color: #6a8cff; font-weight: bold;")
+        self.ws_label.setStyleSheet(f"QLabel {{ color: {get_awp_real_accent()}; font-weight: bold; }}")
+        self.ws_label.setToolTip("Current number of workspaces detected")
         row1.addWidget(self.ws_label)
 
         row1.addStretch()
@@ -366,6 +446,12 @@ class Bath(QWidget):
             default="Zoomed"
         )
         style_row.addWidget(self.style_combo)
+        self.style_combo.setToolTip(
+            "How wallpapers fit the screen\n"
+            "Centered: original size\n"
+            "Scaled: fit to screen\n"
+            "Zoomed: fill screen (cropped)"
+        )
         style_row.addStretch()
         wp_layout.addLayout(style_row)
         
@@ -376,7 +462,13 @@ class Bath(QWidget):
         self.folder_edit = QLineEdit()
         self.folder_edit.setFixedWidth(200)
         self.folder_edit.setPlaceholderText("~/Pictures/Wallpapers")
+        self.folder_edit.setToolTip(
+            "Wallpaper folder to pick from\n"
+            "Bath picks the first image when you click Apply All"
+        )
         folder_row.addWidget(self.folder_edit)
+        
+        
 
         # Browse Button (now green like the others)
         self.browse_btn = QPushButton("Browse")
@@ -405,6 +497,7 @@ class Bath(QWidget):
 
         wp_group.setLayout(wp_layout)
         layout.addWidget(wp_group)
+        self.browse_btn.setToolTip("Browse for a wallpaper folder")
         
         # ============================================================
         # THEME GENERATION
@@ -424,6 +517,10 @@ class Bath(QWidget):
         self.color_edit.setPlaceholderText("#b7004f")
         self.color_edit.setText("#b7004f")
         self.color_edit.textChanged.connect(self.update_color_preview)
+        self.color_edit.setToolTip(
+            "Hex color for theme generation\n"
+            "Example: #b7004f (AWP pink)"
+        )
         color_row.addWidget(self.color_edit)
 
         # Color Preview Square
@@ -454,6 +551,7 @@ class Bath(QWidget):
         """)
         self.pick_btn.clicked.connect(self.pick_color)
         color_row.addWidget(self.pick_btn)
+        self.pick_btn.setToolTip("Pick a color with the system dialog")
 
         color_row.addStretch()
         gen_layout.addLayout(color_row)
@@ -468,6 +566,10 @@ class Bath(QWidget):
             width=200,
             default="Awp"
         )
+        self.template_combo.setToolTip(
+            "SVG template used as the icon\n"
+            "Determines the icon style for the baked theme"
+        )
         template_row.addWidget(self.template_combo)
         template_row.addStretch()
         gen_layout.addLayout(template_row)
@@ -480,6 +582,10 @@ class Bath(QWidget):
             items=[(name.title(), name) for name in sorted(THEME_PRESETS.keys())],
             width=200,
             default="Breeze"
+        )
+        self.gtk_combo.setToolTip(
+            "GTK theme family to bake\n"
+            "The chosen color will be applied to this theme's palette"
         )
         gtk_row.addWidget(self.gtk_combo)
         gtk_row.addStretch()
@@ -494,6 +600,10 @@ class Bath(QWidget):
             width=200,
             default="Mint"
         )
+        self.icon_combo.setToolTip(
+            "Icon theme family to bake\n"
+            "The chosen color will be applied to the icons"
+        )
         icon_row.addWidget(self.icon_combo)
         icon_row.addStretch()
         gen_layout.addLayout(icon_row)
@@ -506,6 +616,10 @@ class Bath(QWidget):
             items=[(name.title(), name) for name in sorted(CURSOR_PRESETS.keys())],
             width=200,
             default="Oxy"
+        )
+        self.cursor_combo.setToolTip(
+            "Cursor theme family to bake\n"
+            "The chosen color will be applied to the cursors"
         )
         cursor_row.addWidget(self.cursor_combo)
         cursor_row.addStretch()
@@ -532,6 +646,11 @@ class Bath(QWidget):
             }
         """)
         self.generate_btn.clicked.connect(self.generate_themes)
+        self.generate_btn.setToolTip(
+            "Bake the theme\n"
+            "Creates GTK, icon, and cursor themes in:\n"
+            "  ~/.themes/ and ~/.icons/"
+        )
         
         # ============================================================
         # THEME APPLICATION
@@ -545,24 +664,29 @@ class Bath(QWidget):
         # GTK
         self.apply_gtk_combo = self.create_standard_combo(width=260)
         apply_layout.addLayout(self.create_theme_row("GTK Theme:", self.apply_gtk_combo))
-
+        self.apply_gtk_combo.setToolTip("Current system GTK theme\nApply to change it")
+        
         # Icons
         self.apply_icon_combo = self.create_standard_combo(width=260)
         apply_layout.addLayout(self.create_theme_row("Icon Theme:", self.apply_icon_combo))
-
+        self.apply_icon_combo.setToolTip("Current system icon theme\nApply to change it")
+        
         # Cursor
         self.apply_cursor_combo = self.create_standard_combo(width=260)
         apply_layout.addLayout(self.create_theme_row("Cursor Theme:", self.apply_cursor_combo))
-
+        self.apply_cursor_combo.setToolTip("Current system cursor theme\nApply to change it")
+        
         # Window Theme
         self.apply_window_combo = self.create_standard_combo(width=260)
         self.apply_window_combo.setEnabled(self.caps.get('has_wm_theme', False))
         apply_layout.addLayout(self.create_theme_row("Window Theme:", self.apply_window_combo))
-
+        self.apply_window_combo.setToolTip("Window decoration theme\nOnly available on some DEs")
+        
         # Desktop Theme
         self.apply_desktop_combo = self.create_standard_combo(width=260)
         self.apply_desktop_combo.setEnabled(self.caps.get('has_desktop_theme', False))
         apply_layout.addLayout(self.create_theme_row("Desktop Theme:", self.apply_desktop_combo))
+        self.apply_desktop_combo.setToolTip("Desktop shell theme\nOnly available on some DEs")
         
         self.apply_group.setLayout(apply_layout)
         layout.addWidget(self.apply_group)
@@ -585,6 +709,10 @@ class Bath(QWidget):
             }
         """)
         self.apply_btn.clicked.connect(self.apply_themes)
+        self.apply_btn.setToolTip(
+            "Apply the selected themes to your desktop\n"
+            "Takes effect immediately"
+        )
         
         # ============================================================
         # ACTION BUTTONS (Colorful like DAB/Baker)
@@ -684,11 +812,11 @@ class Bath(QWidget):
         """Create the floating icon preview widget for the Apply section."""
         self.apply_icon_preview = QLabel(self)
         self.apply_icon_preview.setFixedSize(65, 65)
-        self.apply_icon_preview.setToolTip("Applied icon theme preview")
+        #self.apply_icon_preview.setToolTip("Applied icon theme preview")
         self.apply_icon_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.apply_icon_preview.setText("🎨")  # Placeholder
         self.apply_icon_preview.setScaledContents(True)
-        self.apply_icon_preview.setStyleSheet("""background: #2e2e2e;""")
+        #self.apply_icon_preview.setStyleSheet("""background: #2e2e2e;""")
         
         # ============================================================
         # ADJUST THESE VALUES TO POSITION THE PREVIEW
@@ -843,8 +971,6 @@ class Bath(QWidget):
         Render the folder.svg from an already-baked icon theme.
         Trims transparent borders and centers the result.
         """
-        import shutil
-        
         if not theme_name or not theme_name.startswith('awp-icons-'):
             return None
         
@@ -905,7 +1031,6 @@ class Bath(QWidget):
                 pass
             
             # Load the final image
-            from PyQt6.QtGui import QPixmap
             pix = QPixmap(temp_png)
             shutil.rmtree(temp_dir, ignore_errors=True)
             return pix
@@ -984,22 +1109,21 @@ class Bath(QWidget):
             
             cleanup_temp_icon(icon_path)
             
-            self.populate_theme_lists()  # Refresh theme lists
+            self.refresh_apply_section()  # Refresh Apply combos, keep Generate choices intact
             
             QMessageBox.information(self, "Success", f"Themes generated successfully!\n\nGTK: {gtk}\nIcon: {icon}\nCursor: {cursor}")
             
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to generate themes:\n\n{str(e)}")
     
-    def apply_themes(self):
-        """Apply themes using core.actions.set_themes()."""
+    def _build_theme_config(self):
+        """Read the Apply combos and return a theme_config dict (empty if none selected)."""
         gtk = self.apply_gtk_combo.currentText()
         icon = self.apply_icon_combo.currentText()
         cursor = self.apply_cursor_combo.currentText()
         window = self.apply_window_combo.currentText() if self.caps.get('has_wm_theme', False) else ""
         desktop = self.apply_desktop_combo.currentText() if self.caps.get('has_desktop_theme', False) else ""
-        
-        # Build theme config
+
         theme_config = {}
         if gtk and gtk != "(Default)":
             theme_config['gtk_theme'] = gtk
@@ -1011,74 +1135,79 @@ class Bath(QWidget):
             theme_config['wm_theme'] = window
         if desktop and desktop != "(Default)":
             theme_config['desktop_theme'] = desktop
+
+        # Extract accent color from the GTK theme so Qt/KDE apps follow along.
+        # Only do this if we're actually setting a GTK theme.
+        if theme_config.get('gtk_theme'):
+            color = extract_color_from_theme(theme_config['gtk_theme'])
+            if color:
+                theme_config['icon_color'] = color
         
+        return theme_config
+
+
+    def _apply_theme_config(self, theme_config):
+        """Apply a theme_config dict via set_themes. Returns True if applied."""
+        if not theme_config:
+            return False
+        ws_num = self.get_current_workspace()
+        fake_config = SimpleConfig(theme_config, section=f"ws{ws_num + 1}", de=self.de)
+        set_themes(ws_num, fake_config)
+        return True
+    
+    def apply_themes(self):
+        theme_config = self._build_theme_config()
         if not theme_config:
             QMessageBox.warning(self, "Warning", "Please select at least one theme to apply.")
             return
-        
         try:
-            # Create fake config
-            fake_config = SimpleConfig(theme_config)
-            
-            # Get current workspace
-            ws_num = self.get_current_workspace()
-            
-            # Apply themes
-            set_themes(ws_num, fake_config)
-            
+            self._apply_theme_config(theme_config)
             QMessageBox.information(self, "Success", "Themes applied successfully!")
-            
         except Exception as e:
+            traceback.print_exc()
             QMessageBox.critical(self, "Error", f"Failed to apply themes:\n\n{str(e)}")    
     
     def apply_all(self):
-        # Apply wallpaper
-        folder = self.folder_edit.text()
-        if folder and os.path.exists(folder):
-            from core.utils import load_images, sort_images
-            images = load_images(folder)
-            if images:
-                sorted_images = sort_images(images, 'name_az')
-                first_image = str(sorted_images[0])  # ← Pass the actual image!
-                scaling = self.style_combo.currentText().lower()
-                ws_num = self.get_current_workspace()
-                set_wallpaper(ws_num, first_image, scaling)
-                _printer.info(f"Applied wallpaper: {first_image}", backend="bath")
-            else:
-                _printer.warning(f"No images found in {folder}", backend="bath")
-        
-        # Apply themes (using the same logic as apply_themes)
-        gtk = self.apply_gtk_combo.currentText()
-        icon = self.apply_icon_combo.currentText()
-        cursor = self.apply_cursor_combo.currentText()
-        window = self.apply_window_combo.currentText() if self.caps.get('has_wm_theme', False) else ""
-        desktop = self.apply_desktop_combo.currentText() if self.caps.get('has_desktop_theme', False) else ""
-        
-        theme_config = {}
-        if gtk and gtk != "(Default)":
-            theme_config['gtk_theme'] = gtk
-        if icon and icon != "(Default)":
-            theme_config['icon_theme'] = icon
-        if cursor and cursor != "(Default)":
-            theme_config['cursor_theme'] = cursor
-        if window and window != "(Default)":
-            theme_config['wm_theme'] = window
-        if desktop and desktop != "(Default)":
-            theme_config['desktop_theme'] = desktop
-        
-        if theme_config:
-            fake_config = SimpleConfig(theme_config)
-            ws_num = self.get_current_workspace()
-            set_themes(ws_num, fake_config)
-            _printer.info("Applied themes", backend="bath")
-        
-        QMessageBox.information(self, "Success", "All settings applied successfully!")    
+        try:
+            # 1. Wallpaper
+            folder = self.folder_edit.text()
+            if folder and os.path.exists(folder):
+                images = load_images(folder)
+                if images:
+                    sorted_images = sort_images(images, 'name_az')
+                    first_image = str(sorted_images[0])
+                    scaling = self.style_combo.currentText().lower()
+                    ws_num = self.get_current_workspace()
+                    set_wallpaper(ws_num, first_image, scaling)
+                    _printer.info(f"Applied wallpaper: {first_image}", backend="bath")
+                else:
+                    _printer.warning(f"No images found in {folder}", backend="bath")
+
+            # 2. Themes (GTK/icons/cursor + Qt/KDE accent)
+            theme_config = self._build_theme_config()
+            if theme_config:
+                self._apply_theme_config(theme_config)
+                _printer.info("Applied themes", backend="bath")
+
+            QMessageBox.information(self, "Success", "All settings applied successfully!")
+
+        except Exception as e:
+            traceback.print_exc()
+            QMessageBox.critical(self, "Error", f"Failed to apply all settings:\n\n{str(e)}")    
     
+    def refresh_apply_section(self):
+        """
+        Repopulate the Apply combos and restore them to the current
+        system theme values. Does NOT touch the Generate section.
+        """
+        self.load_current_settings()
+
+
     def reset_settings(self):
         """Reset EVERYTHING to initial state (as if just started)."""
-        # Reload everything from the system (just like startup)
-        self.load_current_settings()
-        
+        # Repopulate Apply combos and restore to system values
+        self.refresh_apply_section()
+
         # Reset Generate Themes section to defaults
         self.color_edit.setText("#b7004f")
         self.update_color_preview()
@@ -1086,20 +1215,15 @@ class Bath(QWidget):
         self.icon_combo.setCurrentText("Mint")
         self.cursor_combo.setCurrentText("Oxy")
         self.template_combo.setCurrentText("Awp")
-        
+
         # Reset Wallpaper section
         self.folder_edit.setText("")
         self.style_combo.setCurrentText("Zoomed")
-        
-        # But we also reset to system value via load_current_settings
-        self.load_current_settings()
-        
+
         QMessageBox.information(self, "Reset", "All settings reset to initial state")
 
 if __name__ == "__main__":
     app = QApplication([])
-    
-    from PyQt6.QtGui import QPalette, QColor
     palette = QPalette()
     
     # Active colors
@@ -1111,6 +1235,7 @@ if __name__ == "__main__":
     palette.setColor(QPalette.ColorRole.Button, QColor(58, 58, 58))
     palette.setColor(QPalette.ColorRole.ButtonText, QColor(221, 221, 221))
     palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.PlaceholderText, QColor(136, 136, 136))
     
     # Disabled colors (greyed-out)
     palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, QColor(120, 120, 120))
@@ -1121,6 +1246,20 @@ if __name__ == "__main__":
     palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(46, 46, 46))
     
     app.setPalette(palette)
+    
+    # ─── AWP brand tooltip style (follows live accent, falls back to brand pink) ───
+    accent = get_awp_accent()
+    app.setStyleSheet(f"""
+        QToolTip {{
+            background-color: {accent};
+            color: #ffffff;
+            border: none;
+            padding: 6px 4px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+        }}
+    """)
     
     window = Bath()
     window.show()

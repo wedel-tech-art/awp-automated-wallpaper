@@ -136,9 +136,9 @@ class AWPConfig:
             self._workspace_cache[cache_key] = {
                 'folder': self.get(ws_key, 'folder', ''),
                 'timing': self.get(ws_key, 'timing', '1m'),
-                'mode': self.get(ws_key, 'mode', 'random'),
+                'mode': self.get(ws_key, 'mode', 'sequential'),
                 'order': self.get(ws_key, 'order', 'name_az'),
-                'scaling': self.get(ws_key, 'scaling', 'scaled'),
+                'scaling': self.get(ws_key, 'scaling', 'zoomed'),
                 'icon': self.get(ws_key, 'icon', ''),
                 'icon_color': self.get(ws_key, 'icon_color', '#109daf'),
                 'icon_theme': self.get(ws_key, 'icon_theme', ''),

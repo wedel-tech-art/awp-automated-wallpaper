@@ -1,6 +1,7 @@
 #!/bin/bash
-# Toggle auto-rotation (ADAPTIVE to current workspace + preset-aware)
-# Polls /dev/shm/awp_full_state.json every 2 seconds for workspace/interval changes
+# Toggle auto-rotation - MODE FLAG VERSION
+# - Qtile presets: bypass mode with 2-second polling
+# - Non-Qtile presets: toggle mode flag and restart
 
 # DETACH FROM TERMINAL IF RUN INTERACTIVELY
 if [ -t 0 ] && [ -t 1 ]; then
@@ -15,6 +16,7 @@ SLEEP_PID_FILE="/tmp/awp_rotate_sleep.pid"
 AWP_DIR="/home/ows/awp"
 PRESET_FILE="/dev/shm/awp_active_preset"
 STATE_FILE="/dev/shm/awp_full_state.json"
+MODE_FILE="/dev/shm/awp_rotation_mode"
 
 get_current_preset() {
     if [ -f "$PRESET_FILE" ]; then
@@ -26,35 +28,18 @@ get_current_preset() {
 
 is_bypass_preset() {
     local preset=$(get_current_preset)
-    case "$preset" in
-        qtile_xfce-debian|qtile_gnome-debian|qtile_wayland-debian)
-            return 0
-            ;;
-        *)
-            return 1
-            ;;
+    [ -z "$preset" ] && return 1
+
+    local config_file="$AWP_DIR/presets/$preset/$preset.ini"
+    [ -f "$config_file" ] || return 1
+
+    # Read os_detected from the [general] section
+    local de=$(grep -m1 "^os_detected" "$config_file" | cut -d= -f2 | tr -d ' ')
+
+    case "$de" in
+        qtile_*) return 0 ;;
+        *)       return 1 ;;
     esac
-}
-
-is_light_preset() {
-    local preset=$(get_current_preset)
-    [[ "$preset" == *_light-* ]] || [[ "$preset" == *_light ]]
-}
-
-get_light_preset() {
-    local preset=$(get_current_preset)
-    if [[ "$preset" == *-* ]]; then
-        local base="${preset%-*}"
-        local distro="${preset##*-}"
-        echo "${base}_light-${distro}"
-    else
-        echo "${preset}_light"
-    fi
-}
-
-get_base_preset() {
-    local preset=$(get_current_preset)
-    echo "${preset/_light-/-}"
 }
 
 get_current_state() {
@@ -95,7 +80,7 @@ send_notification() {
 }
 
 # ======================================================================
-# 1. PRESET DECISION
+# 1. CHECK CURRENT PRESET
 # ======================================================================
 PRESET=$(get_current_preset)
 
@@ -104,18 +89,10 @@ if [ -z "$PRESET" ] || [ "$PRESET" == "unknown" ]; then
     exit 1
 fi
 
+# ======================================================================
+# 2. QTILE PRESETS: BYPASS MODE (adaptive rotation with polling)
+# ======================================================================
 if is_bypass_preset; then
-    DAEMON_MODE="bypass"
-elif is_light_preset; then
-    DAEMON_MODE="light"
-else
-    DAEMON_MODE="full"
-fi
-
-# ======================================================================
-# BYPASS MODE (Qtile) - Adaptive rotation with 2-second polling
-# ======================================================================
-if [ "$DAEMON_MODE" == "bypass" ]; then
     if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
         # Turn OFF
         rm -f "$FLAG"
@@ -185,20 +162,25 @@ if [ "$DAEMON_MODE" == "bypass" ]; then
 fi
 
 # ======================================================================
-# DAEMON MODES (Universal) - Switch between full and light presets
+# 3. NON-QTILE PRESETS: Toggle rotation mode flag
 # ======================================================================
 
-# FULL mode (daemon.py running)
-if [ "$DAEMON_MODE" == "full" ]; then
-    # SWITCH TO LIGHT (stop rotation)
-    LIGHT_PRESET=$(get_light_preset)
-    send_notification "⏹️ Rotation OFF → Switching to $LIGHT_PRESET" "normal"
-    "$AWP_DIR/awp_start.sh" "$LIGHT_PRESET"
-    
-# LIGHT mode (daemon-light.py running)
-elif [ "$DAEMON_MODE" == "light" ]; then
-    # SWITCH TO FULL (start rotation)
-    BASE_PRESET=$(get_base_preset)
-    send_notification "🔄 Rotation ON → Switching to $BASE_PRESET" "normal"
-    "$AWP_DIR/awp_start.sh" "$BASE_PRESET"
+# Read current mode (default to 'full')
+if [ -f "$MODE_FILE" ]; then
+    CURRENT_MODE=$(cat "$MODE_FILE")
+else
+    CURRENT_MODE="full"
+    echo "full" > "$MODE_FILE"
 fi
+
+# Toggle mode
+if [ "$CURRENT_MODE" = "full" ]; then
+    echo "light" > "$MODE_FILE"
+    send_notification "⏹️ Rotation OFF using '$PRESET' preset" "normal"
+else
+    echo "full" > "$MODE_FILE"
+    send_notification "🔄 Rotation ON using '$PRESET' preset" "normal"
+fi
+
+# Restart AWP with the new mode
+"$AWP_DIR/awp_start.sh" "$PRESET"

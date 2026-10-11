@@ -9,14 +9,15 @@ import os
 import json
 import random
 import subprocess
+import configparser
 from pathlib import Path
 from typing import List, Tuple, Optional
-
 from .constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH
 from .config import AWPConfig
-from backends import get_backend
+from backends import get_backend, write_qt6_kde_accent
 from core.utils import load_images, sort_images
 from core.runtime import load_index_state, save_index_state
+from core.themes import extract_preset_from_theme
 from core.printer import get_printer
 
 _printer = get_printer()
@@ -35,7 +36,7 @@ def get_current_workspace() -> int:
         try:
             return func()
         except Exception as e:
-            print(f"Backend workspace detection failed: {e}")
+            _printer.warning(f"Backend workspace detection failed: {e}")
             return 0
     return 0
 
@@ -92,11 +93,62 @@ def get_workspace_index(ws_num: int, images: list) -> int:
         idx = 0
     return idx
 
-def set_themes(ws_num: int, config=None):
-    """Apply theme settings for specified workspace."""
-    func = get_backend_func("themes")
-    if func:
-        func(ws_num, config)
+
+def _get_config_parser(config):
+    """
+    Ensure we have a ConfigParser object.
+
+    Handles:
+    - ConfigParser object → return as-is
+    - AWPConfig object → return config.config
+    - SimpleConfig (duck-typed ConfigParser-like) → return as-is
+    - Anything else → create new AWPConfig and return its config
+    """
+    # 1. Real ConfigParser
+    if isinstance(config, configparser.ConfigParser):
+        return config
+
+    # 2. AWPConfig wrapper — unwrap to its inner ConfigParser
+    if hasattr(config, 'config') and isinstance(config.config, configparser.ConfigParser):
+        return config.config
+
+    # 3. Duck-typed ConfigParser-like (e.g. Bath's SimpleConfig)
+    if hasattr(config, 'sections') and hasattr(config, 'has_section') and hasattr(config, 'get'):
+        return config
+
+    # 4. Fallback
+    return AWPConfig().config
+
+
+def set_themes(ws_num: int, config):
+    """
+    Unified theme application for ALL backends.
+    Handles: GTK, Icons, Cursor, WM, Desktop, AND Qt/KDE.
+    """
+    
+    # 1. Get ConfigParser object
+    awp_config = _get_config_parser(config)
+    
+    # 2. Get the current backend
+    backend_name = awp_config.get('general', 'os_detected', fallback='xfce')
+    
+    # 3. Apply GTK/Icons/Cursor/WM via backend
+    backend = get_backend(backend_name)
+    if backend:
+        func = backend.get("themes")
+        if func:
+            func(ws_num, awp_config)
+    
+    # 4. Apply Qt/KDE accent (UNIFIED for ALL backends)
+    section = f"ws{ws_num + 1}"
+    if awp_config.has_section(section):
+        accent_color = awp_config.get(section, 'icon_color', fallback=None)
+        if accent_color:
+            gtk_theme = awp_config.get(section, 'gtk_theme', fallback='awp-gtk-breeze-000000')
+            theme_name = extract_preset_from_theme(gtk_theme, 'awp-gtk-')
+            if not theme_name:
+                theme_name = 'breeze'
+            write_qt6_kde_accent(accent_color, theme_name)
 
 def set_panel_icon(icon_path: str):
     """Set panel/menu icon for current desktop environment."""

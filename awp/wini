@@ -1,0 +1,1994 @@
+#!/usr/bin/env python3
+"""
+wini.py - AWP Preset Creator GUI
+Wizard for INI files - creates new presets with automatic folder structure
+"""
+
+import os
+import sys
+import json
+import shutil
+import subprocess
+import re
+import random
+import argparse
+import configparser
+import colorsys
+from pathlib import Path
+from typing import List, Optional, Dict
+from PIL import Image, ImageStat
+from core.utils import (
+    hex_to_hls, hls_to_hex,
+    hex_to_hsv, hsv_to_hex,
+    get_color_brightness,
+    sort_colors_by_intensity,
+)
+from core.wallpaper import generate_wallpaper, compute_wallpaper_name
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QLineEdit, QPushButton, QComboBox, QSpinBox,
+    QGroupBox, QFrame, QMessageBox, QProgressBar,
+    QTextEdit, QGridLayout, QSizePolicy
+)
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QFont, QPalette, QColor
+from core.constants import (
+    AWP_DIR,
+    WALLPAPER_SVG_TEMPLATES,
+    DEFAULT_WALLPAPER_TEMPLATE,
+    SVG_TEMPLATES,
+    BACKGROUNDS,
+    LOGO_POSITIONS,
+    RUNTIME_STATE_PATH,
+    QT6_ACCENT_SHM,
+    AWP_FALLBACK_ACCENT,
+    WORKSPACE_TEMPLATES,
+    SHM_ACTIVE_PRESET,
+    AWP_CONFIG_RAM,
+)
+from core.runtime import read_raw_accent
+from core.printer import get_printer
+_printer = get_printer()
+
+# ============================================================
+# AVAILABLE BACKENDS
+# ============================================================
+
+AVAILABLE_BACKENDS = [
+    "qtile_xfce",
+    "qtile_gnome",
+    "qtile_wayland",
+    "xfce",
+    "cinnamon",
+    "gnome",
+    "mate",
+    "generic",
+]
+
+BACKEND_DESCRIPTIONS = {
+    "qtile_xfce": "Qtile with XFCE settings daemon (xfsettingsd)",
+    "qtile_gnome": "Qtile with GNOME settings daemon (gsd-xsettings)",
+    "qtile_wayland": "Qtile on Wayland (gsd-xsettings)",
+    "xfce": "XFCE desktop environment",
+    "cinnamon": "Cinnamon desktop environment",
+    "gnome": "GNOME desktop environment",
+    "mate": "MATE desktop environment",
+    "generic": "Generic fallback (minimal theming)",
+}
+
+# AVAILABLE OS LIST
+AVAILABLE_OS = [
+    "debian",
+    "ubuntu",
+    "arch",
+    "fedora",
+    "opensuse",
+    "gentoo",
+    "void",
+    "nixos",
+    "alpine",
+    "manjaro",
+    "mint",
+    "pop",
+    "elementary",
+    "zorin",
+    "endeavouros",
+    "garuda",
+    "artix",
+    "linux",
+]
+
+# ============================================================
+# SHUFFLE CONFIGURATION
+# ============================================================
+
+SHUFFLE_COLOR_BUCKETS = [
+    # 1. RED - Happy Crimson / Scarlet (22 unique shades)
+    [
+        "aa0022", "aa1133", "bb0022", "bb1133", "cc0022", 
+        "cc1133", "cc2233", "cc2244", "dd1133", "dd2244", 
+        "dd3344", "dd3355", "ee1133", "ee2244", "ee3355", 
+        "ee4455", "ee4466", "ff2244", "ff3355", "ff4466", 
+        "ff5566", "ff5577"
+    ],
+    
+    # 2. ORANGE - Sunny Orange / Amber (22 unique shades)
+    [
+        "bb4400", "cc5500", "cc5511", "cc6611", "dd5500", 
+        "dd6611", "dd6622", "dd7722", "dd8833", "ee6611", 
+        "ee7722", "ee7733", "ee8833", "ee9944", "ff6600", 
+        "ff7711", "ff7722", "ff8822", "ff8833", "ff8844", 
+        "ff9944", "ff9955"
+    ],
+    
+    # 3. YELLOW - Golden Sun / Warm Gold (22 unique shades)
+    [
+        "bb9900", "bbaa00", "ccaa00", "ccbb00", "ddaa00", 
+        "ddbb00", "ddcc00", "ddcc11", "eeaa00", "eebb00", 
+        "eecc00", "eedd00", "eedd11", "ffaa00", "ffbb00", 
+        "ffcc00", "ffdd00", "ffdd11", "ffdd33", "ffee00", 
+        "ffee22", "ffee33"
+    ],
+    
+    # 4. GREEN - Emerald / Spring (22 unique shades)
+    [
+        "008822", "118833", "119933", "11aa33", "228833", 
+        "22aa44", "22bb44", "22cc55", "33aa44", "33bb55", 
+        "33cc55", "33dd66", "33ee66", "44bb55", "44cc66", 
+        "44dd66", "44ee77", "55cc66", "55dd77", "55ee88", 
+        "66ee88", "66ff99"
+    ],
+    
+    # 5. CYAN - Aqua / Turquoise (22 unique shades)
+    [
+        "006677", "007788", "007799", "0077aa", "008899", 
+        "0088aa", "0099aa", "0099bb", "00aacc", "00aabb", 
+        "00aadd", "00bbaa", "00bbcc", "00bbdd", "00bbee", 
+        "00ccbb", "00ccdd", "00ccee", "00ddbb", "00ddcc", 
+        "00dddd", "00eecc"
+    ],
+    
+    # 6. BLUE - Sky / Bright Blue / Cobalt (22 unique shades)
+    [
+        "3366dd", "3377dd", "3377ee", "4477dd", "4477ee", 
+        "4488ee", "4488ff", "5588ee", "5588ff", "5599ee", 
+        "5599ff", "55aaff", "6688ff", "6699ff", "66aaff", 
+        "66bbff", "7799ff", "77aaff", "77bbff", "88aaff", 
+        "88bbff", "88ccff"
+    ],
+    
+    # 7. PURPLE - Vibrant Purple / Lavender / Violet (22 unique shades)
+    [
+        "8855dd", "9955dd", "9955ee", "9966dd", "9966ee", 
+        "aa55dd", "aa55ee", "aa66dd", "aa66ee", "aa66ff", 
+        "aa77ee", "aa77ff", "bb66ee", "bb77ee", "bb77ff", 
+        "bb88ee", "bb88ff", "cc77ff", "cc88ff", "cc99ff", 
+        "dd88ff", "dd99ff"
+    ],
+    
+    # 8. PINK - Rose / Pink / Magenta (22 unique shades)
+    [
+        "bb3377", "cc2277", "cc3377", "cc4488", "cc5599", 
+        "dd3388", "dd4488", "dd4499", "dd5599", "dd66aa", 
+        "ee4499", "ee5599", "ee55aa", "ee66aa", "ee77bb", 
+        "ff55aa", "ff66aa", "ff66bb", "ff77bb", "ff77cc", 
+        "ff88cc", "ff99dd"
+    ]
+]
+
+# ============================================================
+# SMART SHUFFLE SETTINGS (No profiles needed!)
+# ============================================================
+
+# Icons that look best with bright colors
+HIGH_INTENSITY_ICONS = ['neon', 'sweet-hollow', 'rami', 'adwaitaru']
+
+# Icons that work well with medium colors
+MEDIUM_INTENSITY_ICONS = ['sweet', 'besgnulinux']
+
+# Icons that work with any color (office/universal)
+LOW_INTENSITY_ICONS = ['mint', 'breeze', 'slot-multicolor']
+
+# GTK assignment rules based on icon type
+ICON_TO_GTK = {
+    'neon': 'flat-remix',
+    'sweet-hollow': 'flat-remix',
+    'rami': ['mint-relax', 'graphite'],   # Random choice between these
+    'adwaitaru': ['mint-relax', 'graphite'],
+    'sweet': ['breeze', 'mint-relax'],
+    'besgnulinux': 'breeze',
+    'mint': 'breeze',
+    'breeze': 'breeze',
+    'slot-multicolor': 'breeze',
+}
+
+SHUFFLE_ORDER_OPTIONS = ['name_az', 'name_za', 'name_old', 'name_new', 'n']
+SHUFFLE_TIMINGS = ['30s', '1m', '5m', '20m', '1h', '24h']
+SHUFFLE_MODES = ['sequential', 'random']
+SHUFFLE_SCALINGS = ['zoomed', 'scaled']
+
+# ============================================================
+# DETECTION FUNCTIONS
+# ============================================================
+
+# Backend detection mapping
+BACKEND_DETECTORS = {
+    "qtile_xfce": lambda: os.system("pgrep -x qtile > /dev/null 2>&1") == 0 and os.system("pgrep -x xfsettingsd > /dev/null 2>&1") == 0,
+    "qtile_gnome": lambda: os.system("pgrep -x qtile > /dev/null 2>&1") == 0 and os.system("pgrep -x gsd-xsettings > /dev/null 2>&1") == 0,
+    "qtile_wayland": lambda: os.system("pgrep -x qtile > /dev/null 2>&1") == 0 and os.environ.get("XDG_SESSION_TYPE") == "wayland",
+    "xfce": lambda: os.system("pgrep -x xfce4-session > /dev/null 2>&1") == 0,
+    "cinnamon": lambda: os.system("pgrep -x cinnamon > /dev/null 2>&1") == 0,
+    "gnome": lambda: os.system("pgrep -x gnome-session > /dev/null 2>&1") == 0,
+    "mate": lambda: os.system("pgrep -x mate-session > /dev/null 2>&1") == 0,
+    "kde": lambda: os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "kde" or os.system("pgrep -x plasmashell > /dev/null 2>&1") == 0,
+    "budgie": lambda: os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "budgie" or os.system("pgrep -x budgie-panel > /dev/null 2>&1") == 0,
+    "pantheon": lambda: os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "pantheon" or os.system("pgrep -x gala > /dev/null 2>&1") == 0,
+    "lxde": lambda: os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "lxde" or os.system("pgrep -x lxpanel > /dev/null 2>&1") == 0,
+    "lxqt": lambda: os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "lxqt" or os.system("pgrep -x lxqt-panel > /dev/null 2>&1") == 0,
+    "i3": lambda: os.system("pgrep -x i3 > /dev/null 2>&1") == 0,
+    "sway": lambda: os.system("pgrep -x sway > /dev/null 2>&1") == 0,
+    "hyprland": lambda: os.system("pgrep -x Hyprland > /dev/null 2>&1") == 0,
+    "awesome": lambda: os.system("pgrep -x awesome > /dev/null 2>&1") == 0,
+    "enlightenment": lambda: os.system("pgrep -x enlightenment > /dev/null 2>&1") == 0,
+}
+
+def detect_de() -> str:
+    # Check each detector in priority order
+    for backend, detector in BACKEND_DETECTORS.items():
+        try:
+            if detector():
+                return backend
+        except:
+            continue
+    return "generic"
+
+def detect_session_type() -> str:
+    if os.environ.get('WAYLAND_DISPLAY'):
+        return 'wayland'
+    elif os.environ.get('DISPLAY'):
+        return 'x11'
+    else:
+        return 'unknown'
+
+def detect_os() -> str:
+    """Detect operating system from /etc/os-release"""
+    try:
+        with open('/etc/os-release', 'r') as f:
+            for line in f:
+                if line.startswith('ID='):
+                    os_id = line.strip().split('=')[1].strip('"')
+                    return os_id
+    except:
+        pass
+    
+    # Fallback detection
+    if os.path.exists("/etc/debian_version"):
+        return "debian"
+    elif os.path.exists("/etc/arch-release"):
+        return "arch"
+    elif os.path.exists("/etc/redhat-release"):
+        return "fedora"
+    else:
+        return "linux"
+
+def detect_workspace_count() -> int:
+    # Try Qtile first
+    try:
+        result = subprocess.run(
+            ["qtile", "cmd-obj", "-o", "group", "-f", "info"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            groups = json.loads(result.stdout)
+            return len(groups)
+    except:
+        pass
+    
+    # Try XFCE
+    try:
+        if os.system("pgrep -x xfce4-session > /dev/null 2>&1") == 0:
+            if shutil.which("xfconf-query"):
+                result = subprocess.run(
+                    ["xfconf-query", "-c", "xfwm4", "-p", "/general/workspace_count"],
+                    capture_output=True, text=True
+                )
+                if result.returncode == 0 and result.stdout.strip().isdigit():
+                    return int(result.stdout.strip())
+    except:
+        pass
+    
+    # Try GNOME (fixed workspaces)
+    try:
+        if os.system("pgrep -x gnome-shell > /dev/null 2>&1") == 0:
+            result = subprocess.run(
+                ["gsettings", "get", "org.gnome.desktop.wm.preferences", "num-workspaces"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0 and result.stdout.strip().isdigit():
+                return int(result.stdout.strip())
+    except:
+        pass
+    
+    # Try Cinnamon
+    try:
+        if os.system("pgrep -x cinnamon > /dev/null 2>&1") == 0:
+            result = subprocess.run(
+                ["gsettings", "get", "org.cinnamon.desktop.wm.preferences", "num-workspaces"],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0 and result.stdout.strip().isdigit():
+                return int(result.stdout.strip())
+    except:
+        pass
+    
+    # Fallback
+    return 8
+
+# ============================================================
+# SHUFFLE FUNCTION
+# ============================================================
+
+def roll_shuffle_plan(workspace_count: int = 8) -> list:
+    """
+    Roll a shuffle plan. Returns a list of dicts, one per workspace,
+    each containing:
+        {
+            "icon_color": "#xxxxxx",
+            "gtk_theme": "awp-gtk-...-xxxxxx",
+            "icon_theme": "awp-icons-...-xxxxxx",
+            "cursor_theme": "awp-cursor-oxy-xxxxxx",
+            "desktop_theme": "awp-gtk-...-xxxxxx",
+            "wm_theme": "awp-gtk-...-xxxxxx",
+            "mode": "sequential" | "random",
+            "order": "name_az" | ...,
+            "timing": "30s" | ...,
+            "scaling": "zoomed" | "scaled",
+        }
+
+    Pure function: no I/O, no configparser, no file writes.
+    """
+    used_combos = set()
+    used_icons = set()
+    used_specialist_gtk = set()
+
+    # Get 8 random colors
+    buckets = SHUFFLE_COLOR_BUCKETS.copy()
+    random.shuffle(buckets)
+    selected_colors = [random.choice(bucket) for bucket in buckets]
+    random.shuffle(selected_colors)
+
+    # Sort colors by intensity (brightest first)
+    sorted_colors = sort_colors_by_intensity(selected_colors)
+
+    SPECIALIST_GTK = {
+        'flat-remix': ['neon', 'sweet-hollow'],
+        'graphite': ['rami', 'adwaitaru'],
+        'colloid': ['sweet', 'adwaitaru'],
+    }
+
+    forced_assignments = []
+    forced_icons = []
+
+    # 1. One specialist from each group
+    for gtk, icon_options in SPECIALIST_GTK.items():
+        available = [ic for ic in icon_options if ic not in forced_icons]
+        icon = random.choice(available) if available else icon_options[0]
+        forced_icons.append(icon)
+        forced_assignments.append((gtk, icon))
+        used_specialist_gtk.add(gtk)
+
+    # 2. mint-relax
+    all_icons = ['neon', 'sweet-hollow', 'rami', 'adwaitaru', 'sweet',
+                 'besgnulinux', 'mint', 'breeze', 'slot-multicolor']
+    available_icons = [i for i in all_icons if i not in forced_icons]
+    icon = random.choice(available_icons) if available_icons else 'mint'
+    forced_icons.append(icon)
+    forced_assignments.append(('mint-relax', icon))
+
+    # 3. breeze
+    available_icons = [i for i in all_icons if i not in forced_icons]
+    icon = random.choice(available_icons) if available_icons else 'breeze'
+    forced_icons.append(icon)
+    forced_assignments.append(('breeze', icon))
+
+    # 4. Remaining workspaces get repeats of breeze/mint-relax
+    remaining_workspaces = workspace_count - len(forced_assignments)
+    available_icons = [i for i in all_icons if i not in forced_icons]
+    random.shuffle(available_icons)
+
+    repeat_gtk_pool = ['breeze', 'mint-relax']
+    repeat_assignments = []
+    for _ in range(max(0, remaining_workspaces)):
+        gtk = random.choice(repeat_gtk_pool)
+        if available_icons:
+            icon = available_icons.pop()
+        else:
+            icon = random.choice(['mint', 'breeze', 'slot-multicolor'])
+        repeat_assignments.append((gtk, icon))
+
+    all_assignments = forced_assignments + repeat_assignments
+    random.shuffle(all_assignments)
+
+    # Build the plan
+    plan = []
+    for i, (gtk, icon_set) in enumerate(all_assignments):
+        color_hex = sorted_colors[i] if i < len(sorted_colors) else "666666"
+        color_str = f"#{color_hex}"
+        gtk_theme = f"awp-gtk-{gtk}-{color_hex}"
+        icon_theme = f"awp-icons-{icon_set}-{color_hex}"
+        cursor_theme = f"awp-cursor-oxy-{color_hex}"
+
+        mode = random.choice(SHUFFLE_MODES)
+        order = 'n' if mode == 'random' else random.choice(SHUFFLE_ORDER_OPTIONS)
+
+        plan.append({
+            "icon_color": color_str,
+            "gtk_theme": gtk_theme,
+            "icon_theme": icon_theme,
+            "cursor_theme": cursor_theme,
+            "desktop_theme": gtk_theme,
+            "wm_theme": gtk_theme,
+            "mode": mode,
+            "order": order,
+            "timing": random.choice(SHUFFLE_TIMINGS),
+            "scaling": random.choice(SHUFFLE_SCALINGS),
+        })
+
+    return plan
+
+
+class PresetCreatorWorker(QThread):
+    progress = pyqtSignal(int, str)
+    finished = pyqtSignal(bool, str)
+    
+    def __init__(self, preset_name, backend, os_name, session_type, workspace_count,
+                 shuffle_enabled=False, wallpaper_style=None, shuffle_plan=None,
+                 source_workspaces=None):
+        super().__init__()
+        self.preset_name = preset_name
+        self.backend = backend
+        self.os = os_name
+        self.session_type = session_type
+        self.workspace_count = workspace_count
+        self.shuffle_enabled = shuffle_enabled
+        self.wallpaper_style = wallpaper_style or DEFAULT_WALLPAPER_TEMPLATE
+        self.shuffle_plan = shuffle_plan
+        self.source_workspaces = source_workspaces
+        self.awp_dir = Path.home() / "awp"
+        self.presets_dir = self.awp_dir / "presets"
+        self.ws_source_dir = self.awp_dir / "ws"
+        
+    def generate_ini_content(self) -> str:
+        lines = []
+        home = str(Path.home())
+        preset_dir_path = str(self.presets_dir / self.preset_name)
+        
+        lines.append("[general]")
+        lines.append(f"os_detected = {self.backend}")
+        lines.append(f"session_type = {self.session_type}")
+        lines.append(f"workspaces = {self.workspace_count}")
+        lines.append("")
+        
+        for i in range(1, self.workspace_count + 1):
+            ws_name = f"ws{i}"
+            lines.append(f"[{ws_name}]")
+
+            # Look up the source workspace data if INI mode is active
+            ws_source = None
+            if self.source_workspaces and ws_name in self.source_workspaces:
+                ws_source = self.source_workspaces[ws_name]
+
+            # Folder — from source when available, else preset default
+            if ws_source and ws_source.get("folder"):
+                folder = ws_source["folder"]
+            else:
+                folder = f"{preset_dir_path}/wallpapers/{ws_name}"
+            lines.append(f"folder = {folder}")
+
+            # Icon — always Wini's default (fixed path)
+            icon = f"{home}/awp/logos/ws{i}.png"
+            lines.append(f"icon = {icon}")
+
+            # [wsN] fields — from source (INI mode) or templates (default)
+            if ws_source:
+                # INI mode: write the source's values verbatim
+                for key in ("icon_color", "timing", "mode", "order", "scaling",
+                            "icon_theme", "gtk_theme", "cursor_theme",
+                            "desktop_theme", "wm_theme"):
+                    value = ws_source.get(key, "")
+                    if value:
+                        lines.append(f"{key} = {value}")
+            elif ws_name in WORKSPACE_TEMPLATES:
+                # Template mode: existing behavior
+                ws_data = WORKSPACE_TEMPLATES[ws_name]
+                for key, value in ws_data.items():
+                    if "@COLOR@" in value:
+                        color = ws_data.get("icon_color", "#000000").lstrip('#')
+                        value = value.replace("@COLOR@", color)
+                    lines.append(f"{key} = {value}")
+            else:
+                # Fallback (no template, no source)
+                lines.append("icon_color = #666666")
+                lines.append("timing = 5m")
+                lines.append("mode = sequential")
+                lines.append("order = name_az")
+                lines.append("scaling = zoomed")
+
+            lines.append("")
+        
+        return "\n".join(lines)
+    
+    def generate_ini_content_from_plan(self, plan: list) -> str:
+        """
+        Build INI text from a pre-rolled shuffle plan.
+        Matches the structure of generate_ini_content(), but reads [wsN] values
+        from the plan instead of WORKSPACE_TEMPLATES.
+        """
+        lines = []
+        home = str(Path.home())
+        preset_dir_path = str(self.presets_dir / self.preset_name)
+
+        # [general] — identical to the template-based path
+        lines.append("[general]")
+        lines.append(f"os_detected = {self.backend}")
+        lines.append(f"session_type = {self.session_type}")
+        lines.append(f"workspaces = {self.workspace_count}")
+        lines.append("")
+
+        # [wsN] — from the plan
+        for i in range(1, self.workspace_count + 1):
+            ws_name = f"ws{i}"
+            lines.append(f"[{ws_name}]")
+
+            # Folder — from source when available, else preset default
+            ws_source = None
+            if self.source_workspaces and ws_name in self.source_workspaces:
+                ws_source = self.source_workspaces[ws_name]
+
+            if ws_source and ws_source.get("folder"):
+                folder = ws_source["folder"]
+            else:
+                folder = f"{preset_dir_path}/wallpapers/{ws_name}"
+            lines.append(f"folder = {folder}")
+
+            icon = f"{home}/awp/logos/ws{i}.png"
+            lines.append(f"icon = {icon}")
+
+            if i - 1 < len(plan):
+                ws_data = plan[i - 1]
+            else:
+                ws_data = WORKSPACE_TEMPLATES.get(ws_name, {})
+
+            for key in ("icon_color", "timing", "mode", "order", "scaling",
+                        "icon_theme", "gtk_theme", "cursor_theme",
+                        "desktop_theme", "wm_theme"):
+                value = ws_data.get(key, "")
+                if value:
+                    lines.append(f"{key} = {value}")
+
+            lines.append("")
+
+        return "\n".join(lines)
+    
+    def find_wallpaper(self, ws_num: int) -> Optional[Path]:
+        """Find a wallpaper for a workspace, checking multiple extensions."""
+        # Try new naming: wallpaper{N}.ext
+        extensions = ['.png', '.jpg', '.jpeg', '.avif', '.webp', '.gif', '.bmp']
+        for ext in extensions:
+            candidate = self.ws_source_dir / f"wallpaper{ws_num}{ext}"
+            if candidate.exists():
+                return candidate
+        
+        # Fallback: try old naming (ws{N}.ext) for backward compatibility
+        for ext in extensions:
+            candidate = self.ws_source_dir / f"ws{ws_num}{ext}"
+            if candidate.exists():
+                return candidate
+        
+        return None
+   
+    def run(self):
+        try:
+            self.progress.emit(10, "Creating preset directory...")
+            preset_dir = self.presets_dir / self.preset_name
+            
+            if preset_dir.exists():
+                # 🛡️ SAFETY NET: Preserve existing wallpapers
+                wallpaper_backup = None
+                self.progress.emit(12, "📦 Checking for existing wallpapers...")
+                
+                # 1. Backup wallpapers if they exist
+                if (preset_dir / "wallpapers").exists():
+                    wallpaper_backup = preset_dir / "wallpapers.old"
+                    if wallpaper_backup.exists():
+                        shutil.rmtree(wallpaper_backup)
+                    shutil.move(str(preset_dir / "wallpapers"), str(wallpaper_backup))
+                    self.progress.emit(15, "   📁 Renamed wallpapers/ → wallpapers.old/")
+                    _printer.debug(f"Preserved old wallpapers: {wallpaper_backup}")
+                else:
+                    self.progress.emit(15, "   ℹ️  No existing wallpapers to preserve")
+                
+                # 2. Remove only the INI (Wini owns it and will rewrite it).
+                #    Everything else — themes/, icons (wsN.png), etc. — is
+                #    preserved so that Baker and user assets survive a regen.
+                self.progress.emit(20, "🗑️  Removing old INI...")
+                ini_file = preset_dir / f"{self.preset_name}.ini"
+                if ini_file.exists():
+                    ini_file.unlink()
+                
+                self.progress.emit(25, "   ✅ Old preset removed (kept wallpapers.old)")
+                preset_dir.mkdir(parents=True, exist_ok=True)
+            else:
+                preset_dir.mkdir(parents=True, exist_ok=True)
+                _printer.debug(f"Created new preset directory: {preset_dir}")
+            
+            # Create theme directories (baker will fill these later)
+            self.progress.emit(30, "Creating theme directories...")
+            (preset_dir / 'themes' / 'gtk').mkdir(parents=True, exist_ok=True)
+            (preset_dir / 'themes' / 'icons').mkdir(parents=True, exist_ok=True)
+            (preset_dir / 'themes' / 'cursor').mkdir(parents=True, exist_ok=True)
+            
+            # --- STEP 1: Generate INI ---
+            self.progress.emit(35, "Generating INI file...")
+            ini_path = preset_dir / f"{self.preset_name}.ini"
+
+            if self.shuffle_plan is not None:
+                with open(ini_path, 'w') as f:
+                    f.write(self.generate_ini_content_from_plan(self.shuffle_plan))
+                _printer.debug(f"Generated INI from shuffle plan: {ini_path}")
+            else:
+                with open(ini_path, 'w') as f:
+                    f.write(self.generate_ini_content())
+                _printer.debug(f"Generated INI: {ini_path}")
+            
+            # --- STEP 2: Create wallpaper folders ---
+            self.progress.emit(50, "Creating wallpaper folders...")
+            for i in range(1, self.workspace_count + 1):
+                ws_name = f"ws{i}"
+                wallpaper_dir = preset_dir / "wallpapers" / ws_name
+                wallpaper_dir.mkdir(parents=True, exist_ok=True)
+                self.progress.emit(50 + i * 2, f"Created: wallpapers/{ws_name}/")
+            
+            # --- STEP 3: Generate wallpapers ---
+            self.progress.emit(70, "🎨 Generating wallpapers...")
+            generated_count = 0
+            
+            config = configparser.ConfigParser()
+            config.read(ini_path)
+            
+            for i in range(1, self.workspace_count + 1):
+                section = f"ws{i}"
+                if config.has_section(section) and config.has_option(section, 'icon_color'):
+                    color = config.get(section, 'icon_color')
+                    wallpaper_dir = preset_dir / "wallpapers" / f"ws{i}"
+                    output_path = wallpaper_dir / f"wallpaper{i}.png"
+                    
+                    if generate_wallpaper(self.wallpaper_style, color, output_path):
+                        generated_count += 1
+                        self.progress.emit(70 + i * 3, f"Generated wallpaper for ws{i}")
+                    else:
+                        src = self.find_wallpaper(i)
+                        if src:
+                            shutil.copy2(src, wallpaper_dir / src.name)
+                            self.progress.emit(70 + i * 3, f"Copied fallback: {src.name}")
+                            _printer.debug(f"Fallback wallpaper for ws{i}: {src.name}")
+                        else:
+                            self.progress.emit(70 + i * 3, f"⚠️  No wallpaper for ws{i}")
+                            _printer.warning(f"No wallpaper found for ws{i}")
+                else:
+                    self.progress.emit(70 + i * 3, f"⚠️  No color found for ws{i}")
+                    _printer.warning(f"No color found for ws{i} in INI")
+            
+            if generated_count > 0:
+                self.progress.emit(85, f"✅ Generated {generated_count} wallpapers")
+                _printer.success(f"Generated {generated_count} wallpapers")
+            else:
+                self.progress.emit(85, "⚠️  No wallpapers generated")
+                _printer.warning("No wallpapers generated")
+            
+            self.progress.emit(100, "Preset created successfully!")
+            
+            # Build summary message
+            summary = f"✅ Preset '{self.preset_name}' created successfully!\n\n"
+            summary += f"Location: {preset_dir}\n\n"
+            summary += f"📁 Workspace folders created:\n"
+            summary += "\n".join([f"   - wallpapers/ws{i}/" for i in range(1, self.workspace_count + 1)])
+            
+            if self.shuffle_enabled:
+                summary += f"\n\n🎲 Shuffle was applied - random colors and themes generated!"
+            
+            if generated_count > 0:
+                summary += f"\n\n🎨 Wallpapers generated: {generated_count}/{self.workspace_count}"
+            
+            if (preset_dir / "wallpapers.old").exists():
+                summary += f"\n\n🛡️  Old wallpapers preserved in: wallpapers.old/"
+                summary += f"\n   To recover: cp -r wallpapers.old/* wallpapers/"
+                summary += f"\n   To delete: rm -rf wallpapers.old/"
+            
+            summary += f"\n\n📝 Next steps:"
+            summary += f"\n   1. Run 'baker' to generate themes"
+            summary += f"\n   2. Run 'awp_start.sh {self.preset_name}' to activate"
+            
+            self.finished.emit(True, summary)
+            _printer.success(f"Preset '{self.preset_name}' ready for baking!")
+            
+        except Exception as e:
+            _printer.error(f"Error creating preset: {e}")
+            self.finished.emit(False, f"❌ Error creating preset:\n\n{str(e)}")
+        
+# ============================================================
+# MAIN GUI
+# ============================================================
+
+class WiniGUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("🧙 Wini - Wizard of INI")
+        self.setFixedSize(560, 800)
+        
+        self.awp_dir = Path.home() / "awp"
+        self.presets_dir = self.awp_dir / "presets"
+        
+        # Detection results
+        self.detected_de = detect_de()
+        self.detected_session = detect_session_type()
+        self.detected_os = detect_os()
+        self.detected_ws = detect_workspace_count()
+        self.active_preset = self._detect_active_preset()
+        self.source_data = None         # full data dict from active INI
+        self._pre_ini_state = None      # saved combo state, restored on toggle-off
+        
+        # Shuffle plan storage (None when shuffle is off)
+        self.pending_shuffle = None
+        self.hud_window = None
+        
+        self.setup_ui()
+    
+    def setup_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QVBoxLayout(central)
+        layout.setSpacing(15)
+        layout.setContentsMargins(30, 20, 30, 20)
+        
+        # Header
+        header = QLabel("<h1 style='color: #ddd; font-weight: 300; font-size: 24px;'>🧙 Wini - Wizard of INI</h1>")
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(header)
+        
+        subtitle = QLabel("Create a new AWP preset with automatic folder structure")
+        subtitle.setStyleSheet("color: #888; font-size: 12px; margin-top: -10px;")
+        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(subtitle)
+        
+        # System Detection
+        detect_group = QGroupBox(" System Detection ")
+        detect_group.setStyleSheet(self._group_style())
+        detect_layout = QVBoxLayout()
+        detect_layout.setContentsMargins(15, 10, 15, 10)
+        
+        detect_info = QLabel(
+            f"🖥️  Desktop: {self.detected_de}\n\n"
+            f"🔄  Session: {self.detected_session}\n\n"
+            f"💿  OS: {self.detected_os}\n\n"
+            f"📊  Workspaces: {self.detected_ws}"
+        )
+        detect_info.setStyleSheet("color: #bbb; font-size: 12px;")
+        detect_layout.addWidget(detect_info)
+        detect_group.setLayout(detect_layout)
+        layout.addWidget(detect_group)
+        
+        # Preset Configuration
+        config_group = QGroupBox(" Preset Configuration ")
+        config_group.setStyleSheet(self._group_style())
+        config_layout = QGridLayout()
+        config_layout.setSpacing(12)
+        config_layout.setContentsMargins(15, 15, 15, 15)
+        
+        # Row 0: Backend
+        config_layout.addWidget(QLabel("Backend:"), 0, 0)
+        self.backend_combo = QComboBox()
+        self.backend_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.backend_combo.setFixedHeight(28)
+        for b in sorted(AVAILABLE_BACKENDS):
+            desc = BACKEND_DESCRIPTIONS.get(b, "")
+            self.backend_combo.addItem(f"{b} - {desc}", b)
+            if b == self.detected_de:
+                self.backend_combo.setCurrentIndex(self.backend_combo.count() - 1)
+        self.backend_combo.setToolTip("Select the desired Preset (e.g., xfce, cinnamon, qtile_xfce)")
+        config_layout.addWidget(self.backend_combo, 0, 1)
+        
+        # Row 1: OS
+        config_layout.addWidget(QLabel("OS:"), 1, 0)
+        self.os_combo = QComboBox()
+        self.os_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.os_combo.setFixedHeight(28)
+        for os_name in sorted(AVAILABLE_OS):
+            self.os_combo.addItem(os_name)
+        if self.detected_os in AVAILABLE_OS:
+            self.os_combo.setCurrentText(self.detected_os)
+        else:
+            self.os_combo.setCurrentText("linux")
+            self.os_combo.addItem(self.detected_os)
+            self.os_combo.setCurrentText(self.detected_os)
+        self.os_combo.setToolTip("Select your OS (e.g., debian, arch, ubuntu)")
+        self.os_combo.currentTextChanged.connect(self.on_os_changed)
+        config_layout.addWidget(self.os_combo, 1, 1)
+        
+        # Row 2: Session
+        config_layout.addWidget(QLabel("Session:"), 2, 0)
+        self.session_combo = QComboBox()
+        self.session_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.session_combo.setFixedHeight(28)
+        self.session_combo.addItems(["x11", "wayland"])
+        if self.detected_session in ["x11", "wayland"]:
+            self.session_combo.setCurrentText(self.detected_session)
+        self.session_combo.setToolTip(
+            "Display server session type\n"
+            "x11 = traditional Xorg\n"
+            "wayland = modern compositor"
+        )
+        config_layout.addWidget(self.session_combo, 2, 1)
+        
+        # Row 3: Workspace count
+        config_layout.addWidget(QLabel("Workspaces:"), 3, 0)
+        self.ws_combo = QComboBox()
+        self.ws_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.ws_combo.setFixedHeight(28)
+        for i in range(1, 9):
+            self.ws_combo.addItem(str(i), i)
+        self.ws_combo.setCurrentIndex(self.detected_ws - 1)
+        self.ws_combo.setToolTip("Number of workspaces (1-8)")
+        config_layout.addWidget(self.ws_combo, 3, 1)
+        self.ws_combo.currentIndexChanged.connect(self.on_workspace_count_changed)
+
+        # ─── Row 4: Background ───
+        config_layout.addWidget(QLabel("Background:"), 4, 0)
+        self.bg_combo = QComboBox()
+        self.bg_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.bg_combo.setFixedHeight(28)
+
+        # Sort backgrounds alphabetically by description
+        sorted_backgrounds = sorted(
+            BACKGROUNDS.items(),
+            key=lambda item: item[1]["description"]
+        )
+        for bg_id, bg_data in sorted_backgrounds:
+            self.bg_combo.addItem(bg_data["description"], bg_id)
+            desc = bg_data.get("description", "")
+            if desc:
+                self.bg_combo.setItemData(self.bg_combo.count() - 1, desc, Qt.ItemDataRole.ToolTipRole)
+
+        self.bg_combo.currentIndexChanged.connect(self.on_style_changed)
+        self.bg_combo.setToolTip("Select Wallpaper background")
+        config_layout.addWidget(self.bg_combo, 4, 1)
+
+        # ─── Row 5: Logo ───
+        config_layout.addWidget(QLabel("Logo:"), 5, 0)
+        self.logo_combo = QComboBox()
+        self.logo_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.logo_combo.setFixedHeight(28)
+        self.logo_combo.setToolTip("Logo overlaid on the selected background")
+        self.logo_combo.currentIndexChanged.connect(self.on_style_changed)
+        config_layout.addWidget(self.logo_combo, 5, 1)
+
+        # ─── Row 6: Style preview (read-only label) ───
+        config_layout.addWidget(QLabel("Pattern:"), 6, 0)
+        self.style_preview = QLabel("→ awp-center-334-b7004f.png")
+        self.style_preview.setStyleSheet(f"""
+            QLabel {{
+                background: transparent;
+                color: {read_raw_accent()};
+                border: none;
+                padding: 4px 1px;
+                font-size: 12px;
+                font-weight: bold;
+            }}
+        """)
+        self.style_preview.setFixedHeight(28)
+        self.style_preview.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.style_preview.setToolTip(
+            "Resulting wallpaper filenames will follow this pattern.\n"
+            "Format: <prefix>-<hue>-<hex>.png\n"
+            "Each workspace gets its own hue/hex from its color."
+        )
+        config_layout.addWidget(self.style_preview, 6, 1)
+
+        # ═══════════════════════════════════════════════════════════════
+        # Row 7: Preset name (prefix + OS suffix)
+        # ═══════════════════════════════════════════════════════════════
+        config_layout.addWidget(QLabel("Preset Name:"), 7, 0)
+        
+        name_container = QWidget()
+        name_layout = QHBoxLayout(name_container)
+        name_layout.setContentsMargins(0, 0, 0, 0)
+        name_layout.setSpacing(6)
+        
+        # Prefix field (user-editable)
+        self.prefix_input = QLineEdit()
+        self.prefix_input.setStyleSheet(self._input_style())
+        self.prefix_input.setFixedHeight(28)
+        self.prefix_input.setPlaceholderText("preset-name")
+        self.prefix_input.setToolTip("Preset prefix (e.g., qtile_xfce, cinnamon, xfce)")
+        self.prefix_input.setText(self.detected_de)
+        name_layout.addWidget(self.prefix_input, 3)
+        
+        # OS suffix label (includes the dash separator)
+        self.suffix_label = QLabel(f"-{self.detected_os}")
+        self.suffix_label.setStyleSheet(f"""
+            QLabel {{
+                background: transparent;
+                color: {read_raw_accent()};
+                border: none;
+                padding: 4px 1px;
+                font-size: 12px;
+                font-weight: bold;
+                text-align: left;
+            }}
+        """)
+        self.suffix_label.setFixedHeight(28)
+        self.suffix_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.suffix_label.setToolTip("OS suffix (auto-updated from OS selection above)")
+        self.suffix_label.setMinimumWidth(80)
+        name_layout.addWidget(self.suffix_label, 2)
+        
+        config_layout.addWidget(name_container, 7, 1)
+
+        # Row 8: Info about folders
+        info_label = QLabel("📁 Wallpaper folders will be created and assigned automatically\n  to each workspace inside the preset")
+        info_label.setStyleSheet("color: #888; font-size: 11px; font-style: italic;")
+        config_layout.addWidget(info_label, 8, 0, 1, 2)
+        
+        config_group.setLayout(config_layout)
+        layout.addWidget(config_group)
+        
+        # Progress
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setFixedHeight(24)
+        self.progress_bar.setStyleSheet(self._progress_style())
+        layout.addWidget(self.progress_bar)
+        
+        # Buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(12)
+        btn_layout.addStretch()
+        
+        self.create_btn = QPushButton("W I N I")
+        self.create_btn.setMinimumWidth(90)
+        self.create_btn.setFixedHeight(36)
+        self.create_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 13px;
+                background: #2d7d2d;
+                color: #ffffff;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 16px;
+            }
+            QPushButton:hover {
+                background: #3d9d3d;
+            }
+            QPushButton:pressed {
+                background: #1d6d1d;
+            }
+            QPushButton:disabled {
+                background: #333333;
+                color: #666666;
+            }
+        """)
+        self.create_btn.clicked.connect(self.create_preset)
+        self.create_btn.setToolTip(
+            "🧙 Create the preset\n"
+            "Generates the INI file and wallpaper folders\n"
+            "based on the current configuration"
+        )
+        btn_layout.addWidget(self.create_btn)
+        
+        # 🎲 Shuffle button
+        self.shuffle_btn = QPushButton("Shuffle")
+        self.shuffle_btn.setMinimumWidth(90)
+        self.shuffle_btn.setFixedHeight(36)
+        self.shuffle_btn.setCheckable(True)
+        self.shuffle_btn.setChecked(False)
+        self.shuffle_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 13px;
+                background: #4a4a4a;
+                color: #ddd;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 16px;
+            }
+            QPushButton:hover {
+                background: #5a5a5a;
+            }
+            QPushButton:checked {
+                background: #d4a017;
+                color: #1a1a1a;
+            }
+            QPushButton:checked:hover {
+                background: #e6b422;
+            }
+            QPushButton:disabled {
+                background: #333333;
+                color: #666666;
+            }
+        """)
+        self.shuffle_btn.toggled.connect(self.on_shuffle_toggled)
+        self.shuffle_btn.setToolTip(
+            "🎲 Shuffle mode\n"
+            "Randomizes colors, themes, icons and wallpaper settings\n"
+            "for all workspaces in the preset"
+        )
+        btn_layout.addWidget(self.shuffle_btn)
+
+        # 📁 Use INI button
+        self.ini_btn = QPushButton("Use INI")
+        self.ini_btn.setMinimumWidth(90)
+        self.ini_btn.setFixedHeight(36)
+        self.ini_btn.setCheckable(True)
+        self.ini_btn.setChecked(False)
+        self.ini_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 13px;
+                background: #4a4a4a;
+                color: #ddd;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 16px;
+            }
+            QPushButton:hover {
+                background: #5a5a5a;
+            }
+            QPushButton:checked {
+                background: #2a7fc4;
+                color: #ffffff;
+            }
+            QPushButton:checked:hover {
+                background: #348fd4;
+            }
+            QPushButton:disabled {
+                background: #333333;
+                color: #666666;
+            }
+        """)
+        self.ini_btn.toggled.connect(self.on_ini_toggled)
+        self.ini_btn.setToolTip(
+            "📁 Use INI\n"
+            "Source workspace data from the active preset's INI\n"
+            "instead of the hardcoded templates.\n"
+            "Mutually exclusive with Shuffle."
+        )
+        btn_layout.addWidget(self.ini_btn)
+
+        # Disable Use INI if no active preset exists
+        if not self.active_preset:
+            self.ini_btn.setEnabled(False)
+            self.ini_btn.setToolTip(
+                "📁 Use INI\n"
+                "No active preset found.\n"
+                "Start AWP or select a preset to enable this option."
+            )
+
+        # 📊 HUD button
+        self.hud_btn = QPushButton("HUD")
+        self.hud_btn.setMinimumWidth(90)
+        self.hud_btn.setFixedHeight(36)
+        self.hud_btn.setCheckable(True)
+        self.hud_btn.setChecked(False)
+        self.hud_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 13px;
+                background: #4a4a4a;
+                color: #ddd;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 16px;
+            }
+            QPushButton:hover {
+                background: #5a5a5a;
+            }
+            QPushButton:checked {
+                background: #7d2db7;
+                color: #ffffff;
+            }
+            QPushButton:checked:hover {
+                background: #8d3dc7;
+            }
+            QPushButton:disabled {
+                background: #333333;
+                color: #666666;
+            }
+        """)
+        self.hud_btn.toggled.connect(self.toggle_hud)
+        self.hud_btn.setToolTip("Preview preset colors and wallpapers")
+        btn_layout.addWidget(self.hud_btn)
+        
+        self.quit_btn = QPushButton("Quit")
+        self.quit_btn.setMinimumWidth(90)
+        self.quit_btn.setFixedHeight(36)
+        self.quit_btn.setStyleSheet("""
+            QPushButton {
+                font-weight: bold;
+                font-size: 13px;
+                background: #5a2d2d;
+                color: #ffffff;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 16px;
+            }
+            QPushButton:hover {
+                background: #7a3d3d;
+            }
+            QPushButton:pressed {
+                background: #4a1d1d;
+            }
+            QPushButton:disabled {
+                background: #333333;
+                color: #666666;
+            }
+        """)
+        self.quit_btn.clicked.connect(self.close)
+        self.quit_btn.setToolTip("Exit Wini")
+        btn_layout.addWidget(self.quit_btn)
+        
+        btn_layout.addStretch()
+        layout.addLayout(btn_layout)
+        
+        # Initialize logo list based on the current background selection
+        self.on_style_changed()
+        
+        self.apply_dark_theme()
+        self.statusBar().showMessage("Ready")
+    
+    def get_preview_state(self) -> dict:
+        # Determine the source of workspace data
+        if self.ini_btn.isChecked():
+            source = "active INI"
+        elif self.shuffle_btn.isChecked():
+            source = "shuffle"
+        else:
+            source = "default"
+
+        ini_colors = None
+        if self.ini_btn.isChecked() and self.source_data:
+            ini_colors = [ws.get("icon_color") for ws in self.source_data["workspaces"]]
+
+        return {
+            "backend": self.backend_combo.currentData(),
+            "session": self.session_combo.currentText(),
+            "workspace_count": self.ws_combo.currentData(),
+            "source": source,
+            "shuffle": self.shuffle_btn.isChecked(),
+            "style_id": self.get_selected_style_id(),
+            "pending_shuffle": self.pending_shuffle,
+            "ini_colors": ini_colors,
+        }
+     
+    def _get_accent_color(self) -> str:
+        """Read the derived accent from awp-qt-color.conf (matches Qt6 apps)."""
+        fallback = AWP_FALLBACK_ACCENT
+        try:
+            with open(QT6_ACCENT_SHM, "r") as f:
+                for line in f:
+                    if line.startswith("active_colors="):
+                        parts = line.split("=", 1)[1].strip().split(",")
+                        if parts:
+                            last = parts[-1].strip().lstrip("#")
+                            if len(last) == 8:
+                                last = last[2:]  # strip alpha
+                            if len(last) == 6:
+                                return f"#{last.lower()}"
+        except (FileNotFoundError, OSError):
+            pass
+        return fallback
+    
+    def _group_style(self):
+        return """
+            QGroupBox {
+                color: #ccc;
+                font-weight: bold;
+                font-size: 13px;
+                border: 1px solid #555;
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 6px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 8px 0 8px;
+            }
+        """
+    
+    def _input_style(self, accent=None):
+        if accent is None:
+            accent = read_raw_accent()
+        return f"""
+            QLineEdit {{
+                background: #3c3c3c;
+                color: #ddd;
+                border: 1px solid #555;
+                border-radius: 6px;
+                padding: 4px 10px;
+                font-size: 12px;
+            }}
+            QLineEdit:disabled {{
+                font: italic;
+                color: #888;
+            }}
+            QLineEdit:focus {{
+                border: 1px solid {accent};
+                background: #404040;
+            }}
+        """
+    
+    def _progress_style(self):
+        return """
+            QProgressBar {
+                border: 1px solid #555;
+                border-radius: 4px;
+                background: #3c3c3c;
+                color: #ddd;
+                text-align: center;
+                height: 24px;
+            }
+            QProgressBar::chunk {
+                background: #2d7d2d;
+                border-radius: 4px;
+            }
+        """
+    
+    def _detect_active_preset(self):
+        """
+        Return the name of the currently active AWP preset, or None if no
+        preset is active (fresh install, daemon not running, etc.).
+        """
+        try:
+            with open(SHM_ACTIVE_PRESET, "r") as f:
+                name = f.read().strip()
+                if name:
+                    return name
+        except (FileNotFoundError, OSError):
+            pass
+        return None
+    
+    def _load_active_ini_data(self):
+        """
+        Read the active preset's INI (or RAM JSON) and return its data as a dict:
+            {
+                "general": {"os_detected": ..., "session_type": ..., "workspaces": ...},
+                "workspaces": [
+                    {"section": "ws1", "icon_color": ..., "folder": ..., ...},
+                    {"section": "ws2", ...},
+                    ...
+                ]
+            }
+        Returns None if the INI can't be read.
+        """
+        if not self.active_preset:
+            return None
+
+        # Prefer the RAM JSON — faster, always in sync
+        try:
+            with open(AWP_CONFIG_RAM, "r") as f:
+                ram_data = json.load(f)
+            # Confirm the RAM data is for the active preset (the daemon updates
+            # it on preset switch, but we double-check via the preset name)
+            general = ram_data.get("general", {})
+            workspaces = []
+            for key, value in ram_data.items():
+                if key.startswith("ws") and isinstance(value, dict):
+                    entry = dict(value)
+                    entry["section"] = key
+                    workspaces.append(entry)
+            workspaces.sort(key=lambda w: int(w["section"][2:]))
+            return {"general": general, "workspaces": workspaces}
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            pass
+
+        # Fallback to the INI on disk
+        try:
+            ini_path = self.presets_dir / self.active_preset / f"{self.active_preset}.ini"
+            if not ini_path.exists():
+                return None
+
+            config = configparser.ConfigParser()
+            config.read(ini_path)
+
+            general = dict(config["general"]) if config.has_section("general") else {}
+            workspaces = []
+            for section in config.sections():
+                if section.startswith("ws") and section != "general":
+                    entry = dict(config[section])
+                    entry["section"] = section
+                    workspaces.append(entry)
+            workspaces.sort(key=lambda w: int(w["section"][2:]))
+            return {"general": general, "workspaces": workspaces}
+        except Exception as e:
+            _printer.error(f"Failed to read active INI: {e}", backend="wini")
+            return None
+    
+    def _prefill_from_ini(self):
+        """Prefill the config combos + preset name from self.source_data."""
+        if not self.source_data:
+            return
+
+        general = self.source_data.get("general", {})
+
+        # Backend combo — from INI [general] os_detected
+        backend = general.get("os_detected")
+        if backend:
+            idx = self.backend_combo.findData(backend)
+            if idx >= 0:
+                self.backend_combo.setCurrentIndex(idx)
+
+        # Session combo — from INI [general] session_type
+        session = general.get("session_type")
+        if session:
+            self.session_combo.setCurrentText(session)
+
+        # Workspace count — from INI [general] workspaces
+        try:
+            n_ws = int(general.get("workspaces", 8))
+            self.ws_combo.setCurrentIndex(n_ws - 1)
+        except (ValueError, TypeError):
+            pass
+
+        # Preset name + OS combo — split the active preset name on the last dash
+        if self.active_preset:
+            parts = self.active_preset.rsplit("-", 1)
+            if len(parts) == 2:
+                prefix, suffix = parts
+                self.prefix_input.setText(prefix)
+                self.suffix_label.setText(f"-{suffix}")
+
+                # Sync OS combo to the suffix
+                os_idx = self.os_combo.findText(suffix)
+                if os_idx >= 0:
+                    self.os_combo.setCurrentIndex(os_idx)
+            else:
+                # No dash in the name — treat the whole thing as prefix
+                self.prefix_input.setText(self.active_preset)
+
+    def _reset_combos_to_defaults(self):
+        """Restore the combos to the detected defaults (when Use INI is off)."""
+        idx = self.backend_combo.findData(self.detected_de)
+        if idx >= 0:
+            self.backend_combo.setCurrentIndex(idx)
+
+        self.os_combo.setCurrentText(self.detected_os)
+        self.session_combo.setCurrentText(self.detected_session)
+        self.ws_combo.setCurrentIndex(self.detected_ws - 1)
+
+        self.prefix_input.setText(self.detected_de)
+        self.suffix_label.setText(f"-{self.detected_os}")
+    
+    def _restore_combo_state(self, state):
+        """Restore combos to a previously saved state."""
+        if not state:
+            return
+
+        idx = self.backend_combo.findData(state.get("backend"))
+        if idx >= 0:
+            self.backend_combo.setCurrentIndex(idx)
+
+        os_text = state.get("os")
+        if os_text:
+            self.os_combo.setCurrentText(os_text)
+
+        session = state.get("session")
+        if session:
+            self.session_combo.setCurrentText(session)
+
+        n_ws = state.get("workspaces")
+        if n_ws:
+            self.ws_combo.setCurrentIndex(n_ws - 1)
+
+        prefix = state.get("prefix")
+        if prefix:
+            self.prefix_input.setText(prefix)
+    
+    def apply_dark_theme(self):
+        accent = self._get_accent_color()
+        self.setStyleSheet(f"""
+            QMainWindow {{ background: #2a2a2a; }}
+            QLabel {{ color: #ddd; font-size: 12px; }}
+            QGroupBox {{ color: #ccc; }}
+            QLineEdit:focus {{
+                border: 1px solid {accent};
+            }}
+
+            QComboBox:disabled {{
+                font-style: italic;
+                color: #888;
+            }}
+            QLineEdit:disabled {{
+                font-style: italic;
+                color: #888;
+            }}
+
+            QToolTip {{
+                background-color: {accent};
+                color: #ffffff;
+                border: none;
+                padding: 6px 4px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: bold;
+            }}
+        """)
+    
+    def on_workspace_count_changed(self):
+        """Re-roll shuffle if active, and refresh the HUD."""
+        if self.pending_shuffle is not None:
+            self.pending_shuffle = roll_shuffle_plan(self.ws_combo.currentData())
+        if getattr(self, 'hud_window', None):
+            self.hud_window.update_from_state()
+    
+    def on_shuffle_toggled(self, checked):
+        """Roll or release the shuffle plan, and refresh the HUD."""
+        if checked:
+            # Mutually exclusive with Use INI
+            if self.ini_btn.isChecked():
+                self.ini_btn.setChecked(False)   # triggers on_ini_toggled(False)
+            self.ini_btn.setEnabled(False)
+
+            self.pending_shuffle = roll_shuffle_plan(self.ws_combo.currentData())
+            self.statusBar().showMessage("🎲 Shuffle ON - Colors will be randomized!")
+            self.statusBar().setStyleSheet("color: #d4a017;")
+        else:
+            self.pending_shuffle = None
+            self.statusBar().showMessage("Ready")
+            self.statusBar().setStyleSheet("")
+
+            # Re-enable Use INI if an active preset exists
+            if self.active_preset:
+                self.ini_btn.setEnabled(True)
+
+        # Refresh the HUD if open
+        if getattr(self, 'hud_window', None):
+            self.hud_window.update_from_state()
+    
+    def on_ini_toggled(self, checked):
+        """Handle the Use INI toggle."""
+        if checked:
+            # Save current combo state so we can restore it on toggle-off
+            self._pre_ini_state = {
+                "backend": self.backend_combo.currentData(),
+                "os": self.os_combo.currentText(),
+                "session": self.session_combo.currentText(),
+                "workspaces": self.ws_combo.currentData(),
+                "prefix": self.prefix_input.text(),
+            }
+            
+            # Mutually exclusive with Shuffle
+            if self.shuffle_btn.isChecked():
+                self.shuffle_btn.setChecked(False)
+            self.shuffle_btn.setEnabled(False)
+
+            # Disable the config combos — they're sourced from the INI
+            self.backend_combo.setEnabled(False)
+            self.os_combo.setEnabled(False)
+            self.session_combo.setEnabled(False)
+            self.ws_combo.setEnabled(False)
+            self.prefix_input.setEnabled(False)
+
+            # Load the INI data
+            ini_data = self._load_active_ini_data()
+            if not ini_data:
+                # Safety: couldn't read the INI — bail out, revert the toggle
+                self.ini_btn.setChecked(False)   # triggers else branch
+                QMessageBox.warning(
+                    self, "INI Not Found",
+                    f"Could not read the active preset's INI.\n\n"
+                    f"Preset: {self.active_preset}"
+                )
+                return
+
+            self.source_data = ini_data
+
+            # Prefill the combos with the INI's values
+            self._prefill_from_ini()
+
+            _printer.debug(
+                f"Loaded {len(ini_data['workspaces'])} workspaces from active INI",
+                backend="wini",
+            )
+
+            self.statusBar().showMessage(f"📁 Source: active INI ({self.active_preset})")
+            self.statusBar().setStyleSheet("color: #5aa8e0;")
+        else:
+            # Clear INI data
+            self.source_data = None
+
+            # Restore the pre-INI combo state (fall back to defaults if nothing saved)
+            if self._pre_ini_state:
+                self._restore_combo_state(self._pre_ini_state)
+            else:
+                self._reset_combos_to_defaults()
+            self._pre_ini_state = None
+
+            # Re-enable Shuffle
+            self.shuffle_btn.setEnabled(True)
+
+            # Re-enable the config fields
+            self.backend_combo.setEnabled(True)
+            self.os_combo.setEnabled(True)
+            self.session_combo.setEnabled(True)
+            self.ws_combo.setEnabled(True)
+            self.prefix_input.setEnabled(True)
+
+            self.statusBar().showMessage("Ready")
+            self.statusBar().setStyleSheet("")
+
+        # Refresh the HUD if open
+        if getattr(self, 'hud_window', None):
+            self.hud_window.update_from_state()
+    
+    def on_os_changed(self, os_name):
+        """Sync the suffix label when OS selection changes."""
+        if hasattr(self, 'suffix_label'):
+            self.suffix_label.setText(f"-{os_name}")
+        
+    def on_style_changed(self):
+        """Update the logo list when background changes, and update the preview."""
+        bg_id = self.bg_combo.currentData()
+        
+        # Rebuild logo list to only show logos that work with this background
+        self.logo_combo.blockSignals(True)
+        current_logo = self.logo_combo.currentData()
+        self.logo_combo.clear()
+        
+        # Sort logos alphabetically
+        for logo_id in sorted(LOGO_POSITIONS.keys()):
+            if bg_id in LOGO_POSITIONS[logo_id]:
+                self.logo_combo.addItem(logo_id, logo_id)
+        
+        # Try to keep the previously selected logo if still valid
+        if current_logo:
+            idx = self.logo_combo.findData(current_logo)
+            if idx >= 0:
+                self.logo_combo.setCurrentIndex(idx)
+        
+        self.logo_combo.blockSignals(False)
+        
+        # Update preview
+        self.update_style_preview()
+
+    def update_style_preview(self):
+        """Update the style preview label with the current combination."""
+        bg_id = self.bg_combo.currentData()
+        logo_id = self.logo_combo.currentData()
+        
+        if not bg_id:
+            self.style_preview.setText("Select a background")
+            return
+        
+        raw_accent = read_raw_accent()  # ← use raw, not derived
+        bg_data = BACKGROUNDS.get(bg_id, {})
+        
+        if bg_data.get("no_logo"):
+            style_id = bg_id
+        elif logo_id:
+            style_id = f"{logo_id}-{bg_id}"
+        else:
+            self.style_preview.setText("Select a logo")
+            return
+        
+        if style_id in WALLPAPER_SVG_TEMPLATES:
+            sample_filename = compute_wallpaper_name("#b7004f", style_id)
+            self.style_preview.setText(f"→ {sample_filename}")
+            self.style_preview.setStyleSheet(f"""
+                QLabel {{
+                    background: transparent;
+                    color: {raw_accent};
+                    border: none;
+                    padding: 4px 1px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }}
+            """)
+            self.style_preview.setToolTip(
+                "Resulting wallpaper filenames will follow this pattern.\n"
+                "Format: <prefix>-<hue>-<hex>.png\n"
+                "Each workspace gets its own hue/hex from its color."
+            )
+        else:
+            self.style_preview.setText(f"→ {style_id} (unavailable)")
+            self.style_preview.setStyleSheet("""
+                QLabel {
+                    background: transparent;
+                    color: #d04040;
+                    border: none;
+                    padding: 4px 1px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+            """)
+
+    def get_selected_style_id(self) -> str:
+        """Get the currently selected wallpaper style ID (e.g., 'awp-firma-cave')."""
+        bg_id = self.bg_combo.currentData()
+        logo_id = self.logo_combo.currentData()
+        
+        if not bg_id:
+            return DEFAULT_WALLPAPER_TEMPLATE
+        
+        bg_data = BACKGROUNDS.get(bg_id, {})
+        if bg_data.get("no_logo"):
+            return bg_id
+        
+        if not logo_id:
+            return DEFAULT_WALLPAPER_TEMPLATE
+        
+        return f"{logo_id}-{bg_id}"
+
+    def _connect_hud_refresh(self):
+        """Trigger a HUD re-render whenever a setting that affects preview changes."""
+        if not getattr(self, 'hud_window', None):
+            return
+        self.backend_combo.currentIndexChanged.connect(self.hud_window.update_from_state)
+        self.session_combo.currentIndexChanged.connect(self.hud_window.update_from_state)
+        self.ws_combo.currentIndexChanged.connect(self.hud_window.update_from_state)
+        self.bg_combo.currentIndexChanged.connect(self.hud_window.update_from_state)
+        self.logo_combo.currentIndexChanged.connect(self.hud_window.update_from_state)
+
+    def _disconnect_hud_refresh(self):
+        """Break the signal links when the HUD is closed."""
+        if not getattr(self, 'hud_window', None):
+            return
+        for sig in (
+            self.backend_combo.currentIndexChanged,
+            self.session_combo.currentIndexChanged,
+            self.ws_combo.currentIndexChanged,
+            self.bg_combo.currentIndexChanged,
+            self.logo_combo.currentIndexChanged,
+        ):
+            try:
+                sig.disconnect(self.hud_window.update_from_state)
+            except TypeError:
+                pass   # wasn't connected
+    
+    def toggle_hud(self, checked):
+        """Open or close the preset preview HUD."""
+        if checked:
+            from hud_preset import PresetPreviewHUD
+            self.hud_window = PresetPreviewHUD(self.get_preview_state)
+            self.hud_window.show()
+            # Refresh the HUD when any relevant combo changes
+            self._connect_hud_refresh()
+        else:
+            if getattr(self, 'hud_window', None):
+                self.hud_window.close()
+                self.hud_window = None
+            self._disconnect_hud_refresh()
+    
+    def closeEvent(self, event):
+        """Close the HUD when Wini closes."""
+        if getattr(self, 'hud_window', None):
+            self.hud_window.close()
+            self.hud_window = None
+        super().closeEvent(event)
+    
+    def create_preset(self):
+        """Create the preset."""
+        backend = self.backend_combo.currentData()
+        os_name = self.os_combo.currentText().strip().lower()
+        session_type = self.session_combo.currentText()
+        workspace_count = self.ws_combo.currentData()
+        shuffle_enabled = self.shuffle_btn.isChecked()
+        wallpaper_style = self.get_selected_style_id()
+
+        # Validate the wallpaper combination
+        if wallpaper_style not in WALLPAPER_SVG_TEMPLATES:
+            QMessageBox.warning(self, "Unavailable Combination",
+                f"This background + logo combination isn't available:\n\n"
+                f"  {wallpaper_style}\n\n"
+                f"Please pick a different combination.")
+            return
+        
+        # Build preset name from prefix + suffix
+        prefix = self.prefix_input.text().strip()
+        suffix = self.suffix_label.text().strip().lstrip('-')
+        
+        if not prefix:
+            QMessageBox.warning(self, "Validation Error", "Please enter a preset prefix.")
+            return
+        
+        if not suffix:
+            QMessageBox.warning(self, "Validation Error", "OS suffix not set.")
+            return
+        
+        # Sanitize prefix
+        prefix = re.sub(r'[^a-zA-Z0-9_-]', '', prefix)
+        self.prefix_input.setText(prefix)
+        
+        preset_name = f"{prefix}-{suffix}"
+
+        if not os_name:
+            QMessageBox.warning(self, "Validation Error", "Please select or type an operating system name.")
+            return
+        
+        preset_dir = self.presets_dir / preset_name
+        if preset_dir.exists():
+            is_active = (self.active_preset is not None
+                         and preset_name == self.active_preset)
+
+            if is_active:
+                title = "Active Preset"
+                message = (
+                    f"'{preset_name}' is the currently ACTIVE preset.\n\n"
+                    f"Overwriting will replace its INI and its wallpapers.\n"
+                    f"If the AWP daemon is running, it will reload this preset.\n\n"
+                    f"Your current wallpapers will be preserved in "
+                    f"wallpapers.old/ — but the INI edits will NOT be preserved.\n\n"
+                    f"Overwrite the active preset?"
+                )
+            else:
+                title = "Preset Exists"
+                message = f"Preset '{preset_name}' already exists.\n\nOverwrite?"
+
+            reply = QMessageBox.question(
+                self, title, message,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No   # ← default to No
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+        
+        self.create_btn.setEnabled(False)
+        self.create_btn.setText("⏳ Creating...")
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setValue(0)
+        self.statusBar().showMessage("Creating preset...")
+        
+        # Build source_workspaces from self.source_data when in INI mode
+        source_workspaces = None
+        if self.ini_btn.isChecked() and self.source_data:
+            source_workspaces = {
+                ws["section"]: ws
+                for ws in self.source_data["workspaces"]
+            }
+
+        self.worker = PresetCreatorWorker(
+            preset_name, backend, os_name, session_type, workspace_count,
+            shuffle_enabled, wallpaper_style=wallpaper_style,
+            shuffle_plan=self.pending_shuffle,
+            source_workspaces=source_workspaces,
+        )
+        self.worker.progress.connect(self.update_progress)
+        self.worker.finished.connect(self.creation_finished)
+        self.worker.start()
+    
+    def update_progress(self, value: int, message: str):
+        self.progress_bar.setValue(value)
+        self.statusBar().showMessage(message)
+        QApplication.processEvents()
+    
+    def creation_finished(self, success: bool, message: str):
+        self.progress_bar.setVisible(False)
+        self.create_btn.setEnabled(True)
+        self.create_btn.setText("🧙 Create Preset")
+        
+        # Reset shuffle button state after creation
+        if self.shuffle_btn.isChecked():
+            self.shuffle_btn.setChecked(False)
+            self.statusBar().setStyleSheet("")
+        
+        if success:
+            self.statusBar().showMessage("Preset created successfully!")
+            
+            preset_name = f"{self.prefix_input.text().strip()}-{self.suffix_label.text().strip().lstrip('-')}"
+            preset_dir = self.presets_dir / preset_name
+            
+            msg = f"✅ Preset '{preset_name}' created successfully!\n\n"
+            msg += f"Location: {preset_dir}\n\n"
+            msg += "📁 Wallpaper folders created:\n"
+            msg += "\n".join([f"   - wallpapers/ws{i}/" for i in range(1, self.ws_combo.currentData() + 1)])
+            
+            if (preset_dir / "wallpapers.old").exists():
+                msg += f"\n\n🛡️  Old wallpapers preserved in: wallpapers.old/"
+                msg += f"\n   To recover: cp -r wallpapers.old/* wallpapers/"
+                msg += f"\n   To delete: rm -rf wallpapers.old/"
+            
+            msg += "\n\nNext steps:\n"
+            msg += "1. Run 'baker' to generate themes\n"
+            msg += "2. Run 'awp_start.sh <preset_name>' to use it\n"
+            msg += "3. Add wallpapers to the workspace folders"
+            
+            QMessageBox.information(self, "Preset Created", msg)
+        else:
+            self.statusBar().showMessage("Creation failed!")
+            QMessageBox.critical(self, "Error", message)
+
+def run_gui() -> int:
+    """Launch the GUI wizard. Returns a process exit code."""
+    app = QApplication(sys.argv)
+
+    palette = QPalette()
+    palette.setColor(QPalette.ColorRole.Window, QColor(42, 42, 42))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.Base, QColor(60, 60, 60))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(46, 46, 46))
+    palette.setColor(QPalette.ColorRole.Text, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.Button, QColor(68, 68, 68))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(221, 221, 221))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+    app.setPalette(palette)
+
+    window = WiniGUI()
+    window.show()
+    return app.exec()
+
+# =============================================================================
+# CLI MODE — headless wallpaper generation
+# =============================================================================
+#
+# Wini's primary interface is the GUI wizard. This CLI mode exists so that
+# other tools (Baker, DAB, future scripts) can regenerate a single wallpaper
+# without launching the GUI. It generates one PNG from one template + one color.
+#
+# Usage:
+#   wini --generate-wallpaper --template awp-cave --color "#b7004f" \
+#        --output /path/to/out.png
+#
+# Or, using the background/logo pieces (Wini combines them):
+#   wini --generate-wallpaper --bg cave --logo awp --color "#b7004f" \
+#        --output /path/to/out.png
+#
+# If --template is omitted, defaults to the AWP branded template.
+# =============================================================================
+
+
+def parse_args():
+    """Parse CLI arguments. Returns the argparse Namespace."""
+    parser = argparse.ArgumentParser(
+        prog="wini",
+        description=(
+            "Wini — Wizard of INI. Launch with no arguments to open the GUI, "
+            "or use --generate-wallpaper for headless wallpaper generation."
+        ),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    # Headless mode trigger
+    parser.add_argument(
+        "--generate-wallpaper",
+        action="store_true",
+        help="Headless mode: generate a single wallpaper PNG and exit.",
+    )
+
+    # Template selection — two input modes
+    parser.add_argument(
+        "--template",
+        type=str,
+        default=None,
+        help=(
+            "Composite template ID (e.g. 'awp-cave', 'awp-center'). "
+            "If given, takes precedence over --bg/--logo."
+        ),
+    )
+    parser.add_argument(
+        "--bg",
+        type=str,
+        default=None,
+        help=(
+            "Background ID (e.g. 'cave', 'awp-center', 'fire'). "
+            "Combined with --logo to form the final template ID."
+        ),
+    )
+    parser.add_argument(
+        "--logo",
+        type=str,
+        default=None,
+        help=(
+            "Logo ID (e.g. 'awp', 'debian', 'kde'). "
+            "Ignored for no-logo backgrounds."
+        ),
+    )
+
+    # Required for headless mode
+    parser.add_argument(
+        "--color",
+        type=str,
+        default=None,
+        help="Target hex color (e.g. '#b7004f'). Required with --generate-wallpaper.",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help=(
+            "Output PNG path. The filename component is rewritten by Wini "
+            "to match the template's naming convention "
+            "(e.g. <prefix>-<hue>-<hex>.png). The parent directory is created "
+            "if it doesn't exist. Required with --generate-wallpaper."
+        ),
+    )
+
+    return parser.parse_args()
+
+
+def resolve_template_id(template, bg, logo):
+    """
+    Determine the final composite template ID from CLI args.
+
+    Priority:
+      1. --template (explicit composite ID)
+      2. --bg + --logo (combined)
+      3. --bg alone (if no_logo, use bg_id; else fall back to default)
+      4. Default template (awp-center)
+
+    Returns a string that is guaranteed to be a key in WALLPAPER_SVG_TEMPLATES
+    (or the default if none of the inputs resolve to a valid template).
+    """
+    # 1. Explicit template
+    if template:
+        if template in WALLPAPER_SVG_TEMPLATES:
+            return template
+        print(f"wini: warning: unknown template '{template}', using default",
+              file=sys.stderr)
+        return DEFAULT_WALLPAPER_TEMPLATE
+
+    # 2. bg + logo (composite)
+    if bg:
+        bg_data = BACKGROUNDS.get(bg, {})
+        if bg_data.get("no_logo"):
+            # No-logo background: the bg ID is the template ID
+            return bg
+        if logo:
+            composite = f"{logo}-{bg}"
+            if composite in WALLPAPER_SVG_TEMPLATES:
+                return composite
+            print(f"wini: warning: '{composite}' is not a known template, "
+                  f"using default", file=sys.stderr)
+            return DEFAULT_WALLPAPER_TEMPLATE
+        # bg requires a logo but none was given
+        print(f"wini: warning: --bg {bg} requires --logo, using default",
+              file=sys.stderr)
+        return DEFAULT_WALLPAPER_TEMPLATE
+
+    # 3-4. Default
+    return DEFAULT_WALLPAPER_TEMPLATE
+
+
+def run_cli(args) -> int:
+    """
+    Headless wallpaper generation. Returns a process exit code.
+    """
+    if not args.color:
+        print("wini: error: --generate-wallpaper requires --color", file=sys.stderr)
+        return 1
+    if not args.output:
+        print("wini: error: --generate-wallpaper requires --output", file=sys.stderr)
+        return 1
+
+    template_id = resolve_template_id(args.template, args.bg, args.logo)
+    output_path = Path(args.output)
+
+    ok = generate_wallpaper(template_id, args.color, output_path)
+    if ok:
+        print(f"wini: generated wallpaper ({template_id}, {args.color})")
+        return 0
+    else:
+        print(f"wini: failed to generate wallpaper", file=sys.stderr)
+        return 1
+
+
+def main():
+    """Entry point: dispatch to CLI or GUI based on arguments."""
+    args = parse_args()
+
+    if args.generate_wallpaper:
+        return run_cli(args)
+    else:
+        return run_gui()
+
+if __name__ == "__main__":
+    sys.exit(main())

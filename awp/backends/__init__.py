@@ -5,6 +5,7 @@ Lean Mode = use feh instead of native desktop wallpaper setter.
 """
 import os
 import sys
+import subprocess
 import importlib
 import configparser
 from pathlib import Path
@@ -15,14 +16,13 @@ from core.constants import (
     QT6CT_COLORS_DIR,
     KDE_COLORS_DIR,
     KDE_ACCENT_SHM,
-    SELECTION_BRIGHTNESS
+    SELECTION_BRIGHTNESS,
+    KDE_THEME_COLORS
 )
+from core.utils import calculate_family_color
 
 # Get printer instance
 _printer = get_printer()
-_printer.set_backend("backends")
-
-# In backends/__init__.py, after imports
 
 def _detect_workspace_count():
     """
@@ -30,7 +30,6 @@ def _detect_workspace_count():
     """
     # 1. Try EWMH (works on all X11 WMs)
     try:
-        import subprocess
         result = subprocess.run(
             ["xprop", "-root", "_NET_NUMBER_OF_DESKTOPS"],
             capture_output=True, text=True
@@ -40,14 +39,13 @@ def _detect_workspace_count():
             if len(parts) >= 3:
                 count = int(parts[-1])
                 if count > 0:
-                    _printer.info(f"Workspace count (EWMH): {count}", backend="common")
+                    _printer.info(f"Workspace count (EWMH): {count}")
                     return count
     except:
         pass
     
     # 2. Try gsettings (for Wayland / GNOME)
     try:
-        import subprocess
         result = subprocess.run(
             ["gsettings", "get", "org.gnome.desktop.wm.preferences", "num-workspaces"],
             capture_output=True, text=True
@@ -55,13 +53,13 @@ def _detect_workspace_count():
         if result.returncode == 0:
             count = int(result.stdout.strip())
             if count > 0:
-                _printer.info(f"Workspace count (GNOME/gsettings): {count}", backend="common")
+                _printer.info(f"Workspace count (GNOME/gsettings): {count}")
                 return count
     except:
         pass
     
     # 3. Final fallback
-    _printer.info("Workspace count (default): 4", backend="common")
+    _printer.info("Workspace count (default): 4")
     return 4
 
 # ============================================================================
@@ -101,56 +99,66 @@ def ensure_qt6_kde_symlinks():
             with open(QT6CT_CONF_PATH, 'w') as f:
                 cfg.write(f)
     
-    _printer.info("Qt6 & KDE symlinks verified", backend="common")
+    _printer.info("Qt6 & KDE symlinks verified")
 
-def write_qt6_kde_accent(accent_color: str):
-    """Write Qt6 and KDE accent colors to RAM with dark selection for readability."""
+def write_qt6_kde_accent(accent_color: str, theme_name: str = None):
+    """
+    Write Qt6 and KDE accent colors to RAM with theme-specific backgrounds.
+    """
     ensure_qt6_kde_symlinks()
     
-    accent_raw = accent_color.lstrip('#').lower()
+    # Fallback to 'breeze' if no theme_name provided
+    if not theme_name:
+        theme_name = 'breeze'
     
-    # Calculate dark version (70% brightness) for selection backgrounds
-    from core.utils import calculate_family_color
+    # Look up the colors from the mapping
+    theme_colors = KDE_THEME_COLORS.get(theme_name, KDE_THEME_COLORS['breeze'])
+    dark_bg = theme_colors['dark_bg']
+    dark_view = theme_colors['dark_view']
+    dark_button = theme_colors['dark_button']
+    fg_color = theme_colors['fg_color']
+    
+    accent_raw = accent_color.lstrip('#').lower()
     dark_raw = calculate_family_color(accent_raw, 1.0, SELECTION_BRIGHTNESS, 0.0)
     
-    # Qt6 format with dark selection
+    # Qt6 format with theme-specific dark colors
     qt_content = f'''[ColorScheme]
-active_colors=#ffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{dark_raw}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{dark_raw}
-inactive_colors=#ffffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #{dark_raw}, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{dark_raw}
-disabled_colors=#ff808080, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ff808080, #ffffffff, #ff808080, #ff242424, #ff2e2e2e, #ffffffff, #{dark_raw}, #ff808080, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{dark_raw}'''
+active_colors=#ffffff, #{dark_bg}, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #{dark_bg}, #ffffffff, #{dark_raw}, #ffffffff, #ffff6a00, #ffa70b06, #{dark_bg}, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{dark_raw}
+inactive_colors=#ffffffff, #{dark_bg}, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #{dark_bg}, #ffffffff, #{dark_raw}, #ffffffff, #ffff6a00, #ffa70b06, #{dark_bg}, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{dark_raw}
+disabled_colors=#ff808080, #{dark_bg}, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ff808080, #ffffffff, #ff808080, #ff242424, #{dark_bg}, #ffffffff, #{dark_raw}, #ff808080, #ffff6a00, #ffa70b06, #{dark_bg}, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #{dark_raw}'''
     
     with open(QT6_ACCENT_SHM, 'w') as f:
         f.write(qt_content)
     
-    # KDE format with dark selection
+    # KDE format with theme-specific dark colors
     kde_content = f"""[General]
 Name=AWP_Dynamic
 ReferenceColorScheme=BreezeDark
 
 [Background:Normal]
-Color=#2e2e2e
+Color=#{dark_bg}
 [Foreground:Normal]
-Color=#cfcfc2
+Color=#{fg_color}
 [Background:Selection]
 Color=#{dark_raw}
 [Colors:Selection]
 BackgroundNormal=#{dark_raw}
 ForegroundNormal=#ffffff
 [Colors:Window]
-BackgroundNormal=#2e2e2e
-ForegroundNormal=#cfcfc2
+BackgroundNormal=#{dark_bg}
+ForegroundNormal=#{fg_color}
 [Colors:View]
-BackgroundNormal=#242424
-ForegroundNormal=#cfcfc2
+BackgroundNormal=#{dark_view}
+ForegroundNormal=#{fg_color}
 [Colors:Button]
-BackgroundNormal=#3a3a3a
-ForegroundNormal=#cfcfc2
+BackgroundNormal=#{dark_button}
+ForegroundNormal=#{fg_color}
 """
     
     with open(KDE_ACCENT_SHM, 'w') as f:
         f.write(kde_content)
     
-    _printer.info(f"Qt6 & KDE accents synced in RAM: {accent_color} (selection: #{dark_raw})", backend="common")
+    _printer.info(f"Qt6 & KDE accents synced: {accent_color} (theme: {theme_name})")
 
 
 # ============================================================================

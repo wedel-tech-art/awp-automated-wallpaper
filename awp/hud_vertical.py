@@ -9,6 +9,8 @@ from PyQt6.QtGui import QFont, QColor, QPainter, QBrush, QPixmap
 from core.constants import RUNTIME_STATE_PATH, AWP_CONFIG_RAM, THEME_CAPABILITIES
 from core.runtime import get_ram_info, get_swap_info, get_mounts_info, get_dynamic_mount_labels
 from core.utils import hex_to_hsv
+from core.printer import get_printer
+_printer = get_printer()
 
 class StudioHUD(QWidget):
     def __init__(self):
@@ -207,7 +209,7 @@ class StudioHUD(QWidget):
             self.label.setTextFormat(Qt.TextFormat.RichText)
 
         except Exception as e:
-            print("Error in vertical HUD:", str(e))
+            _printer.error(f"Error in vertical HUD: {e}")
             self.label.setText(f"ERROR: {str(e)[:50]}")
 
 if __name__ == "__main__":

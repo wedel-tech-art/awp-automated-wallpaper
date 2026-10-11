@@ -32,7 +32,8 @@ import configparser
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QComboBox, QMessageBox, QColorDialog,
-    QGroupBox, QFrame, QMainWindow, QCheckBox, QProgressBar
+    QGroupBox, QFrame, QMainWindow, QCheckBox, QProgressBar,
+    QStyledItemDelegate, QStyle
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QPalette, QAction, QPixmap
@@ -61,12 +62,48 @@ from core.printer import get_printer
 _printer = get_printer()
 
 
+class AccentSelectionDelegate(QStyledItemDelegate):
+    """
+    Paints combo-box dropdown items with an explicit accent color when
+    selected, bypassing Qt's native selection painting entirely.
+
+    Needed because once a QComboBox has an explicit `background` set via
+    QSS, Qt stops honoring any selection-highlight styling for its popup
+    (QSS `::item:selected`/`selection-background-color`, and even a
+    QPalette.Highlight override on the popup view) -- the combo box's own
+    background rule silences the whole selection-paint path for that
+    widget. Painting the cell manually sidesteps that entirely.
+    """
+    def __init__(self, accent_color, parent=None):
+        super().__init__(parent)
+        self.accent_color = QColor(accent_color)
+
+    def set_accent_color(self, accent_color):
+        self.accent_color = QColor(accent_color)
+
+    def paint(self, painter, option, index):
+        if option.state & QStyle.StateFlag.State_Selected:
+            painter.save()
+            painter.fillRect(option.rect, self.accent_color)
+            painter.setPen(QColor("white"))
+            text = index.data(Qt.ItemDataRole.DisplayRole)
+            painter.drawText(
+                option.rect.adjusted(10, 0, 0, 0),
+                Qt.AlignmentFlag.AlignVCenter,
+                str(text) if text is not None else ""
+            )
+            painter.restore()
+        else:
+            super().paint(painter, option, index)
+
+
 class AWPBaker(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("🎨 AWP Baker - Workspace Color Manager")
         self.setFixedSize(550, 830)
         self.current_hex = "#b7004f"
+        self._last_regenerate_state = False
         
         # Load config
         self.config = AWPConfig()
@@ -135,6 +172,7 @@ class AWPBaker(QMainWindow):
         self.preset_combo.setMinimumWidth(250)
         self.preset_combo.setStyleSheet(self._get_combo_style())
         self.preset_combo.setFixedHeight(28)
+        self.preset_combo.setToolTip("Preset to bake and update themes into\nMay differ from the current DE preset")
         
         for preset in sorted(self.available_presets):
             is_current = preset == self.current_preset
@@ -153,7 +191,8 @@ class AWPBaker(QMainWindow):
         current_row.setSpacing(12)
         current_row.addWidget(QLabel("Current DE Preset:"))
         self.current_preset_label = QLabel(self.current_preset)
-        self.current_preset_label.setStyleSheet("color: #6a8cff; font-size: 12px; font-weight: bold;")
+        self.current_preset_label.setStyleSheet(self._get_preset_label_style())
+        self.current_preset_label.setToolTip("The preset currently active on this system")
         current_row.addWidget(self.current_preset_label)
         current_row.addStretch()
         preset_layout.addLayout(current_row)
@@ -195,6 +234,7 @@ class AWPBaker(QMainWindow):
         self.ws_combo.setMinimumWidth(250)
         self.ws_combo.setStyleSheet(self._get_combo_style())
         self.ws_combo.setFixedHeight(28)
+        self.ws_combo.setToolTip("Workspace to recolor and rebake themes for")
         ws_row.addWidget(self.ws_combo)
         ws_row.addStretch()
         ws_layout.addLayout(ws_row)
@@ -207,6 +247,7 @@ class AWPBaker(QMainWindow):
         self.current_color_preview = QLabel()
         self.current_color_preview.setFixedSize(32, 28)
         self.current_color_preview.setStyleSheet("background: #888; border-radius: 4px; border: 2px solid #555;")
+        self.current_color_preview.setToolTip("Workspace's current baked color")
         color_row.addWidget(self.current_color_preview)
         
         self.current_color_label = QLabel("Select a workspace")
@@ -249,6 +290,7 @@ class AWPBaker(QMainWindow):
         self.hex_input.setPlaceholderText("#b7004f")
         self.hex_input.setMinimumWidth(160)
         self.hex_input.setFixedHeight(28)
+        self.hex_input.setToolTip("New accent color for this workspace\nType a hex value or use Pick")
         self.hex_input.textChanged.connect(self.on_hex_changed)
         self.hex_input.setStyleSheet("""
             QLineEdit {
@@ -261,7 +303,7 @@ class AWPBaker(QMainWindow):
                 font-family: monospace;
             }
             QLineEdit:focus {
-                border: 2px solid #6a8cff;
+                border: 2px solid #b7004f;
                 background: #404040;
             }
         """)
@@ -270,6 +312,7 @@ class AWPBaker(QMainWindow):
         self.new_color_preview = QLabel()
         self.new_color_preview.setFixedSize(32, 28)
         self.new_color_preview.setStyleSheet("background: #888; border-radius: 4px; border: 2px solid #555;")
+        self.new_color_preview.setToolTip("Preview of the new color")
         color_layout.addWidget(self.new_color_preview)
         
         self.pick_btn = QPushButton("🎨 Pick")
@@ -287,9 +330,10 @@ class AWPBaker(QMainWindow):
             }
             QPushButton:hover {
                 background: #5a5a5a;
-                border: 2px solid #6a8cff;
+                border: 2px solid #b7004f;
             }
         """)
+        self.pick_btn.setToolTip("Pick a color with the system dialog")
         self.pick_btn.clicked.connect(self.pick_color)
         color_layout.addWidget(self.pick_btn)
         
@@ -331,6 +375,7 @@ class AWPBaker(QMainWindow):
         self.template_combo.setMinimumWidth(180)
         self.template_combo.setStyleSheet(self._get_combo_style())
         self.template_combo.setFixedHeight(28)
+        self.template_combo.setToolTip("SVG template used to generate the workspace icon")
         for name in sorted(SVG_TEMPLATES.keys()):
             self.template_combo.addItem(name.title(), name)
         self.template_combo.setCurrentIndex(0)
@@ -350,6 +395,7 @@ class AWPBaker(QMainWindow):
         self.gtk_combo.setMinimumWidth(180)
         self.gtk_combo.setStyleSheet(self._get_combo_style())
         self.gtk_combo.setFixedHeight(28)
+        self.gtk_combo.setToolTip("GTK theme style to bake with the new color")
         for name in sorted(THEME_PRESETS.keys()):
             self.gtk_combo.addItem(name.title())
         self.gtk_combo.setCurrentText("Breeze")
@@ -357,8 +403,9 @@ class AWPBaker(QMainWindow):
         
         # GTK INI label
         self.gtk_ini_label = QLabel("INI: None")
-        self.gtk_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+        self.gtk_ini_label.setStyleSheet("QLabel { color: #666; font-size: 11px; font-style: italic; }")
         self.gtk_ini_label.setMinimumWidth(120)
+        self.gtk_ini_label.setToolTip("GTK theme currently set in this workspace's INI")
         gtk_row.addWidget(self.gtk_ini_label)
         
         gtk_row.addStretch()
@@ -376,6 +423,7 @@ class AWPBaker(QMainWindow):
         self.icon_combo.setMinimumWidth(180)
         self.icon_combo.setStyleSheet(self._get_combo_style())
         self.icon_combo.setFixedHeight(28)
+        self.icon_combo.setToolTip("Icon theme style to bake with the new color")
         for name in sorted(ICON_PRESETS.keys()):
             self.icon_combo.addItem(name.title())
         self.icon_combo.setCurrentText("Mint")
@@ -384,8 +432,9 @@ class AWPBaker(QMainWindow):
         
         # Icons INI label
         self.icon_ini_label = QLabel("INI: None")
-        self.icon_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+        self.icon_ini_label.setStyleSheet("QLabel { color: #666; font-size: 11px; font-style: italic; }")
         self.icon_ini_label.setMinimumWidth(120)
+        self.icon_ini_label.setToolTip("Icon theme currently set in this workspace's INI")
         icon_row.addWidget(self.icon_ini_label)
         
         icon_row.addStretch()
@@ -403,6 +452,7 @@ class AWPBaker(QMainWindow):
         self.cursor_combo.setMinimumWidth(180)
         self.cursor_combo.setStyleSheet(self._get_combo_style())
         self.cursor_combo.setFixedHeight(28)
+        self.cursor_combo.setToolTip("Cursor theme style to bake with the new color")
         for name in sorted(CURSOR_PRESETS.keys()):
             self.cursor_combo.addItem(name.title())
             if isinstance(CURSOR_PRESETS[name], dict):
@@ -415,8 +465,9 @@ class AWPBaker(QMainWindow):
         
         # Cursors INI label
         self.cursor_ini_label = QLabel("INI: None")
-        self.cursor_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+        self.cursor_ini_label.setStyleSheet("QLabel { color: #666; font-size: 11px; font-style: italic; }")
         self.cursor_ini_label.setMinimumWidth(120)
+        self.cursor_ini_label.setToolTip("Cursor theme currently set in this workspace's INI")
         cursor_row.addWidget(self.cursor_ini_label)
         
         cursor_row.addStretch()
@@ -431,7 +482,7 @@ class AWPBaker(QMainWindow):
         self.fool_bake_cb = QCheckBox("🛠️ Fool Bake (Themes only, skip workspace updates)")
         self.fool_bake_cb.setChecked(False)
         self.fool_bake_cb.stateChanged.connect(self.update_checkbox_state)
-        self.fool_bake_cb.setStyleSheet("color: #bbb; font-size: 12px;")
+        self.fool_bake_cb.setStyleSheet("QCheckBox { color: #bbb; font-size: 12px; }")
         self.fool_bake_cb.setToolTip("Bake themes WITHOUT updating workspace colors or copying to preset")
         fool_row.addWidget(self.fool_bake_cb)
         fool_row.addStretch()
@@ -442,7 +493,7 @@ class AWPBaker(QMainWindow):
         self.regenerate_cb = QCheckBox("🔄 Regenerate All Themes (from INI)")
         self.regenerate_cb.setChecked(False)
         self.regenerate_cb.stateChanged.connect(self.update_checkbox_state)
-        self.regenerate_cb.setStyleSheet("color: #bbb; font-size: 12px;")
+        self.regenerate_cb.setStyleSheet("QCheckBox { color: #bbb; font-size: 12px; }")
         self.regenerate_cb.setToolTip("Regenerate ALL themes for ALL workspaces using the INI file")
         regenerate_row.addWidget(self.regenerate_cb)
         regenerate_row.addStretch()
@@ -453,7 +504,7 @@ class AWPBaker(QMainWindow):
         self.clean_cb = QCheckBox("🧹 Clean Start (remove ALL old themes)")
         self.clean_cb.setChecked(False)
         self.clean_cb.stateChanged.connect(self.on_clean_toggled)
-        self.clean_cb.setStyleSheet("color: #bbb; font-size: 12px;")
+        self.clean_cb.setStyleSheet("QCheckBox { color: #bbb; font-size: 12px; }")
         self.clean_cb.setToolTip("Remove ALL existing awp themes before regenerating")
         clean_row.addWidget(self.clean_cb)
         clean_row.addStretch()
@@ -464,7 +515,7 @@ class AWPBaker(QMainWindow):
         self.clean_workspace_cb = QCheckBox("🧹 Clean Workspace (remove old themes for this workspace)")
         self.clean_workspace_cb.setChecked(False)
         self.clean_workspace_cb.stateChanged.connect(self.update_checkbox_state)
-        self.clean_workspace_cb.setStyleSheet("color: #bbb; font-size: 12px;")
+        self.clean_workspace_cb.setStyleSheet("QCheckBox { color: #bbb; font-size: 12px; }")
         self.clean_workspace_cb.setToolTip("Remove existing themes for this workspace before baking (works with Normal Bake)")
         clean_ws_row.addWidget(self.clean_workspace_cb)
         clean_ws_row.addStretch()
@@ -472,9 +523,9 @@ class AWPBaker(QMainWindow):
         
         # Fifth row: Recreate symlinks
         symlink_row = QHBoxLayout()
-        self.symlink_cb = QCheckBox("Recreate symlinks after baking")
+        self.symlink_cb = QCheckBox("🔄 Recreate symlinks after baking")
         self.symlink_cb.setChecked(True)
-        self.symlink_cb.setStyleSheet("color: #bbb; font-size: 12px;")
+        self.symlink_cb.setStyleSheet("QCheckBox { color: #bbb; font-size: 12px; }")
         self.symlink_cb.setToolTip("Run awp_start.sh to recreate symlinks (auto-disabled for non-current presets)")
         symlink_row.addWidget(self.symlink_cb)
         symlink_row.addStretch()
@@ -493,6 +544,7 @@ class AWPBaker(QMainWindow):
         self.bake_btn = QPushButton("🔥 Bake && Update")
         self.bake_btn.setMinimumWidth(160)
         self.bake_btn.setFixedHeight(35)
+        self.bake_btn.setToolTip("Bake themes and update this workspace with the new color")
         self.bake_btn.setStyleSheet("""
             QPushButton {
                 font-weight: bold;
@@ -520,6 +572,7 @@ class AWPBaker(QMainWindow):
         self.quit_btn = QPushButton("✕ Quit")
         self.quit_btn.setMinimumWidth(80)
         self.quit_btn.setFixedHeight(35)
+        self.quit_btn.setToolTip("Exit Baker")
         self.quit_btn.setStyleSheet("""
             QPushButton {
                 font-size: 13px;
@@ -619,7 +672,7 @@ class AWPBaker(QMainWindow):
         self.icon_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.icon_preview.setScaledContents(True)
         self.icon_preview.setText("🎨")  # Placeholder
-        self.icon_preview.setStyleSheet("""background: #2a2a2a;""")
+        self.icon_preview.setStyleSheet("QLabel { background: #2a2a2a; }")
         
         # Position it (floating)
         # These coordinates can be adjusted
@@ -797,11 +850,11 @@ class AWPBaker(QMainWindow):
                 }
                 QPushButton:hover {
                     background: #4a4a4a;
-                    border: 2px solid #6a8cff;
+                    border: 2px solid #b7004f;
                 }
                 QPushButton:pressed {
                     background: #4a4a4a;
-                    border: 2px solid #6a8cff;
+                    border: 2px solid #b7004f;
                     opacity: 0.7;
                 }
             """)
@@ -851,7 +904,7 @@ class AWPBaker(QMainWindow):
                 }
                 QPushButton:hover {
                     background: #4a4a4a;
-                    border: 2px solid #6a8cff;
+                    border: 2px solid #b7004f;
                 }
             """)
         
@@ -871,7 +924,7 @@ class AWPBaker(QMainWindow):
             QPushButton:hover {
                 background: #4a4a4a;
                 color: #ddd;
-                border: 2px solid #6a8cff;
+                border: 2px solid #b7004f;
             }
         """)
         
@@ -986,30 +1039,26 @@ class AWPBaker(QMainWindow):
         is_current = (selected_preset == self.current_preset)
         is_fool_mode = self.fool_bake_cb.isChecked()
         
-        # Only Fool Bake disables symlinks
         can_use_symlinks = is_current and not is_fool_mode
         
         self.symlink_cb.setEnabled(can_use_symlinks)
+        self._style_checkbox(self.symlink_cb, can_use_symlinks)
         
-        color = "#ddd" if can_use_symlinks else "#777"
-        self.symlink_cb.setStyleSheet(f"color: {color}; font-size: 12px;")
-            
-        if not can_use_symlinks:
+        if can_use_symlinks:
+            self.symlink_cb.setChecked(True)
+            self.symlink_cb.setToolTip("Run awp_start.sh to recreate symlinks")
+        else:
             self.symlink_cb.setChecked(False)
             if is_fool_mode:
                 self.symlink_cb.setToolTip("Symlinks disabled during Fool Bake")
             else:
                 self.symlink_cb.setToolTip("Symlinks can only be recreated for the current DE preset")
-        else:
-            self.symlink_cb.setToolTip("Run awp_start.sh to recreate symlinks")
     
     def update_checkbox_state(self):
         """Update checkbox states and enable/disable based on combinations."""
         
         fool_bake = self.fool_bake_cb.isChecked()
         regenerate = self.regenerate_cb.isChecked()
-        clean = self.clean_cb.isChecked()
-        clean_workspace = self.clean_workspace_cb.isChecked()
         
         # --- Rule 1: Fool Bake overrides everything ---
         if fool_bake:
@@ -1021,23 +1070,45 @@ class AWPBaker(QMainWindow):
             self.clean_workspace_cb.setChecked(False)
             self.symlink_cb.setEnabled(False)
             self.symlink_cb.setChecked(False)
+            
+            # Apply disabled styling to all
+            self._style_checkbox(self.regenerate_cb, False)
+            self._style_checkbox(self.clean_cb, False)
+            self._style_checkbox(self.clean_workspace_cb, False)
+            self._style_checkbox(self.symlink_cb, False)
+            
             self.bake_btn.setText("🔥 Fool Bake")
             self.statusBar().showMessage("Fool Bake mode: themes only")
+            self._last_regenerate_state = False
             return
         
         # --- Rule 2: Not Fool Bake - enable things normally ---
+        # Regenerate
         self.regenerate_cb.setEnabled(True)
-        self.symlink_cb.setEnabled(True)
+        self._style_checkbox(self.regenerate_cb, True)
+        
+        # If Regenerate just turned ON (transition off → on), auto-check Clean Start
+        if regenerate and not self._last_regenerate_state:
+            self.clean_cb.blockSignals(True)
+            self.clean_cb.setChecked(True)
+            self.clean_cb.blockSignals(False)
         
         # Clean Start only works with Regenerate
+        clean = self.clean_cb.isChecked()
         self.clean_cb.setEnabled(regenerate)
+        self._style_checkbox(self.clean_cb, regenerate)
         if not regenerate:
             self.clean_cb.setChecked(False)
         
         # Clean Workspace only works with Normal Bake (NOT Regenerate)
+        clean_workspace = self.clean_workspace_cb.isChecked()
         self.clean_workspace_cb.setEnabled(not regenerate)
+        self._style_checkbox(self.clean_workspace_cb, not regenerate)
         if regenerate:
             self.clean_workspace_cb.setChecked(False)
+        
+        # Symlinks (has its own logic for preset + fool mode)
+        self.update_symlink_state()
         
         # --- Rule 3: Update button text ---
         if regenerate:
@@ -1055,8 +1126,8 @@ class AWPBaker(QMainWindow):
                 self.bake_btn.setText("🔥 Bake && Update")
                 self.statusBar().showMessage("Ready")
         
-        # --- Rule 4: Update symlink state ---
-        self.update_symlink_state()
+        # Remember state for the next call
+        self._last_regenerate_state = regenerate
     
     def _update_progress_style(self, hex_color):
         """Update progress bar color to match the current active hex."""
@@ -1106,32 +1177,32 @@ class AWPBaker(QMainWindow):
             # Update labels with colors
             if gtk_preset:
                 self.gtk_ini_label.setText(f"INI: {gtk_preset.title()}")
-                self.gtk_ini_label.setStyleSheet("color: #888; font-size: 11px;")
+                self.gtk_ini_label.setStyleSheet("QLabel { color: #888; font-size: 11px; }")
             else:
                 self.gtk_ini_label.setText("INI: None")
-                self.gtk_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+                self.gtk_ini_label.setStyleSheet("QLabel { color: #666; font-size: 11px; font-style: italic; }")
             
             if icon_preset:
                 self.icon_ini_label.setText(f"INI: {icon_preset.title()}")
-                self.icon_ini_label.setStyleSheet("color: #888; font-size: 11px;")
+                self.icon_ini_label.setStyleSheet("QLabel { color: #888; font-size: 11px; }")
             else:
                 self.icon_ini_label.setText("INI: None")
-                self.icon_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+                self.icon_ini_label.setStyleSheet("QLabel { color: #666; font-size: 11px; font-style: italic; }")
             
             if cursor_preset:
                 self.cursor_ini_label.setText(f"INI: {cursor_preset.title()}")
-                self.cursor_ini_label.setStyleSheet("color: #888; font-size: 11px;")
+                self.cursor_ini_label.setStyleSheet("QLabel { color: #888; font-size: 11px; }")
             else:
                 self.cursor_ini_label.setText("INI: None")
-                self.cursor_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+                self.cursor_ini_label.setStyleSheet("QLabel { color: #666; font-size: 11px; font-style: italic; }")
         else:
             # No workspace selected - reset labels
             self.gtk_ini_label.setText("INI: None")
-            self.gtk_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+            self.gtk_ini_label.setStyleSheet("QLabel { color: #666; font-size: 11px; font-style: italic; }")
             self.icon_ini_label.setText("INI: None")
-            self.icon_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+            self.icon_ini_label.setStyleSheet("QLabel { color: #666; font-size: 11px; font-style: italic; }")
             self.cursor_ini_label.setText("INI: None")
-            self.cursor_ini_label.setStyleSheet("color: #666; font-size: 11px; font-style: italic;")
+            self.cursor_ini_label.setStyleSheet("QLabel { color: #666; font-size: 11px; font-style: italic; }")
     
     def on_clean_toggled(self, checked):
         """Handle Clean Start checkbox toggling."""
@@ -1201,7 +1272,7 @@ class AWPBaker(QMainWindow):
                 self.statusBar().showMessage("Ready")
                 self.statusBar().setStyleSheet("")
                 self.bake_btn.setEnabled(True)
-                self.bake_btn.setToolTip("")
+                self.bake_btn.setToolTip("Bake themes and update this workspace with the new color")
                 # Only update hex input style if it's the current color
                 if color == self.hex_input.text().strip():
                     self.hex_input.setStyleSheet(self._get_input_style(color))
@@ -1210,10 +1281,30 @@ class AWPBaker(QMainWindow):
             self.current_color_label.setText("No color set")
             self._update_progress_style(None)
             self.bake_btn.setEnabled(True)
-            self.bake_btn.setToolTip("")
+            self.bake_btn.setToolTip("Bake themes and update this workspace with the new color")
         
         # Update INI labels
         self._update_ini_labels(ws)
+    
+    def _apply_combo_selection_palette(self, combo, hex_color=None):
+        """
+        Apply (or create) this combo's AccentSelectionDelegate so its
+        dropdown's selected item is painted with the picked accent color.
+        QSS-only selection styling doesn't survive once QComboBox has an
+        explicit `background` set (see AccentSelectionDelegate docstring),
+        so the delegate paints the selected row directly instead.
+        """
+        if hex_color and hex_color.startswith('#') and len(hex_color) == 7:
+            accent = hex_color
+        else:
+            accent = "#555555"
+        
+        delegate = combo.itemDelegate()
+        if isinstance(delegate, AccentSelectionDelegate):
+            delegate.set_accent_color(accent)
+        else:
+            combo.setItemDelegate(AccentSelectionDelegate(accent, combo))
+        combo.view().update()
     
     def _get_combo_style(self, hex_color=None):
         """Generate combo box style with optional accent color."""
@@ -1252,7 +1343,8 @@ class AWPBaker(QMainWindow):
             QComboBox QAbstractItemView {{
                 background: #3c3c3c;
                 color: #ddd;
-                selection-background-color: #4a4a4a;
+                selection-background-color: {border_color};
+                selection-color: white;
                 border: 1px solid #555;
                 border-radius: 6px;
                 padding: 2px;
@@ -1305,7 +1397,7 @@ class AWPBaker(QMainWindow):
         else:
             border_color = "#555"
             border_width = "2px"
-            hover_border = "#6a8cff"
+            hover_border = "#b7004f"
         
         return f"""
             QPushButton {{
@@ -1341,6 +1433,34 @@ class AWPBaker(QMainWindow):
             border: {border_width} solid {border_color};
         """
     
+    def _get_preset_label_style(self, hex_color=None):
+        """Generate 'Current DE Preset' label style using the picked accent color."""
+        if hex_color and hex_color.startswith('#') and len(hex_color) == 7:
+            accent = hex_color
+        else:
+            accent = "#b7004f"
+        
+        return f"QLabel {{ color: {accent}; font-size: 12px; font-weight: bold; }}"
+    
+    def _get_tooltip_style(self, hex_color=None):
+        """Generate app-wide QToolTip style using the picked accent color."""
+        if hex_color and hex_color.startswith('#') and len(hex_color) == 7:
+            accent = hex_color
+        else:
+            accent = "#555"
+        
+        return f"""
+            QToolTip {{
+                background-color: {accent};
+                color: #ffffff;
+                border: none;
+                padding: 6px 4px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: bold;
+            }}
+        """
+    
     def _update_all_styles(self, hex_color):
         """Update UI elements with the new accent color."""
         combo_style = self._get_combo_style(hex_color)
@@ -1351,9 +1471,19 @@ class AWPBaker(QMainWindow):
         self.ws_combo.setStyleSheet(combo_style)
         self.preset_combo.setStyleSheet(combo_style)
         
+        for combo in (self.gtk_combo, self.icon_combo, self.cursor_combo,
+                      self.template_combo, self.ws_combo, self.preset_combo):
+            self._apply_combo_selection_palette(combo, hex_color)
+        
         self.hex_input.setStyleSheet(self._get_input_style(hex_color))
         self.pick_btn.setStyleSheet(self._get_pick_style(hex_color))
         self.new_color_preview.setStyleSheet(self._get_preview_style(hex_color))
+        self.current_preset_label.setStyleSheet(self._get_preset_label_style(hex_color))
+        
+        # Tooltips follow the picked accent too (app-wide QToolTip rule)
+        app = QApplication.instance()
+        if app is not None:
+            app.setStyleSheet(self._get_tooltip_style(hex_color))
     
     def pick_color(self):
         color = QColorDialog.getColor()
@@ -1366,7 +1496,7 @@ class AWPBaker(QMainWindow):
         
         # Reset status bar and enable bake button by default
         self.bake_btn.setEnabled(True)
-        self.bake_btn.setToolTip("")
+        self.bake_btn.setToolTip("Bake themes and update this workspace with the new color")
         
         if hex_val.startswith('#') and len(hex_val) == 7:
             self.current_hex = hex_val
@@ -1407,7 +1537,7 @@ class AWPBaker(QMainWindow):
                     self.statusBar().setStyleSheet("")
                     self.hex_input.setStyleSheet(self._get_input_style(hex_val))
                     self.bake_btn.setEnabled(True)
-                    self.bake_btn.setToolTip("")
+                    self.bake_btn.setToolTip("Bake themes and update this workspace with the new color")
         else:
             self.current_hex = None
             self._update_all_styles(None)
@@ -1576,6 +1706,11 @@ class AWPBaker(QMainWindow):
         except Exception as e:
             _printer.error(f"Failed to copy to preset: {e}", backend="baker")
             return False
+    
+    def _style_checkbox(self, cb, enabled):
+        """Apply consistent enabled/disabled styling."""
+        color = "#bbb" if enabled else "#666"
+        cb.setStyleSheet(f"QCheckBox {{ color: {color}; font-size: 12px; }}")
     
     def _fool_bake(self):
         """Fool Bake - Pure theme baking without workspace operations."""

@@ -13,9 +13,6 @@ import time
 
 from core.constants import SCALING_FEH
 from core.printer import get_printer
-from backends import ensure_qt6_kde_symlinks, write_qt6_kde_accent
-
-ensure_qt6_kde_symlinks()
 
 # Get printer instance
 _printer = get_printer()
@@ -27,7 +24,6 @@ def generic_current_ws():
     Provides safety and logging for the GENERIC backend.
     """
     try:
-        import subprocess
         # Get the raw workspace index from the root window
         ws_num = subprocess.check_output(
             ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
@@ -96,7 +92,6 @@ def generic_set_themes(ws_num: int, config):
     should_gtk = config.get(section, 'gtk_theme', fallback=None)
     should_icon = config.get(section, 'icon_theme', fallback=None)
     should_cursor = config.get(section, 'cursor_theme', fallback=None)
-    should_accent = config.get(section, 'icon_color', fallback=None)
     
     # Try gsettings for GTK theme (works on most GTK systems)
     if should_gtk:
@@ -163,13 +158,6 @@ def generic_set_themes(ws_num: int, config):
             "-set", "_XSETTINGS_SETTINGS", ""
         ], check=False)
         _printer.info("Cursor refresh triggered", backend="generic")
-    
-    # ========================================================================
-    # Qt6 Accent Color (via /dev/shm - RAM, no disk writes!)
-    # ========================================================================
-    if should_accent:
-        write_qt6_kde_accent(should_accent)
-        changes.append(f"qt6:{should_accent}")
     
     # Report what was applied (if anything)
     if changes:

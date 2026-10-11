@@ -28,48 +28,25 @@ detect_presets() {
     for dir in "$PRESETS_DIR"/*; do
         if [ -d "$dir" ]; then
             name=$(basename "$dir")
-            [ "$name" == "TEMPLATE" ] && continue
-            presets+=("$name")
+            # ❌ REMOVED: [ "$name" == "TEMPLATE" ] && continue
+            # Check if it has a valid INI file
+            if [ -f "$dir/$name.ini" ]; then
+                presets+=("$name")
+            fi
         fi
     done
     echo "${presets[@]}"
 }
 
 # ============================================================
-# CHECK IF LIGHT PRESET
-# ============================================================
-is_light_preset() {
-    local name="$1"
-    [[ "$name" == *_light-* ]] || [[ "$name" == *_light ]]
-}
-
-# ============================================================
-# GET BASE PRESET NAME (remove _light)
-# ============================================================
-get_base_preset() {
-    local name="$1"
-    local base="${name/_light-/-}"
-    base="${base/_light/}"
-    echo "$base"
-}
-
-# ============================================================
-# GET DESKTOP NAME
+# 🆕 SIMPLIFIED GET DESKTOP NAME (no _light handling)
 # ============================================================
 get_desktop_name() {
     local name="$1"
-    
-    if is_light_preset "$name"; then
-        local base=$(get_base_preset "$name")
-        echo "${base%-*}"
-        return
-    fi
-    
-    if [[ "$name" == qtile_* ]]; then
-        echo "${name%-*}"
-        return
-    fi
-    
+    # Extract desktop part: everything before the last '-'
+    # e.g., qtile_xfce-debian → qtile_xfce
+    #       xfce-debian → xfce
+    #       cinnamon-debian → cinnamon
     echo "${name%-*}"
 }
 
@@ -106,10 +83,7 @@ clone_to_target() {
         return 1
     fi
     
-    # Skip TEMPLATE
-    if [ "$TARGET" == "TEMPLATE" ]; then
-        return 1
-    fi
+    # ❌ REMOVED: TEMPLATE skip block
     
     SOURCE_DIR="$PRESETS_DIR/$SOURCE"
     TARGET_DIR="$PRESETS_DIR/$TARGET"
@@ -128,7 +102,7 @@ clone_to_target() {
     fi
     
     # Copy everything
-    cp -r "$SOURCE_DIR" "$TARGET_DIR"
+    cp -a "$SOURCE_DIR" "$TARGET_DIR"
     
     # Rename INI
     if [ -f "$TARGET_DIR/$SOURCE.ini" ]; then
@@ -143,28 +117,20 @@ clone_to_target() {
         mv "$TARGET_DIR/$SOURCE.bak" "$TARGET_DIR/$TARGET.bak"
     fi
     
-    # Get desktop name for target
+    # 🆕 Get desktop name for target (simplified)
     DESKTOP=$(get_desktop_name "$TARGET")
     
     # Update os_detected
     sed -i "s/os_detected = .*/os_detected = $DESKTOP/" "$TARGET_DIR/$TARGET.ini"
     
-    if is_light_preset "$TARGET"; then
-        echo -e "  ${CLR_YELLOW}☀️${CLR_RESET} Light preset - os_detected = $DESKTOP"
-    else
-        echo -e "  ${CLR_GREEN}✅${CLR_RESET} os_detected → $DESKTOP"
-    fi
+    # 🆕 Simplified output - no light special case
+    echo -e "  ${CLR_GREEN}✅${CLR_RESET} os_detected → $DESKTOP"
     
-    # ============================================================
-    # ENFORCE ICON PATHS TO LOGOS/
-    # ============================================================
+    # Enforce icon paths to logos/
     enforce_icon_paths "$TARGET_DIR/$TARGET.ini"
     echo -e "  ${CLR_GREEN}✅${CLR_RESET} icon paths enforced to logos/"
     
-     
-    # ============================================================
     # SESSION_TYPE = wayland (for Wayland presets)
-    # ============================================================
     if [[ "$TARGET" == *"wayland"* ]]; then
         sed -i 's/session_type = .*/session_type = wayland/' "$TARGET_DIR/$TARGET.ini"
         echo -e "  ${CLR_GREEN}✅${CLR_RESET} session_type = wayland"
@@ -192,10 +158,7 @@ if [ -z "$ACTIVE_PRESET" ]; then
     exit 1
 fi
 
-if [ "$ACTIVE_PRESET" == "TEMPLATE" ]; then
-    echo -e "${CLR_RED}❌ Cannot clone from TEMPLATE (untouchable!)${CLR_RESET}"
-    exit 1
-fi
+# ❌ REMOVED: TEMPLATE check block
 
 SOURCE_DIR="$PRESETS_DIR/$ACTIVE_PRESET"
 if [ ! -d "$SOURCE_DIR" ]; then
@@ -215,7 +178,8 @@ if [ -n "$1" ]; then
     echo ""
     
     # Validate target exists in presets
-    if [ ! -d "$PRESETS_DIR/$TARGET" ] && [ "$TARGET" != "TEMPLATE" ]; then
+    # ❌ REMOVED: && [ "$TARGET" != "TEMPLATE" ]
+    if [ ! -d "$PRESETS_DIR/$TARGET" ]; then
         echo -e "${CLR_RED}❌ Target preset not found: $TARGET${CLR_RESET}"
         echo ""
         echo -e "${CLR_CYAN}Available presets:${CLR_RESET}"
@@ -248,7 +212,7 @@ TOTAL_PRESETS=${#ALL_PRESETS[@]}
 echo -e "${CLR_CYAN}📋 Found ${TOTAL_PRESETS} presets total${CLR_RESET}"
 echo -e "${CLR_YELLOW}⚠️  This will OVERWRITE all presets except:${CLR_RESET}"
 echo -e "   - ${CLR_GREEN}$ACTIVE_PRESET${CLR_RESET} (current)"
-echo -e "   - ${CLR_GREEN}TEMPLATE${CLR_RESET} (untouchable)"
+# ❌ REMOVED: echo -e "   - ${CLR_GREEN}TEMPLATE${CLR_RESET} (untouchable)"
 echo ""
 read -p "Continue? (y/N): " -n 1 -r
 echo

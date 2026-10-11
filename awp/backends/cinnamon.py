@@ -10,10 +10,7 @@ import subprocess
 import json
 import configparser
 import time
-from backends import ensure_qt6_kde_symlinks, write_qt6_kde_accent
 from core.printer import get_printer
-
-ensure_qt6_kde_symlinks()
 
 # Get printer instance
 _printer = get_printer()
@@ -70,7 +67,6 @@ def cinnamon_set_themes(ws_num: int, config):
     should_cursor = config.get(section, 'cursor_theme', fallback=None)
     should_desktop = config.get(section, 'desktop_theme', fallback=None)
     should_wm = config.get(section, 'wm_theme', fallback=None)
-    should_accent = config.get(section, 'icon_color', fallback=None)
     
     # Check GTK theme
     if should_gtk:
@@ -161,11 +157,6 @@ def cinnamon_set_themes(ws_num: int, config):
                 "theme", should_wm
             ], check=False)
             changes.append("wm")
-    
-    # Qt6 Accent Color
-    if should_accent:
-        write_qt6_kde_accent(should_accent)
-        changes.append(f"qt6:{should_accent}")
     
     # Report changes
     _printer.themes(ws_num, changes, backend="cinnamon")

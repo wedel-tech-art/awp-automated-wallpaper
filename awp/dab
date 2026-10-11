@@ -17,6 +17,8 @@ import sys
 import subprocess
 import shutil
 import json
+import re
+from datetime import datetime
 
 # QT6 IMPORTS
 from PyQt6.QtWidgets import (
@@ -31,7 +33,8 @@ from PyQt6.QtGui import QPixmap
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.constants import (
     AWP_DIR, CONFIG_PATH, ICON_DIR, DEFAULT_ICON, THEME_CAPABILITIES,
-    PRESETS_DIR, SHM_ACTIVE_PRESET, AVAILABLE_PRESETS, RUNTIME_STATE_PATH
+    PRESETS_DIR, SHM_ACTIVE_PRESET, AVAILABLE_PRESETS, RUNTIME_STATE_PATH, QT6_ACCENT_SHM,
+    AWP_FALLBACK_ACCENT
 )
 from core.config import AWPConfig
 from core.themes import get_available_themes, extract_color_from_theme
@@ -45,6 +48,24 @@ _printer = get_printer()
 BASE_FOLDER = QStandardPaths.writableLocation(
     QStandardPaths.StandardLocation.HomeLocation
 )
+
+def get_awp_derived_accent() -> str:
+    """Read the derived (dimmed) AWP accent from /dev/shm/awp-qt-color.conf."""
+    fallback = AWP_FALLBACK_ACCENT
+    try:
+        with open(QT6_ACCENT_SHM, "r") as f:
+            for line in f:
+                if line.startswith("active_colors="):
+                    parts = line.split("=", 1)[1].strip().split(",")
+                    if parts:
+                        last = parts[-1].strip().lstrip("#")
+                        if len(last) == 8:
+                            last = last[2:]   # strip alpha
+                        if len(last) == 6:
+                            return f"#{last.lower()}"
+    except (FileNotFoundError, OSError):
+        pass
+    return fallback
 
 # =============================================================================
 # SHARED STYLES
@@ -66,6 +87,8 @@ GROUPBOX_STYLE = """
         padding: 0 8px 0 8px;
     }
 """
+
+
 
 # =============================================================================
 # WORKSPACE CONFIGURATION TAB
@@ -219,7 +242,10 @@ class WorkspaceTab(QWidget):
         # Create the icon preview (floating over the identity group)
         self.icon_preview = QLabel(self)
         self.icon_preview.setFixedSize(56, 56)
-        self.icon_preview.setToolTip("Loading identity...")
+        self.icon_preview.setToolTip(
+            "Current workspace icon\n"
+            "Read-only — managed by AWP Baker"
+        )
         self.icon_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.icon_preview.setScaledContents(True)
         self.icon_preview.setText("🎨")  # Placeholder
@@ -726,6 +752,18 @@ class AWPDashboard(QWidget):
         """Initialize dashboard and load existing configuration."""
         super().__init__()
         _printer.info("Starting AWP Dashboard...", backend="dab")
+
+        # ─── Warn if AWP state is missing (fresh install / not activated) ───
+        if not os.path.exists(RUNTIME_STATE_PATH) and not os.path.exists(QT6_ACCENT_SHM):
+            _printer.warning(
+                "No AWP state found in /dev/shm — using default colors",
+                backend="dab"
+            )
+            _printer.info(
+                "Hint: run 'awp_start.sh <preset>' to activate a preset",
+                backend="dab"
+            )
+
         self.setWindowTitle("AWP Dashboard - Configuration Editor")
         self.setFixedSize(528, 800)
         
@@ -805,8 +843,6 @@ class AWPDashboard(QWidget):
 
     def check_hud_status(self):
         """Check if HUDs are running and update buttons accordingly."""
-        import subprocess
-        
         # Check vertical HUD
         result = subprocess.run(["pgrep", "-f", "hud_vertical.py"], capture_output=True)
         if result.returncode == 0:
@@ -871,8 +907,6 @@ class AWPDashboard(QWidget):
     
     def closeEvent(self, event):
         """Clean up HUD processes when DAB exits."""
-        import subprocess
-        
         # Kill vertical HUD
         subprocess.run(["pkill", "-f", "hud_vertical.py"], stderr=subprocess.DEVNULL)
         _printer.info("Vertical HUD terminated", backend="dab")
@@ -900,18 +934,27 @@ class AWPDashboard(QWidget):
             self.ws_count_label.setText(str(self.config.workspaces_count))
     
     def update_info_colors(self):
-        """Update the info labels with the system accent color from SHM."""
+        """Update the info labels with the RAW (bright) accent color."""
         try:
             with open(RUNTIME_STATE_PATH, 'r') as f:
                 data = json.load(f)
-                color = data.get('icon_color', '#6a8cff')
-        except:
-            color = '#6a8cff'
+                color = data.get('icon_color', AWP_FALLBACK_ACCENT)
+        except Exception:
+            color = AWP_FALLBACK_ACCENT
         
         if not color.startswith('#'):
-            color = '#6a8cff'
+            color = AWP_FALLBACK_ACCENT
         
-        style = f"color: {color}; font-size: 11px; font-weight: bold;"
+        style = f"""
+            QLabel {{
+                background: transparent;
+                color: {color};
+                border: none;
+                padding: 0 1px;
+                font-size: 11px;
+                font-weight: bold;
+            }}
+        """
         
         if hasattr(self, 'de_label'):
             self.de_label.setStyleSheet(style)
@@ -964,6 +1007,11 @@ class AWPDashboard(QWidget):
         self.preset_combo = QComboBox()
         self.preset_combo.setMinimumWidth(200)
         self.preset_combo.setEditable(False)
+        self.preset_combo.setToolTip(
+            "Select which AWP preset to edit\n"
+            "✓ marks the currently active system preset\n"
+            "Changes are saved to the selected preset's INI file"
+        )
 
         # Populate from AVAILABLE_PRESETS constant with checkmark for system preset
         for preset in AVAILABLE_PRESETS:
@@ -988,16 +1036,23 @@ class AWPDashboard(QWidget):
         de_label_text.setFixedWidth(30)
         info_layout.addWidget(de_label_text)
         self.de_label = QLabel(self.config.de)
-        self.de_label.setStyleSheet("color: #6a8cff; font-size: 11px; font-weight: bold;")
+        self.de_label.setToolTip(
+            "Detected desktop environment\n"
+            "Determines which theme settings are available"
+        )
         info_layout.addWidget(self.de_label)
-
+        
         info_layout.addSpacing(50)
 
         session_label_text = QLabel("Session:")
         session_label_text.setFixedWidth(60)
         info_layout.addWidget(session_label_text)
         self.session_label = QLabel(self.config.session_type)
-        self.session_label.setStyleSheet("color: #6a8cff; font-size: 11px; font-weight: bold;")
+        self.session_label.setToolTip(
+            "Display server session type\n"
+            "x11 = traditional Xorg\n"
+            "wayland = modern compositor"
+        )
         info_layout.addWidget(self.session_label)
 
         info_layout.addSpacing(50)
@@ -1006,7 +1061,10 @@ class AWPDashboard(QWidget):
         ws_label_text.setFixedWidth(78)
         info_layout.addWidget(ws_label_text)
         self.ws_count_label = QLabel(str(self.config.workspaces_count))
-        self.ws_count_label.setStyleSheet("color: #6a8cff; font-size: 11px; font-weight: bold;")
+        self.ws_count_label.setToolTip(
+            "Total number of workspaces configured\n"
+            "for the current preset"
+        )
         info_layout.addWidget(self.ws_count_label)
 
         info_layout.addStretch()
@@ -1028,6 +1086,10 @@ class AWPDashboard(QWidget):
         self.ws_combo = QComboBox()
         self.ws_combo.setMinimumWidth(200)
         self.ws_combo.setEditable(False)
+        self.ws_combo.setToolTip(
+            "Select a workspace to configure\n"
+            "Each workspace has its own wallpaper, colors, and themes"
+        )
         num_workspaces = self.config.workspaces_count
         for i in range(num_workspaces):
             self.ws_combo.addItem(f"WS{i + 1}")
@@ -1102,13 +1164,18 @@ class AWPDashboard(QWidget):
         button_layout = QHBoxLayout()
         button_layout.addStretch(0)
 
-        BTN_W = 85
+        BTN_W = 88
         BTN_H = 40
 
         # 1. Backup Button
-        self.backup_btn = QPushButton("Backup\nini")
+        self.backup_btn = QPushButton("Backup\nAll INIs")
         self.backup_btn.setFixedSize(BTN_W, BTN_H)
-        self.backup_btn.setToolTip("Create backup of current configuration (Ctrl+B)")
+        self.backup_btn.setToolTip(
+            "Backup ALL presets' INI files\n"
+            "Creates a timestamped snapshot in ~/awp/ini_backups/\n"
+            "Keeps only the last 2 snapshots\n"
+            "(Ctrl+B)"
+        )
         self.backup_btn.clicked.connect(self.backup_config)
         self.backup_btn.setStyleSheet("""
             QPushButton {
@@ -1138,18 +1205,18 @@ class AWPDashboard(QWidget):
             QPushButton {
                 font-weight: bold;
                 font-size: 12px;
-                background: #8a6a2a;
+                background: #a06020;
                 color: #ddd;
                 border: none;
                 border-radius: 8px;
                 padding: 6px 16px;
             }
             QPushButton:hover {
-                background: #aa8a3a;
+                background: #c08030;
                 color: white;
             }
             QPushButton:pressed {
-                background: #6a4a1a;
+                background: #804010;
             }
         """)
         button_layout.addWidget(self.reset_btn)
@@ -1187,18 +1254,18 @@ class AWPDashboard(QWidget):
             QPushButton {
                 font-weight: bold;
                 font-size: 12px;
-                background: #7a5a2a;
+                background: #6a3d8a;
                 color: #ddd;
                 border: none;
                 border-radius: 8px;
                 padding: 6px 16px;
             }
             QPushButton:hover {
-                background: #9a7a3a;
+                background: #8a5daa;
                 color: white;
             }
             QPushButton:pressed {
-                background: #5a3a1a;
+                background: #4a2d6a;
             }
         """)
         button_layout.addWidget(self.rotate_btn)
@@ -1463,16 +1530,51 @@ class AWPDashboard(QWidget):
             QMessageBox.critical(self, "Error", f"Failed to save: {str(e)}")
     
     def backup_config(self):
-        """Create backup of current configuration file."""
-        if os.path.exists(self.config.path):
-            backup_path = str(self.config.path) + ".backup"
-            shutil.copy(str(self.config.path), backup_path)
-            _printer.success(f"Configuration backed up to: {backup_path}", backend="dab")
-            QMessageBox.information(self, "Backup Created", 
-                                  f"Configuration backed up to:\n{backup_path}")
-        else:
-            _printer.warning("No configuration file found to backup.", backend="dab")
-            QMessageBox.warning(self, "No Config", "No configuration file found.")
+        """Backup ALL presets' INI files (keep last 3 snapshots in timestamped folders)."""
+        STAMP_RE = re.compile(r'^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$')
+        MAX_SNAPSHOTS = 3
+
+        backup_dir = str(AWP_DIR / "ini_backups")
+        os.makedirs(backup_dir, exist_ok=True)
+
+        # 1. Get existing snapshot folders (only valid timestamps), sorted newest first.
+        existing_snapshots = sorted(
+            [d for d in os.listdir(backup_dir)
+             if os.path.isdir(os.path.join(backup_dir, d)) and STAMP_RE.match(d)],
+            reverse=True
+        )
+
+        # 2. If we're at or above the cap, delete the oldest to make room.
+        #    Delete (len - MAX + 1) so that after creating the new one we land exactly at MAX.
+        if len(existing_snapshots) >= MAX_SNAPSHOTS:
+            num_to_delete = len(existing_snapshots) - MAX_SNAPSHOTS + 1
+            for old_snapshot in existing_snapshots[-num_to_delete:]:
+                old_path = os.path.join(backup_dir, old_snapshot)
+                shutil.rmtree(old_path)
+                _printer.debug(f"Removed old snapshot: {old_snapshot}", backend="dab")
+
+        # 3. Create the new snapshot folder.
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        snapshot_dir = os.path.join(backup_dir, timestamp)
+        os.makedirs(snapshot_dir, exist_ok=True)
+
+        count = 0
+        for preset_name in AVAILABLE_PRESETS:
+            preset_ini = os.path.join(PRESETS_DIR, preset_name, f"{preset_name}.ini")
+            if os.path.exists(preset_ini):
+                backup_path = os.path.join(snapshot_dir, f"{preset_name}.ini")
+                shutil.copy(preset_ini, backup_path)
+                count += 1
+
+        # 4. Report.
+        _printer.success(f"Backed up {count} presets to snapshot {timestamp}", backend="dab")
+        QMessageBox.information(
+            self, "Backup Created",
+            f"✅ Backed up {count} presets\n\n"
+            f"📁 Snapshot: {timestamp}\n"
+            f"📊 Keeping last {MAX_SNAPSHOTS} snapshots\n\n"
+            f"Location:\n{backup_dir}/{timestamp}/"
+        )
 
     def toggle_rotation(self):
         """Toggle wallpaper rotation via awp_rotate.sh."""
@@ -1519,7 +1621,21 @@ if __name__ == "__main__":
     palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(46, 46, 46))
     
     app.setPalette(palette)
-    
+
+    # ─── Accent-aware tooltip style ───
+    accent = get_awp_derived_accent()
+    app.setStyleSheet(f"""
+        QToolTip {{
+            background-color: {accent};
+            color: #ffffff;
+            border: none;
+            padding: 6px 4px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+        }}
+    """)
+
     window = AWPDashboard()
     window.show()
     sys.exit(app.exec())

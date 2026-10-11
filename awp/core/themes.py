@@ -6,9 +6,13 @@ Core Themes Module
 All Themes related functions
 """
 import os
+import re
 import shutil
 import subprocess
+import tempfile
+import time
 import colorsys
+from PIL import Image
 from core.constants import (
     ICON_PRESETS,
     THEME_PRESETS,
@@ -129,8 +133,6 @@ def _modulate_gtk_assets(config, target_path, clean_hex, source_hex=None):
     Modulate GTK PNG assets using PIL with dynamic fuzz.
     Elegant, no halo, preserves whites and insensitive variants.
     """
-    from PIL import Image
-
     if not config or not config.get('assets'):
         return
 
@@ -350,7 +352,6 @@ def bake_awp_theme(hex_color: str, icon: str = None, preset: str = 'breeze', pre
             thumbnail_png = os.path.join(target_path, "gtk-3.0", "thumbnail.png")
             if os.path.exists(thumbnail_svg):
                 try:
-                    import re
                     with open(thumbnail_svg, 'r') as f:
                         svg_content = f.read()
                     
@@ -1003,9 +1004,6 @@ def generate_icon_from_svg(hex_color, template_name='awp', size=512):
     Returns:
         Path to the generated PNG file, or None if failed
     """
-    import tempfile
-    import time
-    
     if not shutil.which('rsvg-convert'):
         return None
     

@@ -10,7 +10,6 @@ All functions maintained for backend API consistency.
 import os
 import json
 import subprocess
-import configparser
 import time
 from core.constants import SCALING_FEH
 from core.printer import get_printer
@@ -31,11 +30,10 @@ def qtile_xfce_current_ws():
                 state = json.load(f)
                 return state.get('workspace_num', 0)
     except Exception as e:
-        print(f"Failed to read workspace from /dev/shm: {e}")
+        _printer.error(f"Failed to read workspace from /dev/shm: {e}", backend="qtile_xfce")
     
     # Fallback to xprop
     try:
-        import subprocess
         ws_num = subprocess.check_output(
             ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
             text=True
@@ -94,7 +92,7 @@ def qtile_xfce_set_themes(ws_num: int, config):
             ], check=False)
             changes.append("icons")
  
-     # Check Cursor theme
+    # Check Cursor theme
     if should_cursor:
         current = _get_current_value("xsettings", "/Gtk/CursorThemeName")
         if current != should_cursor:
@@ -116,10 +114,17 @@ def qtile_xfce_set_themes(ws_num: int, config):
         time.sleep(0.5)
         # Refresh root cursor
         subprocess.run(["xsetroot", "-cursor_name", "left_ptr"], check=False)
-        #subprocess.run([
-        #   "xprop", "-root", "-f", "_XSETTINGS_SETTINGS", "8s",
-        #   "-set", "_XSETTINGS_SETTINGS", ""
-        #   ], check=False)
+
+        # Fallback: more aggressive XSETTINGS broadcast.
+        # Not needed currently — xsetroot alone refreshes the cursor
+        # reliably in this Qtile + xfsettingsd setup. Kept here in case
+        # a future combination stops honoring the xsetroot approach and
+        # a full XSETTINGS reload is required.
+        # subprocess.run([
+        #     "xprop", "-root", "-f", "_XSETTINGS_SETTINGS", "8s",
+        #     "-set", "_XSETTINGS_SETTINGS", ""
+        # ], check=False)
+
         _printer.info("Cursor refresh triggered", backend="qtile_xfce")
  
     # Use printer with explicit backend
@@ -134,7 +139,7 @@ def qtile_xfce_lean_mode():
     """
     Generic lean mode - nothing to kill, already using feh.
     """
-    _printer.info("Started xfsettingsd for themes", backend="qtile_xfce")
+    _printer.info("Qtile is already lean; nothing to disable", backend="qtile_xfce")
 
 
 # =============================================================================
@@ -150,8 +155,11 @@ def qtile_xfce_get_monitors_for_workspace(ws_num: int):
 # WALLPAPER FUNCTIONS
 # =============================================================================
 
-def qtile_xfce_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
-    """Native wallpaper not used with Qtile - falls back to feh."""
+def qtile_xfce_set_wallpaper_native(ws_num, image_path, scaling):
+    """
+    No native wallpaper mechanism exists for Qtile+feh.
+    Delegates to the feh-based setter for API compatibility.
+    """
     qtile_xfce_set_wallpaper(ws_num, image_path, scaling)
 
 def qtile_xfce_set_wallpaper(ws_num: int, image_path: str, scaling: str):

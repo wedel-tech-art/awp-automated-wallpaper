@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+=============================================================================
+Project:     AWP (Automated Wallpaper Program)
+File:        mint.svg
+Author:      Otto Wedel Scriba (Background Canvas)
+License:     GPL-3.0-or-later
+
+Description: Custom wallpaper featuring the Linux Mint logo integrated over
+the AWP signature radial gradient backdrop.
+
+TRADEMARK NOTICE:
+The "Linux Mint" logo and visual identity are trademarks of Clement Lefebvre
+and the Linux Mint team. This file is an unofficial community asset created
+for desktop customization within AWP. It is not produced by, endorsed by,
+or affiliated with the official Linux Mint project.
+=============================================================================
+-->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1920" height="1080" viewBox="0 0 1920 1080">
+
+  <!-- ==================== DEFINITIONS & GRADIENTS ==================== -->
+  <defs>
+    <!-- Background Radial Gradient Base Colors -->
+    <linearGradient id="awp_bg_colors">
+      <stop style="stop-color:#e62076;stop-opacity:1" offset="0" />
+      <stop style="stop-color:#20020f;stop-opacity:1" offset="1" />
+    </linearGradient>
+
+    <!-- Transformed Radial Vignette Effect -->
+    <radialGradient id="awp_bg_gradient" xlink:href="#awp_bg_colors" cx="960" cy="512.36218" fx="960" fy="512.36218" r="960" gradientTransform="matrix(1.2448906,0,0,0.8766271,-235.09492,63.211612)" gradientUnits="userSpaceOnUse" />
+  </defs>
+
+  <!-- ==================== BACKGROUND LAYER ==================== -->
+  <g transform="translate(0,27.637817)">
+    <rect style="fill:url(#awp_bg_gradient);fill-opacity:1;stroke:none" width="1920" height="1080" x="0" y="-27.637817" />
+  </g>
+
+  <!-- ==================== LINUX MINT LOGO ==================== -->
+  <!-- Centered Linux Mint 'LM' Emblem -->
+  <g id="awp_signature" transform="translate(960, 540) scale(12)">
+    <path fill="#440923" d="M 4.62,5.2 L 6.93,5.2 L 6.93,15.59 C 6.93,16.88 7.95,17.9 9.24,17.9 L 16.16,17.9 C 17.45,17.9 18.47,16.88 18.47,15.59 L 18.47,9.81 C 18.47,9.16 17.97,8.66 17.32,8.66 C 16.67,8.66 16.16,9.16 16.16,9.81 L 16.16,15.59 L 13.85,15.59 L 13.85,9.81 C 13.85,9.16 13.35,8.66 12.7,8.66 C 12.05,8.66 11.55,9.16 11.55,9.81 L 11.55,15.59 L 9.24,15.59 L 9.24,9.81 C 9.24,7.91 10.8,6.35 12.7,6.35 C 13.59,6.35 14.39,6.7 15.01,7.26 C 15.63,6.7 16.43,6.35 17.32,6.35 C 19.22,6.35 20.78,7.91 20.78,9.81 L 20.78,15.59 C 20.78,18.12 18.7,20.2 16.16,20.2 L 9.24,20.2 C 6.7,20.2 4.62,18.12 4.62,15.59 L 4.62,5.2" transform="translate(-12.7, -12.7)"/>
+  </g>
+
+</svg>
+

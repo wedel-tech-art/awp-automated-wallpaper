@@ -8,9 +8,6 @@
 # Example: BYPASS_LIST=("QTILE_DEFAULT" "MUSIC_STUDIO" "MINIMAL")
 BYPASS_LIST=("qtile_xfce-debian" "qtile_gnome-debian" "qtile_wayland-debian")
 
-# Add any preset names here that should use daemon-light.py (no rotation)
-LIGHT_DAEMON_LIST=("xfce_light-debian" "cinnamon_light-debian" "gnome_light-debian" "mate_light-debian")
-
 # --- ANSI Colors for Bash ---
 CLR_GREEN="\033[92m"
 CLR_CYAN="\033[96m"
@@ -26,12 +23,47 @@ LOGOS_DIR="$AWP_BASE/logos"
 CONFIG_FILE="$AWP_BASE/awp_config.ini"
 DAEMON_PATH="$AWP_BASE/daemon.py"
 DAEMON_LIGHT_PATH="$AWP_BASE/daemon-light.py"
+MODE_FILE="/dev/shm/awp_rotation_mode"
 
-# --- 1. Pre-Flight Safety Mirror ---
+# --- 1. Pre-Flight Rotating Backup ---
+BACKUP_KEEP=3
+
 if [ -d "$PRESETS_DIR" ]; then
     mkdir -p "$BACKUP_DIR"
-    rsync -a --delete "$PRESETS_DIR/" "$BACKUP_DIR/"
-    echo -e "${CLR_CYAN}[INFO] Preset mirror updated.${CLR_RESET}"
+    STAMP=$(date +%Y-%m-%d-%H-%M-%S)
+
+    echo -e "${CLR_CYAN}[BACKUP] Snapshot: $STAMP${CLR_RESET}"
+
+    # cd to the parent so rsync only ever copies "presets/",
+    # never anything above it (no home-within-home).
+    # --exclude='themes/' drops every preset's themes dir (regenerable by baker).
+    T0=$(date +%s.%N)
+    ( cd "$AWP_BASE" && rsync -a --one-file-system --exclude='themes/' \
+        "$(basename "$PRESETS_DIR")/" "$BACKUP_DIR/$STAMP/" )
+    T1=$(date +%s.%N)
+
+    # Keep only the newest $BACKUP_KEEP snapshots.
+    BEFORE=$(ls -1d "$BACKUP_DIR"/[0-9]* 2>/dev/null | wc -l)
+
+    # Collect what's about to be pruned, so we can name it.
+    PRUNED=$(ls -1d "$BACKUP_DIR"/[0-9]* 2>/dev/null | sort | head -n -"$BACKUP_KEEP")
+    if [ -n "$PRUNED" ]; then
+        echo "$PRUNED" | xargs -r rm -rf
+    fi
+
+    AFTER=$(ls -1d "$BACKUP_DIR"/[0-9]* 2>/dev/null | wc -l)
+
+    # Report rsync duration
+    RSYNC_SEC=$(echo "$T1 - $T0" | bc)
+    echo -e "${CLR_CYAN}[BACKUP] Copy took $(printf '%.2f' "$RSYNC_SEC")s${CLR_RESET}"
+
+    # Report what was pruned (by name) and the ring size
+    if [ "$BEFORE" -gt "$AFTER" ]; then
+        while IFS= read -r d; do
+            echo -e "${CLR_YELLOW}[BACKUP] Pruned: $(basename "$d")${CLR_RESET}"
+        done <<< "$PRUNED"
+    fi
+    echo -e "${CLR_GREEN}[BACKUP] Ring: $AFTER / $BACKUP_KEEP${CLR_RESET}"
 fi
 
 # --- 2. Preset Identity Management ---
@@ -43,12 +75,7 @@ if [ -n "$PRESET_NAME" ]; then
 
     if [ -d "$TARGET_PRESET" ] && [ -f "$TARGET_INI" ]; then
         echo -e "${CLR_CYAN}[ACTION] Switching identity to: $PRESET_NAME${CLR_RESET}"
-
-        if [ "$PRESET_NAME" == "TEMPLATE" ]; then
-            echo -e "${CLR_YELLOW}[ACTION] Localizing TEMPLATE paths...${CLR_RESET}"
-            sed -i "s|/home/[^/]*|$HOME|g" "$TARGET_INI"
-        fi
-
+        mkdir -p "$LOGOS_DIR"
         ln -sfn "$TARGET_INI" "$CONFIG_FILE"
 
         # ============================================================
@@ -141,26 +168,7 @@ if [ -n "$PRESET_NAME" ]; then
         echo -e "${CLR_RED}[ERROR] Preset '$PRESET_NAME' not found in $PRESETS_DIR${CLR_RESET}"
         echo -e "${CLR_RED}[ERROR] Available presets:${CLR_RESET}"
         ls -1 "$PRESETS_DIR" 2>/dev/null | grep -v "TEMPLATE" | sed 's/^/  - /'
-        
-        # Don't write invalid preset to /dev/shm
-        # Optionally: exit or fallback to TEMPLATE
-        echo -e "${CLR_YELLOW}[INFO] Falling back to TEMPLATE preset${CLR_RESET}"
-        PRESET_NAME="TEMPLATE"
-        
-        # Fallback to TEMPLATE
-        TARGET_PRESET="$PRESETS_DIR/TEMPLATE"
-        TARGET_INI="$TARGET_PRESET/TEMPLATE.ini"
-        
-        if [ -d "$TARGET_PRESET" ] && [ -f "$TARGET_INI" ]; then
-            echo -e "${CLR_CYAN}[ACTION] Switching to TEMPLATE${CLR_RESET}"
-            sed -i "s|/home/[^/]*|$HOME|g" "$TARGET_INI"
-            ln -sfn "$TARGET_INI" "$CONFIG_FILE"
-            echo "TEMPLATE" > /dev/shm/awp_active_preset
-            echo -e "${CLR_GREEN}[SUCCESS] TEMPLATE preset activated.${CLR_RESET}"
-        else
-            echo -e "${CLR_RED}[CRITICAL] TEMPLATE preset not found! Cannot continue.${CLR_RESET}"
-            exit 1
-        fi
+        exit 1
     fi
 else
     # No preset specified → show usage
@@ -230,9 +238,9 @@ EOF
         echo -e "${CLR_CYAN}[QT6] Creating initial color scheme in RAM...${CLR_RESET}"
         cat > "$SHM_FILE" << 'EOF'
 [ColorScheme]
-active_colors=#ffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #00f076, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
-inactive_colors=#ffffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #00f076, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
-disabled_colors=#ff808080, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ff808080, #ffffffff, #ff808080, #ff242424, #ff2e2e2e, #ffffffff, #00f076, #ff808080, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
+active_colors=#ffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #2e7faf, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
+inactive_colors=#ffffffff, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ffffffff, #ffffffff, #ffffffff, #ff242424, #ff2e2e2e, #ffffffff, #2e7faf, #ffffffff, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
+disabled_colors=#ff808080, #ff2e2e2e, #ff4e4e4e, #ff3a3a3a, #ff1a1a1a, #ff2a2a2a, #ff808080, #ffffffff, #ff808080, #ff242424, #ff2e2e2e, #ffffffff, #2e7faf, #ff808080, #ffff6a00, #ffa70b06, #ff2e2e2e, #ffffffff, #ff3f3f36, #ffffffff, #80ffffff, #ff12608a
 EOF
         echo -e "${CLR_GREEN}[QT6] Initial color scheme created.${CLR_RESET}"
     fi
@@ -261,9 +269,9 @@ Color=#2e2e2e
 [Foreground:Normal]
 Color=#cfcfc2
 [Background:Selection]
-Color=#3daee9
+Color=#2e7faf
 [Colors:Selection]
-BackgroundNormal=#3daee9
+BackgroundNormal=#2e7faf
 ForegroundNormal=#ffffff
 [Colors:Window]
 BackgroundNormal=#2e2e2e
@@ -301,28 +309,30 @@ for bypassed in "${BYPASS_LIST[@]}"; do
     fi
 done
 
-# Check if current preset should use light daemon
-USE_LIGHT_DAEMON=false
-for light in "${LIGHT_DAEMON_LIST[@]}"; do
-    if [ "$PRESET_NAME" == "$light" ]; then
-        USE_LIGHT_DAEMON=true
-        break
-    fi
-done
-
 if [ "$SHOULD_BYPASS" = true ]; then
+    ROTATION_MODE="on-demand"
     echo -e "${CLR_YELLOW}[SKIP] Preset '$PRESET_NAME' is in Bypass List. Daemon will not start.${CLR_RESET}"
-elif [ "$USE_LIGHT_DAEMON" = true ]; then
-    if [ -f "$DAEMON_LIGHT_PATH" ]; then
-        python3 "$DAEMON_LIGHT_PATH" &
-        echo -e "${CLR_GREEN}[READY] AWP Light Daemon (no rotation) is live.${CLR_RESET}"
-    else
-        echo -e "${CLR_RED}[ERROR] Light daemon not found at $DAEMON_LIGHT_PATH${CLR_RESET}"
-    fi
 else
-    if [ -f "$DAEMON_PATH" ]; then
-        python3 "$DAEMON_PATH" &
-        echo -e "${CLR_GREEN}[READY] AWP Full Daemon (with rotation) is live.${CLR_RESET}"
+    # 🆕 Only read/write MODE_FILE for non-bypass presets (XFCE, Cinnamon, etc.)
+    if [ -f "$MODE_FILE" ]; then
+        ROTATION_MODE=$(cat "$MODE_FILE")
+    else
+        ROTATION_MODE="light"
+        echo "light" > "$MODE_FILE"
+    fi
+
+    if [ "$ROTATION_MODE" = "light" ]; then
+        if [ -f "$DAEMON_LIGHT_PATH" ]; then
+            python3 "$DAEMON_LIGHT_PATH" &
+            echo -e "${CLR_GREEN}[READY] AWP Light Daemon (no rotation) is live.${CLR_RESET}"
+        else
+            echo -e "${CLR_RED}[ERROR] Light daemon not found at $DAEMON_LIGHT_PATH${CLR_RESET}"
+        fi
+    else
+        if [ -f "$DAEMON_PATH" ]; then
+            python3 "$DAEMON_PATH" &
+            echo -e "${CLR_GREEN}[READY] AWP Full Daemon (with rotation) is live.${CLR_RESET}"
+        fi
     fi
 fi
 
@@ -331,4 +341,5 @@ sleep 0.5
 if [ -L "$CONFIG_FILE" ]; then
     CURRENT_PRESET=$(basename "$(dirname "$(readlink -f "$CONFIG_FILE")")")
     echo -e "${CLR_CYAN}[STATUS] Active Identity: ${CLR_GREEN}${CURRENT_PRESET}${CLR_RESET}"
+    echo -e "${CLR_CYAN}[STATUS] Rotation Mode: ${CLR_GREEN}${ROTATION_MODE}${CLR_RESET}"
 fi

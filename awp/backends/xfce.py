@@ -2,23 +2,19 @@
 """
 XFCE Desktop Backend for AWP
 Simple orchestrator - applies theme components only if they differ from config
-Now includes Qt6 accent color support via /dev/shm (RAM)
 """
 
 import os
 import subprocess
-import configparser
 import time
 
-from core.constants import SCALING_FEH
+from core.constants import SCALING_FEH, DEFAULT_ICON
 from core.printer import get_printer
-from backends import ensure_qt6_kde_symlinks, write_qt6_kde_accent
-
-ensure_qt6_kde_symlinks()
 
 # Get printer instance
 _printer = get_printer()
 
+SCALING_XFCE = {'centered': 1, 'scaled': 4, 'zoomed': 5}
 
 # =============================================================================
 # WORKSPACE DETECTION
@@ -30,7 +26,6 @@ def xfce_current_ws():
     Provides safety and logging for the XFCE backend.
     """
     try:
-        import subprocess
         # Get the raw workspace index from the root window
         ws_num = subprocess.check_output(
             ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
@@ -60,13 +55,13 @@ def _get_current_value(channel, property):
 
 
 # =============================================================================
-# THEME ORCHESTRATOR (GTK, Icons, Cursor, WM, Qt6)
+# THEME ORCHESTRATOR (GTK, Icons, Cursor, WM ONLY)
 # =============================================================================
 
 def xfce_set_themes(ws_num: int, config):
     """
     Simple orchestrator - applies theme components only if they differ from current.
-    Handles: gtk_theme, icon_theme, cursor_theme, wm_theme, qt6_accent
+    Handles: gtk_theme, icon_theme, cursor_theme, wm_theme
     """
     section = f"ws{ws_num + 1}"
     if not config.has_section(section):
@@ -80,7 +75,6 @@ def xfce_set_themes(ws_num: int, config):
     should_icon = config.get(section, 'icon_theme', fallback=None)
     should_cursor = config.get(section, 'cursor_theme', fallback=None)
     should_wm = config.get(section, 'wm_theme', fallback=None)
-    should_accent = config.get(section, 'icon_color', fallback=None)
     
     # ========================================================================
     # GTK Theme
@@ -150,13 +144,6 @@ def xfce_set_themes(ws_num: int, config):
         _printer.info("Cursor refresh triggered", backend="xfce")
     
     # ========================================================================
-    # Qt6 Accent Color (via shared function from __init__.py)
-    # ========================================================================
-    if should_accent:
-        write_qt6_kde_accent(should_accent)
-        changes.append(f"qt6:{should_accent}")
-    
-    # ========================================================================
     # Report changes
     # ========================================================================
     _printer.themes(ws_num, changes, backend="xfce")
@@ -204,10 +191,7 @@ def xfce_get_monitors_for_workspace(ws_num: int):
 
 def xfce_set_wallpaper_native(ws_num: int, image_path: str, scaling: str):
     """LEGACY: Set wallpaper using XFCE's native desktop manager."""
-    # XFCE-specific scaling (stays here, not in constants)
-    SCALING_XFCE = {'centered': 1, 'scaled': 4, 'zoomed': 5}
     style_code = SCALING_XFCE.get(scaling, 5)
-    print(f"DEBUG: xfce_set_wallpaper_native - ws_num: {ws_num}, image: {image_path}, scaling: {scaling}")
     for mon in xfce_get_monitors_for_workspace(ws_num):
         subprocess.run([
             "xfconf-query", "--channel", "xfce4-desktop",
@@ -253,7 +237,6 @@ def xfce_set_wallpaper(ws_num: int, image_path: str, scaling: str):
 def xfce_set_icon(icon_path: str):
     """Set panel/whiskermenu icon."""
     try:
-        from core.constants import DEFAULT_ICON
         subprocess.run(
             ["xfconf-query", "-c", "xfce4-panel", "-p", "/plugins/plugin-1/button-icon", 
              "-s", DEFAULT_ICON, "--create", "-t", "string"],
@@ -323,4 +306,3 @@ def xfce_get_current_themes():
     _printer.info(f"Current themes: GTK={current['gtk']}, Icons={current['icon']}, Cursor={current['cursor']}", backend="xfce")
     
     return current
-

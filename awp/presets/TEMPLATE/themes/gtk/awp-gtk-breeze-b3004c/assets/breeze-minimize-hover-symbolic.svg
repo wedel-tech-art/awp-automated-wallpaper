@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-  <!-- Window Background Rect -->
-  <rect width="36" height="36" fill="#31363b" />
-  <!-- Colored Circle -->
-  <circle cx="18" cy="18" r="15" fill="#9200c5" />
-  <!-- Minimize Dash Icon -->
-  <rect x="12" y="17" width="12" height="2" rx="1" fill="#31363b" />
-</svg>

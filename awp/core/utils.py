@@ -329,3 +329,23 @@ def get_dominant_color(image_path: str) -> str:
     except Exception:
         return None
 
+# =============================================================================
+# COLOR INTENSITY (for shuffle sorting)
+# =============================================================================
+
+def get_color_brightness(hex_color: str) -> float:
+    """
+    Calculate perceived brightness of a color (0-1).
+    Uses Value × (0.5 + 0.5 × Saturation) as a rough intensity metric.
+    """
+    clean = hex_color.lstrip('#')
+    try:
+        h, s, v = hex_to_hsv(clean)
+        return v * (0.5 + 0.5 * s)
+    except Exception:
+        return 0.5
+
+
+def sort_colors_by_intensity(colors: list) -> list:
+    """Sort hex colors by brightness + saturation (brightest first)."""
+    return sorted(colors, key=lambda c: get_color_brightness(c), reverse=True)

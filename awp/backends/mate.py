@@ -13,10 +13,6 @@ import configparser
 from core.constants import SCALING_FEH
 from core.printer import get_printer
 
-from backends import ensure_qt6_kde_symlinks, write_qt6_kde_accent
-
-ensure_qt6_kde_symlinks()
-
 # Get printer instance
 _printer = get_printer()
 
@@ -33,7 +29,6 @@ def mate_current_ws():
     Provides safety and logging for the MATE backend.
     """
     try:
-        import subprocess
         # Get the raw workspace index from the root window
         ws_num = subprocess.check_output(
             ["xprop", "-root", "_NET_CURRENT_DESKTOP"], 
@@ -76,7 +71,6 @@ def mate_set_themes(ws_num: int, config):
     should_icon = config.get(section, 'icon_theme', fallback=None)
     should_cursor = config.get(section, 'cursor_theme', fallback=None)
     should_wm = config.get(section, 'wm_theme', fallback=None)
-    should_accent = config.get(section, 'icon_color', fallback=None)
     
     # Check GTK theme
     if should_gtk:
@@ -128,13 +122,6 @@ def mate_set_themes(ws_num: int, config):
                 "theme", should_wm
             ], check=False)
             changes.append("wm")
-    
-    # ========================================================================
-    # Qt6 Accent Color (via /dev/shm - RAM, no disk writes!)
-    # ========================================================================
-    if should_accent:
-        write_qt6_kde_accent(should_accent)
-        changes.append(f"qt6:{should_accent}")
     
     # Use printer with explicit backend
     _printer.themes(ws_num, changes, backend="mate")

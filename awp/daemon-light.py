@@ -30,12 +30,12 @@ from core.actions import (
     set_backend,
     set_wallpaper,
     set_panel_icon,
+    set_themes,
 )
 from core.printer import get_printer
 
 # Get printer instance
 _printer = get_printer()
-_printer.set_backend("daemon")
 
 def optimize_desktop_environment():
     """Universal optimization: Disables heavy desktop managers."""
@@ -45,14 +45,6 @@ def optimize_desktop_environment():
         if func:
             _printer.info(f"Initializing Lean Mode for {DE}...", backend="daemon")
             func()
-
-def set_themes(ws_num: int, config=None):
-    """Apply theme settings for specified workspace."""
-    backend = get_backend(DE)
-    if backend:
-        func = backend.get("themes")
-        if func:
-            func(ws_num, config)
 
 # =============================================================================
 # WORKSPACE MODEL (Modified - No Rotation Timer)
@@ -251,7 +243,7 @@ def main():
             ws = Workspace(i, config)
             workspaces[ws.num] = ws
         except Exception as e:
-            print(f"Warning: failed to load ws{i+1}: {e}")
+            _printer.warning(f"failed to load ws{i+1}: {e}")
 
     _printer.info(f"Loaded {len(workspaces)} workspaces. NO ROTATION MODE.", backend="daemon")
     main_loop(workspaces, config)

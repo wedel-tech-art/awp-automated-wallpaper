@@ -14,6 +14,51 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 
 ## 🚀 Key Features
 
+### 🧙 Wini — Wizard of INI (V3.17)
+
+**Wini** is the new preset creator — a GUI wizard that replaces the old TEMPLATE workflow with a proper tool for building presets from scratch.
+
+- **GUI Wizard:** Pick backend, OS, session, workspace count, and wallpaper style — no more hand-editing INI files or cloning a template preset
+- **Automatic Folder Structure:** Creates the full preset tree (wallpapers, themes, icons, cursors) with all workspace folders in place
+- **Wallpaper Generation Built-In:** Composes each workspace's wallpaper from the selected background + logo template, using the workspace's icon color
+- **Shuffle Mode:** Randomizes colors and themes across all workspaces in one click, with smart assignment rules so no two workspaces look alike
+- **Use INI Mode:** Source workspace data from the currently active preset — useful for regenerating or extending an existing setup
+- **Live Preview HUD (`hud_preset`):** Shows per-workspace colors and resulting wallpaper filenames *before* you commit, so you see exactly what Wini will build
+- **CLI Mode:** `wini --generate-wallpaper --template <id> --color <hex> --output <path>` for headless generation — used by the Thunar right-click "Regenerate Wallpapers" workflow
+- **Safe Regeneration:** Existing wallpapers are moved to `wallpapers.old/` before a rebuild, so nothing is lost by accident
+
+### 🖼️ Wallpaper Engine — `core/wallpaper.py` (V3.17)
+
+The wallpaper composition engine now lives in its own module, so any AWP component can generate a wallpaper without touching the GUI:
+
+- **`generate_wallpaper(template_id, hex_color, output_path)`** — composes one PNG from a template + color
+- **`compute_wallpaper_name(hex_color, style_id)`** — canonical filename generator (`<prefix>-<hue>-<hex>.png`)
+
+Wini uses this engine for both its GUI and CLI paths. The Wallpaper HUD (`hud_preset`) uses it for filename prediction. This means the same math drives every wallpaper AWP produces, whether it comes from a preset build or a command-line invocation.
+
+### Wallpaper Backgrounds
+
+The engine composes each wallpaper from a background + target color, with an optional logo stamped on top.
+
+| Background | Type | Asset | Notes |
+|---|---|---|---|
+| `awp-center` | SVG | `wallpapers/svg/awp-center.svg` | AWP logo embedded |
+| `swirldeb` | SVG | `wallpapers/svg/swirldeb.svg` | Debian swirl + wordmark |
+| `mint` | SVG | `wallpapers/svg/mint.svg` | Mint logo |
+| `deb-wav` | SVG | `wallpapers/svg/deb-wav.svg` | Debian waves (composite-ready) |
+| `cave` | Image | `wallpapers/image/cave.png` | Original AWP creation |
+| `fire` | Image | `wallpapers/image/fire.png` | **Not bundled** — see below |
+
+> 💡 **`fire` background:** The `fire` raster background is not distributed in the repository. If you want to use the `*-fire` templates, drop your own `fire.png` into `~/awp/wallpapers/image/`. Any 1920×1080+ image works — the engine will hue-modulate it and composite the selected logo on top.
+
+### 🖨️ Printer Improvements (V3.17)
+
+The unified printer system now **auto-detects the calling module** — every log line is labeled with its real source file (`[AWP-themes]`, `[AWP-wallpaper]`, `[AWP-xfce]`, …) without any per-call configuration.
+
+- **Auto-detection:** No more `set_backend()` calls scattered across modules — each print resolves its own module name from the call stack
+- **Consistent labels:** Every AWP tool (baker, dab, bath, wini, daemons, backends, HUDs) shows accurate `[AWP-module]` prefixes in its terminal output
+- **Removed the singleton footgun:** The old `set_backend()` at import time caused the last-loaded module to hijack every subsequent print. That whole class of bug is gone
+
 ### 🎨 Theme Polishing & Cinnamon Support (V3.16)
 
 - **5 GTK Presets Polished:** Scrollbars now feature accent color "personality" — in general I used a idle (40% tint), hover (70%), and active (100%) opacity rule — with smooth transitions. All 5 themes now consistently use accent-driven scrollbars in GTK3 and GTK4.
@@ -73,16 +118,6 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 - **Regenerate All:** Rebuild ALL themes from the INI file in one operation
 - **Progress Bar:** Visual feedback with dynamic accent color matching
 
-### 🎯 The Three Tools Work Together
-
-| Tool | Purpose | Best For | Complexity |
-|------|---------|----------|------------|
-| **BATH** | System-wide theming (taste of AWP) | New users, quick theme changes, "just make it look good" | 🟢 Low |
-| **DAB** | Configuration & presets | Power users managing multiple presets and workspaces | 🟡 Medium |
-| **BAKER** | Theme generation | Creating custom themes from colors, surgical operations | 🟡 Medium |
-
-> 🔄 **The Workflow:** Try **Bath** first to see what AWP can do. If you like it, graduate to **DAB + Baker** for the full power of workspace-specific theming, presets, and automated wallpaper rotation.
-
 ## 🔧 Dashboard Upgrade & Baker Enhancements (V3.14)
 
 **DAB now features presets** with a tab-free UI and preset indicator.
@@ -115,15 +150,6 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 - **Activation via symlinks** — `awp_start.sh` links to `~/.themes` and `~/.icons`
 - **Clean separation** — Baked themes never conflict with system themes
 - **Portable presets** — Share entire presets with baked themes included
-
-**TEMPLATE Showcase:** 4 workspaces, 4 different themes demonstrating AWP's full power.
-
-| Workspace | Color | GTK | Icons | Cursors |
-|-----------|-------|-----|-------|---------|
-| ws1 | `#00a3b3` | Breeze | Mint | Oxy |
-| ws2 | `#b39b00` | Flat-Remix | Adwaitaru | Oxy |
-| ws3 | `#b3004c` | Breeze | Besgnulinux | Oxy |
-| ws4 | `#8300b3` | Breeze | Sweet | Oxy |
 
 **Benefits:** No cluttering `~/.themes`/`~/.icons`, clean symlink management, portable/shareable presets, surgical updates.
 
@@ -183,8 +209,6 @@ Each workspace becomes a distinct visual identity — with its own themes, icons
 | **MATE** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | **Generic WM** | ✅ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ |
 
-> 💡 **Light Mode:** Presets with `_light` suffix use the same backends but with a lightweight daemon (no wallpaper rotation). All theming features work identically. Add `_light` to any preset name to enable.
-
 > ⚠️ Generic WM support depends on gsettings availability
 
 ## 🚀 Quick Start (Presets and Symlinks Technology)
@@ -208,24 +232,9 @@ mv awp-automated-wallpaper/awp ~/awp
 cd ~/awp
 ```
 
-### Use the startup script with TEMPLATE
-```
-Once you have awp as ~/awp then you can open a terminal there and do:
-./awp_start.sh TEMPLATE (this will start your AWP with default values for a typical 4 workspaces OS)
-The format is ./awp_start.sh [PRESET_NAME] so you can have your own presets all with different values, the possibilities are endless.
-```
-### Creating a Light Preset (No Wallpaper Rotation)
-
-Manually clone and rename an existing preset:
-```
-# Clone an existing preset
-cp -r ~/awp/presets/xfce-debian ~/awp/presets/xfce_light-debian
-mv ~/awp/presets/xfce_light-debian/xfce-debian.ini \
-   ~/awp/presets/xfce_light-debian/xfce_light-debian.ini
-./awp_start.sh xfce_light-debian
-```
-
 ## 🎮 Usage
+
+AWP ships with four tools — Bath, Dab, Baker, and Wini — plus a set of utility scripts.
 
 ## 🛁 BATH — "A Taste of AWP"
 
@@ -332,13 +341,70 @@ AWP Baker (`baker`) is a **standalone, surgical theme generation tool** that cha
 ~/awp ./baker
 ```
 
+## 🧙 WINI — The Preset Creator Wizard
+
+**Wini** is AWP's preset creation wizard. It replaces the old TEMPLATE workflow with a GUI that builds a complete preset from scratch — folder structure, INI file, and per-workspace wallpapers, all in one shot.
+
+### ✨ What Makes Wini Special
+
+- **GUI Wizard:** Pick backend, OS, session, workspace count, and wallpaper style from a single window — no hand-editing INI files, no cloning templates
+- **Automatic Folder Structure:** Creates the full preset tree (`wallpapers/`, `themes/gtk`, `themes/icons`, `themes/cursors`) with all workspace folders in place
+- **Wallpaper Generation Built-In:** Composes each workspace's wallpaper from your selected background + logo template, using the workspace's assigned color
+- **Shuffle Mode:** Randomizes colors and themes across all workspaces in one click — with smart assignment rules so no two workspaces end up looking alike
+- **Use INI Mode:** Source workspace data from the currently active preset — useful for regenerating or extending an existing setup without starting from scratch
+- **Live Preview HUD:** Shows per-workspace colors and resulting wallpaper filenames *before* you commit, so you see exactly what Wini will build
+- **Safe Regeneration:** Existing wallpapers are moved to `wallpapers.old/` before a rebuild — nothing is lost by accident
+- **CLI Mode:** `wini --generate-wallpaper --template <id> --color <hex> --output <path>` for headless generation, useful for scripting or right-click integration
+
+### 🎮 Wini Workflow
+
+Launch the wizard:
+
+```
+# Launch Wini
+~/awp ./wini
+```
+
+Pick your settings, hit **WINI**, and a complete preset is created in `~/awp/presets/<preset-name>/`. From there:
+
+```
+# Bake the themes for the new preset
+./baker
+
+# Activate the preset
+./awp_start.sh <preset-name>
+```
+
+### 💻 CLI Mode (Headless Wallpaper Generation)
+
+Wini also works as a headless wallpaper renderer — no GUI required:
+
+```
+# Generate a single wallpaper
+wini --generate-wallpaper --template awp-center --color "#b7004f" --output ~/wallpaper.png
+```
+
+This is the same engine Wini's GUI uses. Any script or tool can call it to produce a wallpaper from a template + color pair.
+
+> 💡 **TEMPLATE is gone.** The old `presets/TEMPLATE/` showcase preset has been retired. Wini is the new way to create presets — faster, safer, and shaped to how AWP actually works.
+
+### 🆕 Live Preview HUD
+
+Wini's HUD (`hud_preset`) is bundled in the wizard — toggle it on with the **HUD** button:
+
+- **Per-workspace preview:** Shows the color and resulting wallpaper filename for every workspace
+- **Live updates:** Re-renders instantly when you change backend, session, workspace count, shuffle, or wallpaper style
+- **Shuffle-aware:** When Shuffle is on, the HUD shows the randomized colors that will actually be used
+- **INI-aware:** When Use INI is on, the HUD reflects the source preset's real workspace data
+
+> 💡 **Why a HUD?** Because picking a color and *seeing* what wallpaper it produces are two different things. The HUD closes that gap — you know what you're getting before you click WINI.
 
 ### Preset Cloner Tool
 
 Clone your current preset configuration to all other presets with one command:
 
 ```
-# Clone to ALL presets (except TEMPLATE and current)
+# Clone to ALL presets (except current)
 ./preset_cloner.sh
 
 # Clone to a specific preset
@@ -382,6 +448,10 @@ python3 nav.py color
 ```
 python3 nav.py black
 ```
+### Tint current wallpaper with the workspace accent (temporary, via PIL)
+```
+python3 nav.py tint
+```
 
 ### Recommended Keybindings
 
@@ -391,12 +461,18 @@ python3 nav.py black
 - `Super + s` → Sharpen wallpaper
 - `Super + c` → Colorize wallpaper
 - `Super + b` → Convert wallpaper to black and white
+- `Super + t` → Tint wallpaper with workspace accent
 
 > [!TIP]
-> **Non-Destructive Editing:** Last 3 effects are applied to a temporary copy in the `awp/` folder. The original wallpaper remains untouched. If you love a modified version (e.g., a sharpened or B&W version), you can manually replace the original file in your library with the processed one from the `awp/` directory.
-
+> **Non-Destructive Editing:** Last 4 effects are applied to a temporary copy in the `awp/` folder. The original wallpaper remains untouched. If you love a modified version (e.g., a sharpened or B&W version), you can manually replace the original file in your library with the processed one from the `awp/` directory.
+>
+> 💡 **Tint is workspace-aware.** Unlike `sharpen`, `color`, and `black` (which transform the image blindly), `tint` reads the current workspace's accent color from `/dev/shm` and colorizes the wallpaper toward it — same hue, same saturation family, preserving original luminance. It's the only effect that changes the mood of the image rather than just how it looks.
 
 ## Screenshots
+
+### Wini - Preset Creator
+![Wini Main Window](screenshots/wini_main.png)
+*Wini's preset creation wizard — backend, OS, session, workspace count, and wallpaper style.*
 
 ### Bath - Baker-Themer
 ![Bath Main Window](screenshots/bath_main.png)
@@ -414,9 +490,10 @@ python3 nav.py black
 ```
 awp-automated-wallpaper/
 ├── awp/                            # Main Application Directory
-│   ├── bath                         # 🛁 "Taste of AWP" — for newbies baker-themer
-│   ├── baker                        # 🧁 Surgical theme generator
-│   ├── dab                          # 🎛️ AWP Dashboard (presets, workspaces, HUDs)
+│   ├── bath                        # 🛁 "Taste of AWP" — for newbies baker-themer
+│   ├── baker                       # 🧁 Surgical theme generator
+│   ├── dab                         # 🎛️ AWP Dashboard (presets, workspaces, HUDs)
+│   ├── wini                        # 🧙 Preset creator wizard (GUI + CLI)
 │   ├── core/                       # Centralized business logic
 │   │   ├── actions.py              # Core wallpaper operations
 │   │   ├── config.py               # Configuration management
@@ -424,6 +501,7 @@ awp-automated-wallpaper/
 │   │   ├── printer.py              # 🖨️ Unified printing system (V3.6)
 │   │   ├── runtime.py              # Runtime state management
 │   │   ├── themes.py               # Theme baking engine (Genetic logic)
+│   │   ├── wallpaper.py            # 🖼️ Wallpaper composition engine
 │   │   └── utils.py                # Utility functions
 │   ├── backends/                   # Desktop environment backends
 │   │   ├── __init__.py             # Dynamic backend factory
@@ -433,29 +511,12 @@ awp-automated-wallpaper/
 │   │   ├── gnome.py                # GNOME backend
 │   │   ├── mate.py                 # MATE backend
 │   │   └── generic.py              # Generic WM fallback
-│   ├── presets/                    # Identity Robbery Presets 🎭
-│   │   └── TEMPLATE/               # Self-contained showcase preset
-│   │       ├── TEMPLATE.ini        # Workspace configuration
-│   │       ├── themes/             # 🎨 Baked themes (self-contained)
-│   │       │   ├── gtk/            # GTK themes (Breeze, Flat-Remix, etc.)
-│   │       │   ├── icons/          # Icon themes (Mint, Sweet, etc.)
-│   │       │   └── cursors/        # Cursor themes (Oxy)
-│   │       ├── ws1/                # Workspace 1 wallpapers
-│   │       │   └── Debian--*.png
-│   │       ├── ws1.png             # Workspace 1 icon
-│   │       ├── ws2/                # Workspace 2 wallpapers
-│   │       │   └── Debian--*.png
-│   │       ├── ws2.png             # Workspace 2 icon
-│   │       ├── ws3/                # Workspace 3 wallpapers
-│   │       │   └── Debian--*.png
-│   │       ├── ws3.png             # Workspace 3 icon
-│   │       ├── ws4/                # Workspace 4 wallpapers
-│   │       │   └── Debian--*.png
-│   │       └── ws4.png             # Workspace 4 icon
-│   ├── presets-backup/             # Pre-flight safety mirror 🛡️
 │   ├── template-theme-presets/     # GTK
 │   ├── template-icon-presets/      # PNG's + scalable SVG's
 │   ├── template-cursor-presets/    # Cursor preset templates (currently oxy)
+│   ├── wallpapers/                 # 🖼️ Wallpaper sources
+│   │   ├── image/                  # Raster backgrounds
+│   │   └── svg/                    # SVG templates (hue-shifted by the engine)
 │   ├── awp-icon-mom/               # The "Mother" icon template
 │   ├── awp-logos.tar.gz            # 6 folders with 360 AWP icons PNG/SVG
 │   ├── logos/                      # Active workspace icons (symlinks)
@@ -464,6 +525,7 @@ awp-automated-wallpaper/
 │   ├── nav.py                      # Navigation controller
 │   ├── hud_vertical.py             # Sidebar system monitor
 │   ├── hud_bottom.py               # Bottom dock monitor
+│   ├── hud_preset.py               # 🧙 Preset preview HUD (Wini)
 │   ├── awp_rotate.sh               # Rotation toggle (full ↔ light daemon)
 │   ├── preset_cloner.sh            # Clone current preset to all others
 │   └── awp_start.sh                # Identity manager & startup script
@@ -476,6 +538,7 @@ awp-automated-wallpaper/
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
+| **V3.17** | Oct 2026 | 🧙 **Wini Wizard & Wallpaper Engine** — New preset creation GUI (`wini`) replaces the TEMPLATE workflow. Standalone wallpaper module (`core/wallpaper.py`) with CLI mode. Auto-detecting printer labels. `hud_preset` for live previews. Numerous fixes across backends, daemons, and HUDs. |
 | **V3.16** | Aug 2026 | 🎨 **Theme Polishing & Cinnamon Support** — Full Cinnamon desktop theme support with scrollbar consistency. New `mint-relax` GTK preset (based on Mint-Relaxed by Dr-Mccoy, GPLv3). Mint preset deprecated. XFWM4 polishing. Backend fixes for Cinnamon workspace detection. |
 | **V3.15** | Aug 2026 | 🛁 **Bath Launch** — "Taste of AWP" newbie-friendly baker-themer. Live icon previews in Bath and Baker. Color previews in DAB. HUD integration with automatic mount detection and toggle buttons in DAB. Backend enhancements across all DEs. Executables renamed to `baker`, `dab`, `bath`. |
 | **V3.14** | Jul 2026 | 🔧 Dashboard Upgrade — DAB now features presets, tab-free UI, modern buttons, preset indicator, renamed to `dab`. HSV display in Baker. Floating window fix. Symlink cleanup. Mint audio icons updated. |
@@ -498,21 +561,22 @@ awp-automated-wallpaper/
 
 ## 🔧 Troubleshooting
 
+### Wini not creating wallpapers?
+- Ensure `imagemagick` and `rsvg-convert` are installed: `sudo apt install imagemagick librsvg2-bin`
+- If a background has no logo variant available, Wini will warn at Create time
+- Wallpaper colors come from each workspace's `icon_color` in the INI — check the INI's `[wsN]` sections
+- Old wallpapers are preserved in `wallpapers.old/` inside the preset if you need to recover
+
 ### Baker not generating icons?
 - Ensure `rsvg-convert` is installed: `sudo apt install librsvg2-bin`
 - Check that SVG templates exist in `core/constants.py`
 - Try Fool Bake mode to isolate the issue
 
-### Light daemon not working?
-- Ensure your preset name ends with `_light-debian` (e.g., `xfce_light-debian`)
-- Check that `LIGHT_DAEMON_LIST` in `awp_start.sh` includes your preset
-- The same backend works for both full and light modes - no extra files needed
-
 ### Missing Printer Prefixes?
-If you see `[AWP]` instead of `[AWP-xfce]` or similar, ensure:
-- You're using the latest version (V3.6+)
-- The printer is properly imported in each module
-- Backend functions pass `backend="name"` parameter
+The printer auto-detects the calling module. If you see `[AWP]` with no module name:
+- The call is likely from a subprocess or an import-time top-level statement
+- Ensure the module imports the printer (`from core.printer import get_printer`)
+- Check that the calling function is running inside an AWP module (not a one-off script)
 
 ### Themes Not Applying?
 - Run **Baker** (`./baker`) to generate missing themes for the current workspace
@@ -541,7 +605,7 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 AWP is licensed under the MIT License. However, AWP includes and integrates code and visual assets from various third-party projects under their respective licenses:
 
-- **MIT License:** AWP core code, AWP original artwork, AWP-Firma SVG template, AWP logo designs, and the `mint` icon preset (original AWP creation).
+- **MIT License:** AWP core code, AWP original artwork (including the `cave` raster background and `awp-center` SVG background), AWP-Firma SVG template, AWP logo designs, and the `mint` icon preset (original AWP creation).
 
 - **GPLv3:** GTK themes (breeze, colloid, flat-remix, graphite, mint, mint-relax), icon themes (slot-multicolor, breeze, sweet, sweet-hollow, adwaitaru, neon, rami, besgnulinux), and the Oxygen Cursors theme. See the Visual Preset Credits table for full attribution.
 
@@ -585,13 +649,11 @@ AWP includes a comprehensive asset package (`awp-logos.tar.gz`) containing **3 d
 
 ### 🙏 Tribute & Inspiration
 
-The SVG templates in AWP Baker are a tribute to the open-source community:
+The SVG templates in constants.py are a tribute to the open-source community:
 
-- **Debian** — For the philosophy of freedom
-- **Ubuntu** — For making Linux accessible to millions
-- **Linux Mint** — For the elegant Mint-Y GTK and Icon themes
-- **KDE** — For the Plasma desktop and Breeze theme
-- **GNOME** — For the clean, minimalist design philosophy
+- **Debian and Swirldeb** — For the philosophy of freedom
+- **Mint** — For the elegant Mint-Y GTK and Icon themes
+- **KDE and Plasma** — For the Plasma desktop and Breeze theme
 
 > 💙 **"We stand on the shoulders of giants."** — All community tribute templates are created as artistic reinterpretations, not endorsed by or affiliated with their respective projects.
 
@@ -624,7 +686,7 @@ AWP includes modified and adapted visual presets derived from the following open
 
 > ℹ️ **Besgnulinux Preset:** Used with explicit permission from the creator (besgnulinux) who stated: *"You can share them or make changes to them."* Modified and enhanced for AWP Icon Presets. Original design available at [Gnome-Look](https://www.gnome-look.org/p/1832128/).
 
-> ℹ️ **DeepMacOS Preset:** Trash icons used from the DeepMacOS IconTheme, distributed under GPLv3. Original design available at [OpenDesktop](https://www.opendesktop.org/p/2104775).
+> ℹ️ **DeepMacOS Icons:** Trash icons used from the DeepMacOS IconTheme, distributed under GPLv3. Original design available at [OpenDesktop](https://www.opendesktop.org/p/2104775).
 
 AWP does not claim ownership of bundled visual assets. Icon, GTK and cursor presets remain under their respective upstream licenses and are redistributed and/or modified in accordance with those terms.
 
@@ -645,6 +707,10 @@ AWP does not claim ownership of bundled visual assets. Icon, GTK and cursor pres
 - **AWP-Firma SVG Template:** Original AWP creation — the signature stroke design with transparent background. Available as an SVG template in Baker.
 
 - **AWP Logo Designs:** The 3 AWP logo designs in `awp-logos.tar.gz` are original creations. Available in SVG and PNG formats across 360 colors.
+
+- **AWP Wallpaper Backgrounds:** The `cave` raster background and `awp-center` SVG background are original AWP creations, distributed under the MIT License as part of AWP.
+
+- **Debian-Derived Backgrounds:** `deb-wav.svg` and `swirldeb.svg` are artistic reinterpretations using Debian's public color palette and logo shapes (the Debian swirl). They are not endorsed by or affiliated with the Debian Project.
 
 - **SVG Templates:** The AWP Baker SVG templates (awp, debian, swirldeb, ubuntu, mint, kde, gnome, plasma) are artistic reinterpretations created as tributes to the open-source projects that inspire us.
 
