@@ -227,7 +227,7 @@ For AWP to function correctly, the main directory must be named awp and reside i
 
 # Clone the repository
 ```
-git clone [https://github.com/wedel-tech-art/awp-automated-wallpaper.git](https://github.com/wedel-tech-art/awp-automated-wallpaper.git)
+git clone https://github.com/wedel-tech-art/awp-automated-wallpaper.git
 mv awp-automated-wallpaper/awp ~/awp
 cd ~/awp
 ```
