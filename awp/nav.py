@@ -7,6 +7,14 @@ Changes:
 - v2.0: Added RAM-first config loading (fallback to HDD INI)
 - Reads from /dev/shm/awp_config_ram.json for faster access on HDD systems
 - Falls back to traditional INI file if RAM config is unavailable
+
+Effects:
+- Temp outputs live in ~/awp/nav_files/, keeping the source's base name
+  and extension. Re-running an effect overwrites the previous output.
+- Quality is format-aware: PNG/WebP/AVIF write lossless, JPEG writes
+  at quality 100 with no chroma subsampling.
+- AVIF sources are round-tripped through ImageMagick for the 'tint'
+  effect, because Pillow on Debian cannot read/write AVIF directly.
 """
 
 import os
@@ -47,6 +55,11 @@ from core.printer import get_printer
 _printer = get_printer()
 
 DE = None
+
+# Folder where temporary effect outputs live.
+# Same base name + extension as the source wallpaper, overwritten each run.
+# User can promote a temp file to the workspace if they like the result.
+NAV_FILES_DIR = os.path.join(AWP_DIR, "nav_files")
 
 
 # =============================================================================
@@ -105,6 +118,7 @@ def get_awpconfig_instance():
     awp.config = get_config()  # Override with RAM-loaded config
     return awp
 
+
 def load_current_workspace_context():
     """
     Load everything needed to operate on the current workspace.
@@ -151,6 +165,7 @@ def load_current_workspace_context():
         "imgs": imgs,
         "idx": idx,
     }
+
 
 # =============================================================================
 # WALLPAPER DELETION FUNCTIONALITY
@@ -288,10 +303,84 @@ def delete_current_wallpaper_and_advance() -> bool:
 # EFFECT PREVIEW
 # =============================================================================
 
+def _effect_output_path(wallpaper_path: str) -> str:
+    """
+    Compute the destination path for an effect's output file.
+
+    Files live in NAV_FILES_DIR, keeping the source's base name AND
+    extension, so the user can promote the result back to the workspace
+    with a plain mv (no extension mismatch).
+
+    Returns:
+        Absolute path where the effect should write its output.
+    """
+    os.makedirs(NAV_FILES_DIR, exist_ok=True)
+    return os.path.join(NAV_FILES_DIR, os.path.basename(wallpaper_path))
+
+
+def _save_pil_format_aware(result, output_path: str) -> bool:
+    """
+    Save a PIL image at "good, not paranoid" quality.
+
+    PNG / BMP / TIFF → lossless default
+    JPEG             → q95, no chroma subsampling
+    WebP             → q95
+    AVIF             → handled by the AVIF round-trip in _apply_tint_pil
+
+    Returns:
+        True on success, False on failure.
+    """
+    ext = os.path.splitext(output_path)[1].lower()
+
+    try:
+        if ext in (".png", ".bmp", ".tif", ".tiff"):
+            result.save(output_path)
+        elif ext in (".jpg", ".jpeg"):
+            result.save(output_path, quality=95, subsampling=0)
+        elif ext == ".webp":
+            result.save(output_path, quality=95)
+        else:
+            result.save(output_path)
+        return True
+    except Exception as e:
+        _printer.error(f"Save failed for {ext}: {e}", backend="nav")
+        return False
+
+
+def _imagemagick_quality_flags(output_path: str) -> list:
+    """
+    Return ImageMagick flags tuned for "good, not paranoid".
+
+    PNG / BMP / TIFF → []         (lossless by default)
+    JPEG             → q95, no chroma subsampling
+    WebP             → q95
+    AVIF             → q95        (lossless AVIF is slow and huge)
+
+    Quality 95 is the standard "visually indistinguishable" threshold
+    for lossy formats. Files stay small, encodes stay fast, and there
+    is no perceptible difference from lossless for wallpaper use.
+    """
+    ext = os.path.splitext(output_path)[1].lower()
+
+    if ext in (".jpg", ".jpeg"):
+        return ["-quality", "95", "-sampling-factor", "1x1"]
+    if ext == ".webp":
+        return ["-quality", "95"]
+    if ext == ".avif":
+        return ["-quality", "95"]
+    return []
+
+
 def _apply_tint_pil(image_path, target_hex, output_path, target_saturation=None):
     """
     Mimic GIMP's Colorize: replace every pixel's hue and saturation
     with the target's, keeping the original luminance.
+
+    Pillow on Debian cannot read or write AVIF. When either end of this
+    operation involves an AVIF file, we delegate that side to ImageMagick:
+      - AVIF input  → IM converts to a temp PNG for Pillow to read
+      - AVIF output → Pillow writes a temp PNG, IM converts to AVIF
+    Everything else runs entirely through Pillow.
 
     target_saturation: 0-1. If None, uses the target color's own saturation.
     """
@@ -301,53 +390,97 @@ def _apply_tint_pil(image_path, target_hex, output_path, target_saturation=None)
     if target_saturation is None:
         target_saturation = target_s * 0.6
 
-    # Load image, convert to grayscale to get luminance
-    img = Image.open(image_path).convert("L")
-    luminance = np.array(img, dtype=np.float32) / 255.0  # 0-1
+    src_ext = os.path.splitext(str(image_path))[1].lower()
+    dst_ext = os.path.splitext(str(output_path))[1].lower()
 
-    # Build HSL arrays: H and S constant, L from luminance
-    # Convert to RGB using PIL's HSV or manual math
-    # (colorsys per-pixel would be slow; use vectorized conversion)
+    needs_im_decode = src_ext == ".avif"
+    needs_im_encode = dst_ext == ".avif"
 
-    # Simplest: convert each pixel via HSV
-    # H = target_h, S = target_saturation, V = luminance
-    # Then HSV → RGB
+    working_input = str(image_path)
+    working_output = str(output_path)
+    temp_decode = None
+    temp_encode = None
 
-    # Vectorized HSV → RGB for constant H, S:
-    h = target_h * 6.0                    # 0-6
-    i = int(h)                            # sector 0-5
-    f = h - i                             # fractional part
-    p = luminance * (1 - target_saturation)
-    q = luminance * (1 - target_saturation * f)
-    t = luminance * (1 - target_saturation * (1 - f))
-    v = luminance
+    try:
+        # ─── Decode side: AVIF → PNG ───
+        if needs_im_decode:
+            temp_decode = "/dev/shm/nav_tint_input.png"
+            subprocess.run(
+                ["convert", str(image_path), temp_decode],
+                check=True, capture_output=True,
+            )
+            working_input = temp_decode
 
-    # Select RGB based on sector
-    r = np.zeros_like(luminance)
-    g = np.zeros_like(luminance)
-    b = np.zeros_like(luminance)
+        # ─── Core transform (Pillow) ───
+        img = Image.open(working_input).convert("L")
+        luminance = np.array(img, dtype=np.float32) / 255.0  # 0-1
 
-    if i == 0:
-        r, g, b = v, t, p
-    elif i == 1:
-        r, g, b = q, v, p
-    elif i == 2:
-        r, g, b = p, v, t
-    elif i == 3:
-        r, g, b = p, q, v
-    elif i == 4:
-        r, g, b = t, p, v
-    else:
-        r, g, b = v, p, q
+        # Vectorized HSV → RGB for constant H, S:
+        h = target_h * 6.0                    # 0-6
+        i = int(h)                            # sector 0-5
+        f = h - i                             # fractional part
+        p = luminance * (1 - target_saturation)
+        q = luminance * (1 - target_saturation * f)
+        t = luminance * (1 - target_saturation * (1 - f))
+        v = luminance
 
-    rgb = np.stack([r, g, b], axis=-1)
-    result = Image.fromarray((rgb * 255).astype(np.uint8), mode="RGB")
-    result.save(output_path)
-    return True
+        r = np.zeros_like(luminance)
+        g = np.zeros_like(luminance)
+        b = np.zeros_like(luminance)
+
+        if i == 0:
+            r, g, b = v, t, p
+        elif i == 1:
+            r, g, b = q, v, p
+        elif i == 2:
+            r, g, b = p, v, t
+        elif i == 3:
+            r, g, b = p, q, v
+        elif i == 4:
+            r, g, b = t, p, v
+        else:
+            r, g, b = v, p, q
+
+        rgb = np.stack([r, g, b], axis=-1)
+        result = Image.fromarray((rgb * 255).astype(np.uint8), mode="RGB")
+
+        # ─── Encode side: PNG → AVIF ───
+        if needs_im_encode:
+            temp_encode = "/dev/shm/nav_tint_output.png"
+            result.save(temp_encode)
+            subprocess.run(
+                ["convert", temp_encode]
+                + _imagemagick_quality_flags(str(output_path))
+                + [str(output_path)],
+                check=True, capture_output=True,
+            )
+        else:
+            if not _save_pil_format_aware(result, working_output):
+                return False
+
+        return True
+
+    except Exception as e:
+        _printer.error(f"Tint failed: {e}", backend="nav")
+        return False
+
+    finally:
+        # Best-effort cleanup of any temp files we created
+        for tmp in (temp_decode, temp_encode):
+            if tmp and os.path.exists(tmp):
+                try:
+                    os.remove(tmp)
+                except OSError:
+                    pass
+
 
 def apply_effect_preview(effect: str = "sharpen"):
     """
     Apply a temporary effect to the current wallpaper.
+
+    Output is written to ~/awp/nav_files/<original-name>.<ext>, at
+    maximum quality for the format. The extension is always preserved,
+    so promoting the result back to a workspace is a plain mv.
 
     Args:
         effect: Effect type ('sharpen', 'black', 'color', 'tint')
@@ -364,9 +497,7 @@ def apply_effect_preview(effect: str = "sharpen"):
         _printer.error("Cannot determine current wallpaper path.", backend="nav")
         return
 
-    filename = os.path.basename(wallpaper_path)
-    temp_file = os.path.join(AWP_DIR, filename)
-    os.makedirs(os.path.dirname(temp_file), exist_ok=True)
+    temp_file = _effect_output_path(wallpaper_path)
 
     # ─── Tint: uses PIL, returns early ───
     if effect == "tint":
@@ -383,7 +514,7 @@ def apply_effect_preview(effect: str = "sharpen"):
                 _printer.error("Tint failed", backend="nav")
                 return
             set_wallpaper(ws_num, temp_file, scaling)
-            _printer.info(f"Applied temporary effect '{effect}' to wallpaper", backend="nav")
+            _printer.info(f"Applied '{effect}' -> {temp_file}", backend="nav")
         except Exception as e:
             _printer.error(f"Failed to apply tint: {e}", backend="nav")
         return
@@ -401,12 +532,13 @@ def apply_effect_preview(effect: str = "sharpen"):
         _printer.error(f"Unknown effect: {effect}", backend="nav")
         return
 
+    cmd += _imagemagick_quality_flags(temp_file)
     cmd.append(temp_file)
 
     try:
         subprocess.run(cmd, check=True)
         set_wallpaper(ws_num, temp_file, scaling)
-        _printer.info(f"Applied temporary effect '{effect}' to wallpaper", backend="nav")
+        _printer.info(f"Applied '{effect}' -> {temp_file}", backend="nav")
     except Exception as e:
         _printer.error(f"Failed to apply effect '{effect}': {e}", backend="nav")
 
