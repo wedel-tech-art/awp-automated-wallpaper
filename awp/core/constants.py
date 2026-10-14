@@ -16,6 +16,9 @@ STATE_PATH = str(AWP_DIR / "indexes.json")
 ICON_DIR = str(AWP_DIR / "logos")
 DEFAULT_ICON = str(AWP_DIR / "debian.png")
 
+# ─── NAV EFFECT OUTPUT ───
+NAV_FILES_DIR = str(AWP_DIR / "nav_files")
+
 # ─── WALLPAPER PATHS ───
 WALLPAPER_DIR = AWP_DIR / "wallpapers"
 SVG_DIR = WALLPAPER_DIR / "svg"

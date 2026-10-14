@@ -36,7 +36,13 @@ except ImportError:
     HAS_QT = False
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from core.constants import AWP_DIR, STATE_PATH, RUNTIME_STATE_PATH, AWP_CONFIG_RAM
+from core.constants import (
+    AWP_DIR,
+    STATE_PATH,
+    RUNTIME_STATE_PATH,
+    AWP_CONFIG_RAM,
+    NAV_FILES_DIR,
+)
 from core.config import AWPConfig
 from core.runtime import update_runtime_state, load_index_state, save_index_state
 from core.utils import load_images, sort_images, hex_to_hls
@@ -55,12 +61,6 @@ from core.printer import get_printer
 _printer = get_printer()
 
 DE = None
-
-# Folder where temporary effect outputs live.
-# Same base name + extension as the source wallpaper, overwritten each run.
-# User can promote a temp file to the workspace if they like the result.
-NAV_FILES_DIR = os.path.join(AWP_DIR, "nav_files")
-
 
 # =============================================================================
 # CONFIGURATION LOADING (RAM-first with HDD fallback)
