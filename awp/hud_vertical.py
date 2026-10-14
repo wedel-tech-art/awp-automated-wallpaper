@@ -6,7 +6,7 @@ from datetime import datetime
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor, QPainter, QBrush, QPixmap
-from core.constants import RUNTIME_STATE_PATH, AWP_CONFIG_RAM, THEME_CAPABILITIES
+from core.constants import RUNTIME_STATE_PATH, AWP_CONFIG_RAM, THEME_CAPABILITIES, SHM_ACTIVE_PRESET
 from core.runtime import get_ram_info, get_swap_info, get_mounts_info, get_dynamic_mount_labels
 from core.utils import hex_to_hsv
 from core.printer import get_printer
@@ -26,17 +26,31 @@ class StudioHUD(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
 
-        # ============================================================
-        # AUTO-DETECT SCREEN SIZE
-        # ============================================================
-        screen = QApplication.primaryScreen()
-        screen_geometry = screen.availableGeometry()
-        SCREEN_W = screen_geometry.width()
-        SCREEN_H = screen_geometry.height()
+        avail = QApplication.primaryScreen().availableGeometry()
 
-        # Position: 10px from left, 40px from top
-        self.move(10, 40)
-        # Size: 560px wide, 570px tall (adjust as needed)
+        # ============================================================
+        # AUTO-DETECT WORK AREA
+        # ============================================================
+        avail = QApplication.primaryScreen().availableGeometry()
+
+        GAP_X = 10
+        GAP_Y = 10
+
+        pos_x = avail.x() + GAP_X
+        pos_y = avail.y() + GAP_Y
+
+        # Band-aid: Qtile doesn't publish _NET_WORKAREA, so avail.y()
+        # reports 0 even though the bar occupies the top ~41px. Detect a
+        # Qtile preset and nudge the HUD down past the bar.
+        try:
+            with open(SHM_ACTIVE_PRESET, "r") as f:
+                preset_name = f.read().strip()
+            if "qtile" in preset_name.lower():
+                pos_y += 32
+        except (FileNotFoundError, OSError):
+            pass
+
+        self.move(pos_x, pos_y)
         self.resize(560, 570)
 
         self.main_layout = QVBoxLayout()

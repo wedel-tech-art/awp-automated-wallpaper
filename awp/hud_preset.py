@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor, QPainter, QBrush
 
-from core.constants import WORKSPACE_TEMPLATES
+from core.constants import WORKSPACE_TEMPLATES, SHM_ACTIVE_PRESET
 from core.runtime import read_raw_accent
 from core.wallpaper import compute_wallpaper_name
 from core.printer import get_printer
@@ -49,8 +49,29 @@ class PresetPreviewHUD(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
 
-        # Fixed size — matches hud_wp.py's density
-        self.move(10, 40)
+        # ============================================================
+        # AUTO-DETECT WORK AREA
+        # ============================================================
+        avail = QApplication.primaryScreen().availableGeometry()
+
+        GAP_X = 10
+        GAP_Y = 10
+
+        pos_x = avail.x() + GAP_X
+        pos_y = avail.y() + GAP_Y
+
+        # Band-aid: Qtile doesn't publish _NET_WORKAREA, so avail.y()
+        # reports 0 even though the bar occupies the top ~32px. If the
+        # currently active preset targets Qtile, nudge the HUD down.
+        try:
+            with open(SHM_ACTIVE_PRESET, "r") as f:
+                active = f.read().strip()
+            if "qtile" in active.lower():
+                pos_y += 32
+        except (FileNotFoundError, OSError):
+            pass
+
+        self.move(pos_x, pos_y)
         self.resize(500, 550)
 
         layout = QVBoxLayout()

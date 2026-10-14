@@ -24,17 +24,21 @@ class StudioBar(QWidget):
         # AUTO-DETECT SCREEN SIZE
         # ============================================================
         screen = QApplication.primaryScreen()
-        screen_geometry = screen.availableGeometry()
-        SCREEN_W = screen_geometry.width()
-        SCREEN_H = screen_geometry.height()
+        avail = screen.availableGeometry()
 
         BAR_H    = 62
         GAP_SIDE = 10
         GAP_BOT  = 25
-        BAR_W    = SCREEN_W - (GAP_SIDE * 2)
+        BAR_W    = avail.width() - (GAP_SIDE * 2)
+
+        # avail.y() is where the usable area starts (below any top panel)
+        # avail.height() is the usable height. Position the widget at the
+        # bottom of the usable area, offset by GAP_SIDE / GAP_BOT.
+        pos_x = avail.x() + GAP_SIDE
+        pos_y = avail.y() + avail.height() - BAR_H - GAP_BOT
 
         self.resize(BAR_W, BAR_H)
-        self.move(GAP_SIDE, SCREEN_H - BAR_H - GAP_BOT)
+        self.move(pos_x, pos_y)
         self._r = 10
 
         self.main_layout = QVBoxLayout()
