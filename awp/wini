@@ -17,12 +17,7 @@ import colorsys
 from pathlib import Path
 from typing import List, Optional, Dict
 from PIL import Image, ImageStat
-from core.utils import (
-    hex_to_hls, hls_to_hex,
-    hex_to_hsv, hsv_to_hex,
-    get_color_brightness,
-    sort_colors_by_intensity,
-)
+
 from core.wallpaper import generate_wallpaper, compute_wallpaper_name
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -102,105 +97,107 @@ AVAILABLE_OS = [
 # SHUFFLE CONFIGURATION
 # ============================================================
 
-SHUFFLE_COLOR_BUCKETS = [
-    # 1. RED - Happy Crimson / Scarlet (22 unique shades)
-    [
-        "aa0022", "aa1133", "bb0022", "bb1133", "cc0022", 
-        "cc1133", "cc2233", "cc2244", "dd1133", "dd2244", 
-        "dd3344", "dd3355", "ee1133", "ee2244", "ee3355", 
-        "ee4455", "ee4466", "ff2244", "ff3355", "ff4466", 
-        "ff5566", "ff5577"
-    ],
-    
-    # 2. ORANGE - Sunny Orange / Amber (22 unique shades)
-    [
-        "bb4400", "cc5500", "cc5511", "cc6611", "dd5500", 
-        "dd6611", "dd6622", "dd7722", "dd8833", "ee6611", 
-        "ee7722", "ee7733", "ee8833", "ee9944", "ff6600", 
-        "ff7711", "ff7722", "ff8822", "ff8833", "ff8844", 
-        "ff9944", "ff9955"
-    ],
-    
-    # 3. YELLOW - Golden Sun / Warm Gold (22 unique shades)
-    [
-        "bb9900", "bbaa00", "ccaa00", "ccbb00", "ddaa00", 
-        "ddbb00", "ddcc00", "ddcc11", "eeaa00", "eebb00", 
-        "eecc00", "eedd00", "eedd11", "ffaa00", "ffbb00", 
-        "ffcc00", "ffdd00", "ffdd11", "ffdd33", "ffee00", 
-        "ffee22", "ffee33"
-    ],
-    
-    # 4. GREEN - Emerald / Spring (22 unique shades)
-    [
-        "008822", "118833", "119933", "11aa33", "228833", 
-        "22aa44", "22bb44", "22cc55", "33aa44", "33bb55", 
-        "33cc55", "33dd66", "33ee66", "44bb55", "44cc66", 
-        "44dd66", "44ee77", "55cc66", "55dd77", "55ee88", 
-        "66ee88", "66ff99"
-    ],
-    
-    # 5. CYAN - Aqua / Turquoise (22 unique shades)
-    [
-        "006677", "007788", "007799", "0077aa", "008899", 
-        "0088aa", "0099aa", "0099bb", "00aacc", "00aabb", 
-        "00aadd", "00bbaa", "00bbcc", "00bbdd", "00bbee", 
-        "00ccbb", "00ccdd", "00ccee", "00ddbb", "00ddcc", 
-        "00dddd", "00eecc"
-    ],
-    
-    # 6. BLUE - Sky / Bright Blue / Cobalt (22 unique shades)
-    [
-        "3366dd", "3377dd", "3377ee", "4477dd", "4477ee", 
-        "4488ee", "4488ff", "5588ee", "5588ff", "5599ee", 
-        "5599ff", "55aaff", "6688ff", "6699ff", "66aaff", 
-        "66bbff", "7799ff", "77aaff", "77bbff", "88aaff", 
-        "88bbff", "88ccff"
-    ],
-    
-    # 7. PURPLE - Vibrant Purple / Lavender / Violet (22 unique shades)
-    [
-        "8855dd", "9955dd", "9955ee", "9966dd", "9966ee", 
-        "aa55dd", "aa55ee", "aa66dd", "aa66ee", "aa66ff", 
-        "aa77ee", "aa77ff", "bb66ee", "bb77ee", "bb77ff", 
-        "bb88ee", "bb88ff", "cc77ff", "cc88ff", "cc99ff", 
-        "dd88ff", "dd99ff"
-    ],
-    
-    # 8. PINK - Rose / Pink / Magenta (22 unique shades)
-    [
-        "bb3377", "cc2277", "cc3377", "cc4488", "cc5599", 
-        "dd3388", "dd4488", "dd4499", "dd5599", "dd66aa", 
-        "ee4499", "ee5599", "ee55aa", "ee66aa", "ee77bb", 
-        "ff55aa", "ff66aa", "ff66bb", "ff77bb", "ff77cc", 
-        "ff88cc", "ff99dd"
-    ]
-]
-
-# ============================================================
-# SMART SHUFFLE SETTINGS (No profiles needed!)
-# ============================================================
-
-# Icons that look best with bright colors
-HIGH_INTENSITY_ICONS = ['neon', 'sweet-hollow', 'rami', 'adwaitaru']
-
-# Icons that work well with medium colors
-MEDIUM_INTENSITY_ICONS = ['sweet', 'besgnulinux']
-
-# Icons that work with any color (office/universal)
-LOW_INTENSITY_ICONS = ['mint', 'breeze', 'slot-multicolor']
-
-# GTK assignment rules based on icon type
-ICON_TO_GTK = {
-    'neon': 'flat-remix',
-    'sweet-hollow': 'flat-remix',
-    'rami': ['mint-relax', 'graphite'],   # Random choice between these
-    'adwaitaru': ['mint-relax', 'graphite'],
-    'sweet': ['breeze', 'mint-relax'],
-    'besgnulinux': 'breeze',
-    'mint': 'breeze',
-    'breeze': 'breeze',
-    'slot-multicolor': 'breeze',
+# Rule of thumb: accents are bright and saturated, never dark, never washed out,
+# and the greens/cyans never neon.
+# These are the original hand-picked shades, with: too-dark ones brightened
+# (value < 0.80), pale ones saturated or dropped (saturation < 0.55), and the
+# neon greens/cyans dropped (Lab lightness > 79). Each hue family has two tiers,
+# split by saturation x brightness:
+#   vivid  -> the strongest half (at least 6) - for icon sets that need a strong accent
+#   medium -> the softer half - fine for stylized/office sets
+# Edit freely; the roll only cares about the family -> tier -> list structure.
+SHUFFLE_COLOR_FAMILIES = {
+    'red': {
+        'vivid':  ["dd1144", "ee1144", "dd0033", "ee3355", "ee2244", "ff3355", "dd1133", "cc0022", "ee1133", "ff2244", "dd0022"],
+        'medium': ["ee4466", "dd3355", "ff5577", "cc2244", "ff4466", "dd2244", "cc1133", "ee4455", "dd3344", "ff5566", "cc2233"],
+    },
+    'orange': {
+        'vivid':  ["ee5500", "dd5500", "ee6611", "ff7722", "ff6600", "cc5500", "ee7722", "ff8833", "dd6611", "ff7711", "ff8822"],
+        'medium': ["ee7733", "ff8844", "dd6622", "cc5511", "ff9955", "ee8833", "ff9944", "dd7722", "cc6611", "ee9944", "dd8833"],
+    },
+    'yellow': {
+        'vivid':  ["ffaa00", "eeaa00", "ffbb00", "ddaa00", "eebb00", "ffcc00", "eecc00", "ffdd11", "ffdd00", "eedd00", "ffee00"],
+        'medium': ["ccaa00", "ffdd33", "ddbb00", "eecc11", "eedd33", "ccbb00", "ffee33", "ddcc11", "eedd11", "ffee22", "ddcc00"],
+    },
+    'green': {
+        'vivid':  ["33dd55", "00dd33", "11dd44", "22dd55", "33dd66", "22cc55"],
+        'medium': ["44dd55", "55dd66", "55cc66", "33cc55", "44dd66", "44cc66"],
+    },
+    'cyan': {
+        'vivid':  ["00ccdd", "00ccee", "11ccee", "00bbdd", "00ccff", "00bbee", "11bbee"],
+        'medium': ["00ccbb", "00bbcc", "00aacc", "33ccee", "00aadd", "0099dd"],
+    },
+    'blue': {
+        'vivid':  ["55aaff", "4488ee", "3377dd", "5599ff", "3377ee", "4488ff", "4477ee", "3366dd"],
+        'medium': ["66bbff", "5599ee", "66aaff", "4477dd", "5588ee", "6699ff", "5588ff", "6688ff"],
+    },
+    'purple': {
+        'vivid':  ["9966ff", "9955ee", "aa66ff", "aa55ee", "bb66ff", "cc66ff"],
+        'medium': ["8855dd", "9966ee", "9955dd", "aa66ee", "aa55dd", "bb66ee"],
+    },
+    'pink': {
+        'vivid':  ["dd4499", "ee55aa", "ff44aa", "ee4499", "dd3388", "ff55aa", "cc2277", "cc3377", "dd4488"],
+        'medium': ["ff66cc", "dd55aa", "cc5599", "ff66bb", "cc4488", "dd5599", "ee66aa", "ee5599", "ff66aa"],
+    },
 }
+
+# ------------------------------------------------------------
+# Icon "personalities"
+#   needs: how strong the accent must be -> 'vivid' | 'medium' | 'any'
+#   style: used to decide which GTK themes it matches (see STYLE_GTK)
+#          'hollow'   thin/empty icons (need black + vivid)
+#          'modern'   grey body, small accent area (professional)
+#          'stylized' beautiful, not too bright
+#          'showy'    super 3D, always shines
+#          'office'   multipurpose
+# ------------------------------------------------------------
+ICON_PROFILE = {
+    'neon':            {'needs': 'vivid',  'style': 'hollow'},
+    'sweet-hollow':    {'needs': 'vivid',  'style': 'hollow'},
+    'rami':            {'needs': 'vivid',  'style': 'modern'},
+    'adwaitaru':       {'needs': 'vivid',  'style': 'modern'},
+    'besgnulinux':     {'needs': 'vivid',  'style': 'showy'},
+    'sweet':           {'needs': 'medium', 'style': 'stylized'},
+    'mint':            {'needs': 'any',    'style': 'office'},
+    'breeze':          {'needs': 'any',    'style': 'office'},
+    'slot-multicolor': {'needs': 'any',    'style': 'office'},
+}
+
+# ------------------------------------------------------------
+# Style -> GTK affinity (0 / missing = never, 4 = ideal)
+# GTK themes:
+#   flat-remix  super black          graphite / colloid  brownish, modern
+#   mint-relax  dark mint, sober     breeze              standard, goes with all
+# ------------------------------------------------------------
+STYLE_GTK = {
+    'hollow':   {'flat-remix': 4, 'mint-relax': 1, 'breeze': 1},
+    'modern':   {'graphite': 4, 'colloid': 3, 'mint-relax': 2, 'breeze': 1},
+    'stylized': {'colloid': 4, 'graphite': 2, 'mint-relax': 2, 'breeze': 2},
+    'showy':    {'breeze': 4, 'flat-remix': 3, 'mint-relax': 1},
+    'office':   {'breeze': 3, 'mint-relax': 3, 'graphite': 1, 'colloid': 1},
+}
+
+# Colour families that don't suit a GTK theme (never used with it).
+# flat-remix is super black and mint-relax is a dark mint: purples and blues clash.
+GTK_AVOID_FAMILIES = {
+    'flat-remix': ('purple', 'blue'),
+    'mint-relax': ('purple', 'blue'),
+}
+
+# Most restrictive first: each GTK theme is guaranteed a workspace in this order
+GTK_PRIORITY = ['flat-remix', 'graphite', 'colloid', 'mint-relax', 'breeze']
+
+# Neighbouring workspaces: minimum comfortable hue gap (degrees) and "loud" styles
+# that shouldn't sit next to each other
+MIN_NEIGHBOR_HUE_GAP = 35
+
+# Every pair of workspaces (not just neighbours) must look clearly different.
+# Distance is measured in CIE Lab (perceptual); lightness counts half as much as
+# hue/chroma so "same colour, lighter" still counts as similar.
+# ~45 is reliably reachable with 8 workspaces; the ceiling is about 53.
+MIN_COLOR_DISTANCE = 45
+COLOR_L_WEIGHT = 0.5
+LOUD_STYLES = ('hollow', 'showy')
 
 SHUFFLE_ORDER_OPTIONS = ['name_az', 'name_za', 'name_old', 'name_new', 'n']
 SHUFFLE_TIMINGS = ['30s', '1m', '5m', '20m', '1h', '24h']
@@ -328,7 +325,194 @@ def detect_workspace_count() -> int:
 # SHUFFLE FUNCTION
 # ============================================================
 
-def roll_shuffle_plan(workspace_count: int = 8) -> list:
+def _hue_deg(hex6: str) -> float:
+    r, g, b = (int(hex6[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    return colorsys.rgb_to_hsv(r, g, b)[0] * 360
+
+
+def _hue_gap(a: float, b: float) -> float:
+    d = abs(a - b) % 360
+    return min(d, 360 - d)
+
+
+def _weighted_choice(rng, items):
+    """items: list of (value, weight>0). Returns one value."""
+    total = sum(w for _, w in items)
+    r = rng.uniform(0, total)
+    acc = 0.0
+    for value, w in items:
+        acc += w
+        if r <= acc:
+            return value
+    return items[-1][0]
+
+
+def _roll_pairs(rng, n: int) -> list:
+    """Pick n (gtk, icon) pairs using ICON_PROFILE / STYLE_GTK."""
+    unused = list(ICON_PROFILE)
+    uses = {g: 0 for g in GTK_PRIORITY}
+    pairs = []
+
+    def weight(icon, gtk):
+        w = STYLE_GTK[ICON_PROFILE[icon]['style']].get(gtk, 0)
+        return w / (1 + 2 * uses[gtk])          # soft penalty for repeats
+
+    def take(icon, gtk):
+        unused.remove(icon)
+        uses[gtk] += 1
+        pairs.append((gtk, icon))
+
+    # A. Coverage: every GTK theme gets one slot (most restrictive first)
+    for gtk in GTK_PRIORITY[:n]:
+        cands = [(ic, weight(ic, gtk)) for ic in unused if weight(ic, gtk) > 0]
+        if not cands:
+            cands = [(ic, 1) for ic in unused]
+        take(_weighted_choice(rng, cands), gtk)
+
+    # B. Remaining workspaces: random unused icons, GTK picked by affinity
+    rng.shuffle(unused)
+    while len(pairs) < n:
+        if not unused:   # more workspaces than icon sets: reuse office icons
+            unused = [i for i, p in ICON_PROFILE.items() if p['style'] == 'office']
+        icon = unused[0]
+        style = ICON_PROFILE[icon]['style']
+        # Extra workspaces only repeat the neutral themes; specialists stay unique
+        cands = [(g, max(weight(icon, g), 0.5)) for g in ('breeze', 'mint-relax')]
+        take(icon, _weighted_choice(rng, cands))
+
+    return pairs
+
+
+_LAB_CACHE = {}
+
+
+def _lab(hex6: str):
+    v = _LAB_CACHE.get(hex6)
+    if v is None:
+        r, g, b = (int(hex6[i:i + 2], 16) / 255 for i in (0, 2, 4))
+        lin = lambda c: c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+        r, g, b = lin(r), lin(g), lin(b)
+        x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047
+        y = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883
+        f = lambda t: t ** (1 / 3) if t > 0.008856 else 7.787 * t + 16 / 116
+        fx, fy, fz = f(x), f(y), f(z)
+        v = (116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz))
+        _LAB_CACHE[hex6] = v
+    return v
+
+
+def _color_distance(a: str, b: str) -> float:
+    la, lb = _lab(a), _lab(b)
+    return (((COLOR_L_WEIGHT * (la[0] - lb[0])) ** 2
+             + (la[1] - lb[1]) ** 2 + (la[2] - lb[2]) ** 2) ** 0.5)
+
+
+def _family_pool(family: str, needs: str) -> list:
+    tiers = SHUFFLE_COLOR_FAMILIES[family]
+    if needs == 'vivid':
+        return tiers['vivid']
+    if needs == 'medium':
+        return tiers['medium']
+    return tiers['vivid'] + tiers['medium']
+
+
+def _color_score(cols: list):
+    """(smallest pairwise distance, mean pairwise distance) - higher is better."""
+    ds = [_color_distance(cols[i], cols[j])
+          for i in range(len(cols)) for j in range(i + 1, len(cols))]
+    return (min(ds), sum(ds) / len(ds)) if ds else (999.0, 999.0)
+
+
+def _assign_families(rng, allowed: list, all_fams: list) -> list:
+    """One family per workspace (distinct while families last), honouring `allowed`."""
+    n = len(allowed)
+    best = None
+
+    for _ in range(50):
+        order = list(range(n))
+        rng.shuffle(order)
+        order.sort(key=lambda i: len(allowed[i]))        # most restricted first
+
+        fams = [None] * n
+        used = set()
+        relaxed_at = None
+
+        for i in order:
+            free = [f for f in allowed[i] if f not in used]
+            if not free:
+                # No unused family available for this workspace.
+                # Relax here so the rest of the assignment can proceed,
+                # but remember that this attempt wasn't perfect.
+                if relaxed_at is None:
+                    relaxed_at = i
+                free = list(allowed[i])
+            fams[i] = rng.choice(free)
+            used.add(fams[i])
+
+        if relaxed_at is None:
+            return fams                                  # perfect — done
+
+        if best is None:
+            best = fams                                  # keep first relaxed as fallback
+
+    return best if best is not None else [rng.choice(allowed[i]) for i in range(n)]
+
+
+def _roll_colors(rng, needs: list, gtks: list) -> list:
+    """
+    One shade per workspace (same order as `needs` / `gtks`). Each workspace gets a
+    different hue family (never one in GTK_AVOID_FAMILIES for its GTK theme) and a
+    shade from the tier its icon needs, and the set is searched so that EVERY pair
+    of workspaces is at least MIN_COLOR_DISTANCE apart (best effort if unreachable).
+    """
+    n = len(needs)
+    all_fams = list(SHUFFLE_COLOR_FAMILIES)
+    allowed = [[f for f in all_fams if f not in GTK_AVOID_FAMILIES.get(g, ())] for g in gtks]
+    best = None
+    for _ in range(60):
+        fams = _assign_families(rng, allowed, all_fams)
+        cols = [rng.choice(_family_pool(f, nd)) for f, nd in zip(fams, needs)]
+        sc = _color_score(cols)
+        for _ in range(60):
+            if sc[0] >= MIN_COLOR_DISTANCE or n < 2:
+                break
+            # take the closest pair and re-roll one of its two shades (or swap families)
+            i, j = min(((p, q) for p in range(n) for q in range(p + 1, n)),
+                       key=lambda pq: _color_distance(cols[pq[0]], cols[pq[1]]))
+            k = rng.choice((i, j))
+            new_fams, new_cols = fams[:], cols[:]
+            m = rng.choice([x for x in range(n) if x != k]) if n > 1 else k
+            if n > 1 and rng.random() < 0.25 and fams[m] in allowed[k] and fams[k] in allowed[m]:
+                new_fams[k], new_fams[m] = new_fams[m], new_fams[k]
+                new_cols[k] = rng.choice(_family_pool(new_fams[k], needs[k]))
+                new_cols[m] = rng.choice(_family_pool(new_fams[m], needs[m]))
+            else:
+                new_cols[k] = rng.choice(_family_pool(fams[k], needs[k]))
+            new_sc = _color_score(new_cols)
+            if new_sc >= sc:
+                fams, cols, sc = new_fams, new_cols, new_sc
+        if best is None or sc > best[0]:
+            best = (sc, cols)
+        if best[0][0] >= MIN_COLOR_DISTANCE or n < 2:
+            break
+    return best[1]
+
+
+def _neighbor_cost(bundles: list) -> float:
+    cost = 0.0
+    for a, b in zip(bundles, bundles[1:]):
+        gap = _hue_gap(a['hue'], b['hue'])
+        if gap < MIN_NEIGHBOR_HUE_GAP:
+            cost += (MIN_NEIGHBOR_HUE_GAP - gap) / MIN_NEIGHBOR_HUE_GAP
+        if a['style'] in LOUD_STYLES and b['style'] in LOUD_STYLES:
+            cost += 1.0
+        if a['gtk'] == b['gtk']:
+            cost += 0.5
+    return cost
+
+
+def roll_shuffle_plan(workspace_count: int = 8, seed=None) -> list:
     """
     Roll a shuffle plan. Returns a list of dicts, one per workspace,
     each containing:
@@ -345,93 +529,64 @@ def roll_shuffle_plan(workspace_count: int = 8) -> list:
             "scaling": "zoomed" | "scaled",
         }
 
-    Pure function: no I/O, no configparser, no file writes.
+    How it works:
+      1. GTK/icon pairs come from ICON_PROFILE + STYLE_GTK (affinity, not fixed pairs).
+      2. Each workspace gets a different hue family (skipping the ones that clash with
+         its GTK theme, see GTK_AVOID_FAMILIES); the shade tier (vivid/medium)
+         is chosen by what the icon set needs, and the colours are searched so
+         that ALL pairs of workspaces differ clearly (MIN_COLOR_DISTANCE).
+      3. The finished bundles are re-ordered so neighbours differ in hue, loud
+         icon styles don't touch, and the same GTK doesn't repeat back to back.
+
+    Pure function: no I/O. Pass `seed` to reproduce a roll.
     """
-    used_combos = set()
-    used_icons = set()
-    used_specialist_gtk = set()
+    rng = random.Random(seed)
+    n = max(1, workspace_count)
 
-    # Get 8 random colors
-    buckets = SHUFFLE_COLOR_BUCKETS.copy()
-    random.shuffle(buckets)
-    selected_colors = [random.choice(bucket) for bucket in buckets]
-    random.shuffle(selected_colors)
+    # 1. Pairs
+    pairs = _roll_pairs(rng, n)
 
-    # Sort colors by intensity (brightest first)
-    sorted_colors = sort_colors_by_intensity(selected_colors)
+    # 2. Colors: different family per workspace, shade tier by icon need,
+    #    and every pair of workspaces clearly different (not just neighbours)
+    needs = [ICON_PROFILE[icon]['needs'] for _, icon in pairs]
+    shades = _roll_colors(rng, needs, [g for g, _ in pairs])
+    bundles = []
+    for (gtk, icon), color_hex in zip(pairs, shades):
+        bundles.append({
+            'gtk': gtk, 'icon': icon, 'color': color_hex,
+            'hue': _hue_deg(color_hex), 'style': ICON_PROFILE[icon]['style'],
+        })
 
-    SPECIALIST_GTK = {
-        'flat-remix': ['neon', 'sweet-hollow'],
-        'graphite': ['rami', 'adwaitaru'],
-        'colloid': ['sweet', 'adwaitaru'],
-    }
+    # 3. Order: best of many random permutations (stops early on a perfect one)
+    best, best_cost = bundles[:], _neighbor_cost(bundles)
+    for _ in range(400):
+        if best_cost == 0:
+            break
+        trial = bundles[:]
+        rng.shuffle(trial)
+        c = _neighbor_cost(trial)
+        if c < best_cost:
+            best, best_cost = trial, c
 
-    forced_assignments = []
-    forced_icons = []
-
-    # 1. One specialist from each group
-    for gtk, icon_options in SPECIALIST_GTK.items():
-        available = [ic for ic in icon_options if ic not in forced_icons]
-        icon = random.choice(available) if available else icon_options[0]
-        forced_icons.append(icon)
-        forced_assignments.append((gtk, icon))
-        used_specialist_gtk.add(gtk)
-
-    # 2. mint-relax
-    all_icons = ['neon', 'sweet-hollow', 'rami', 'adwaitaru', 'sweet',
-                 'besgnulinux', 'mint', 'breeze', 'slot-multicolor']
-    available_icons = [i for i in all_icons if i not in forced_icons]
-    icon = random.choice(available_icons) if available_icons else 'mint'
-    forced_icons.append(icon)
-    forced_assignments.append(('mint-relax', icon))
-
-    # 3. breeze
-    available_icons = [i for i in all_icons if i not in forced_icons]
-    icon = random.choice(available_icons) if available_icons else 'breeze'
-    forced_icons.append(icon)
-    forced_assignments.append(('breeze', icon))
-
-    # 4. Remaining workspaces get repeats of breeze/mint-relax
-    remaining_workspaces = workspace_count - len(forced_assignments)
-    available_icons = [i for i in all_icons if i not in forced_icons]
-    random.shuffle(available_icons)
-
-    repeat_gtk_pool = ['breeze', 'mint-relax']
-    repeat_assignments = []
-    for _ in range(max(0, remaining_workspaces)):
-        gtk = random.choice(repeat_gtk_pool)
-        if available_icons:
-            icon = available_icons.pop()
-        else:
-            icon = random.choice(['mint', 'breeze', 'slot-multicolor'])
-        repeat_assignments.append((gtk, icon))
-
-    all_assignments = forced_assignments + repeat_assignments
-    random.shuffle(all_assignments)
-
-    # Build the plan
+    # 4. Build the plan
     plan = []
-    for i, (gtk, icon_set) in enumerate(all_assignments):
-        color_hex = sorted_colors[i] if i < len(sorted_colors) else "666666"
-        color_str = f"#{color_hex}"
-        gtk_theme = f"awp-gtk-{gtk}-{color_hex}"
-        icon_theme = f"awp-icons-{icon_set}-{color_hex}"
-        cursor_theme = f"awp-cursor-oxy-{color_hex}"
-
-        mode = random.choice(SHUFFLE_MODES)
-        order = 'n' if mode == 'random' else random.choice(SHUFFLE_ORDER_OPTIONS)
+    for b in best:
+        color_hex = b['color']
+        gtk_theme = f"awp-gtk-{b['gtk']}-{color_hex}"
+        mode = rng.choice(SHUFFLE_MODES)
+        order = 'n' if mode == 'random' else rng.choice(SHUFFLE_ORDER_OPTIONS)
 
         plan.append({
-            "icon_color": color_str,
+            "icon_color": f"#{color_hex}",
             "gtk_theme": gtk_theme,
-            "icon_theme": icon_theme,
-            "cursor_theme": cursor_theme,
+            "icon_theme": f"awp-icons-{b['icon']}-{color_hex}",
+            "cursor_theme": f"awp-cursor-oxy-{color_hex}",
             "desktop_theme": gtk_theme,
             "wm_theme": gtk_theme,
             "mode": mode,
             "order": order,
-            "timing": random.choice(SHUFFLE_TIMINGS),
-            "scaling": random.choice(SHUFFLE_SCALINGS),
+            "timing": rng.choice(SHUFFLE_TIMINGS),
+            "scaling": rng.choice(SHUFFLE_SCALINGS),
         })
 
     return plan
@@ -1260,7 +1415,7 @@ class WiniGUI(QMainWindow):
     
     def _load_active_ini_data(self):
         """
-        Read the active preset's INI (or RAM JSON) and return its data as a dict:
+        Read the active preset's INI and return its data as a dict:
             {
                 "general": {"os_detected": ..., "session_type": ..., "workspaces": ...},
                 "workspaces": [
@@ -1269,17 +1424,47 @@ class WiniGUI(QMainWindow):
                     ...
                 ]
             }
-        Returns None if the INI can't be read.
+
+        Reads the INI on disk (the authoritative source), then falls back
+        to the RAM mirror if the disk file is unreadable. The RAM mirror
+        can be stale — it only reflects the config as of the last time the
+        running system reloaded it, so a hand-edited INI wouldn't be picked
+        up. The disk file is what the user actually sees and edits.
+
+        Returns None if neither source can be read.
         """
         if not self.active_preset:
             return None
 
-        # Prefer the RAM JSON — faster, always in sync
+        ini_path = self.presets_dir / self.active_preset / f"{self.active_preset}.ini"
+
+        # ── Preferred: the INI on disk ──
+        if ini_path.exists():
+            try:
+                config = configparser.ConfigParser()
+                config.read(ini_path)
+
+                general = dict(config["general"]) if config.has_section("general") else {}
+                workspaces = []
+                for section in config.sections():
+                    if section.startswith("ws") and section != "general":
+                        entry = dict(config[section])
+                        entry["section"] = section
+                        workspaces.append(entry)
+                workspaces.sort(key=lambda w: int(w["section"][2:]))
+                return {"general": general, "workspaces": workspaces}
+            except Exception as e:
+                _printer.warning(
+                    f"Could not read INI at {ini_path}: {e} — falling back to RAM mirror",
+                    backend="wini",
+                )
+
+        # ── Fallback: the RAM mirror ──
+        # Only reached if the disk INI is missing or malformed.
         try:
             with open(AWP_CONFIG_RAM, "r") as f:
                 ram_data = json.load(f)
-            # Confirm the RAM data is for the active preset (the daemon updates
-            # it on preset switch, but we double-check via the preset name)
+
             general = ram_data.get("general", {})
             workspaces = []
             for key, value in ram_data.items():
@@ -1289,29 +1474,11 @@ class WiniGUI(QMainWindow):
                     workspaces.append(entry)
             workspaces.sort(key=lambda w: int(w["section"][2:]))
             return {"general": general, "workspaces": workspaces}
-        except (FileNotFoundError, json.JSONDecodeError, OSError):
-            pass
-
-        # Fallback to the INI on disk
-        try:
-            ini_path = self.presets_dir / self.active_preset / f"{self.active_preset}.ini"
-            if not ini_path.exists():
-                return None
-
-            config = configparser.ConfigParser()
-            config.read(ini_path)
-
-            general = dict(config["general"]) if config.has_section("general") else {}
-            workspaces = []
-            for section in config.sections():
-                if section.startswith("ws") and section != "general":
-                    entry = dict(config[section])
-                    entry["section"] = section
-                    workspaces.append(entry)
-            workspaces.sort(key=lambda w: int(w["section"][2:]))
-            return {"general": general, "workspaces": workspaces}
-        except Exception as e:
-            _printer.error(f"Failed to read active INI: {e}", backend="wini")
+        except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+            _printer.error(
+                f"Could not read active preset (disk INI and RAM mirror both failed): {e}",
+                backend="wini",
+            )
             return None
     
     def _prefill_from_ini(self):
